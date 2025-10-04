@@ -1,44 +1,107 @@
-# 🌐 MindQuest – Interactive Learning Platform
+# Interactive Course Builder
 
-**MindQuest** is an interactive web platform designed to make university-level learning more engaging through **visualizations, simulations, and mini-games**. Inspired by platforms like [VisuAlgo](https://visualgo.net/en) and [TryHackMe](https://tryhackme.com), it combines education with gamification to help students understand complex topics in a fun and practical way.
+> A web-based platform for interactive learning of technical topics like data structures and algorithms.  
+> Users can explore courses with animations, mini-games, and quizzes to reinforce concepts.
 
 ---
 
-## 🚀 Features
-- 🎮 **Gamified Learning** – mini-games, quizzes, and capture-the-flag challenges.  
-- 📊 **Visual Simulations** – animations for Data Structures & Algorithms.  
-- 🔐 **Security Modules** – hands-on topics like hashing, encryption, and SQL injection (future expansion).  
-- 📚 **Modular Subjects** – start with *Data Structures* (arrays, linked lists, trees) and extend to *Cybersecurity*.  
-- 🧑‍🤝‍🧑 **User-Friendly Interface** – intuitive navigation with topic-based progress tracking.  
+## 🧠 Project Overview
+
+This project is designed as a graduation project for a computer engineering degree.  
+The goal is to build a **fully functional web application** that provides an engaging, interactive learning experience.
+
+### Features
+- User authentication (signup, login)
+- Interactive lessons with animations (stack push/pop, linked list traversal, etc.)
+- Mini-games and simulations to practice concepts
+- Quizzes for each lesson
+- Progress tracking and optional achievements/points system
+
+---
+
+## 🧰 Tech Stack
+
+**Frontend:**  
+- React  
+- Tailwind CSS  
+- Framer Motion (for animations)  
+
+**Backend:**  
+- Node.js + Express  
+- PostgreSQL + Prisma (for user accounts, progress tracking)  
+- MongoDB + Mongoose (for courses, lessons, animations, quizzes)  
+
+**DevOps / Tools:**  
+- Git & GitHub  
+- Docker (optional for deployment consistency)  
 
 ---
 
 ## 📂 Project Structure
-mindquest/
-├── frontend/ # React (or Next.js) app for UI/UX
-├── backend/ # Node.js/Express API (future scalability)
-├── games/ # Mini-games & interactive challenges
-├── docs/ # Documentation, diagrams, and project notes
-└── README.md # This file
+
+backend/
+├── src/
+│ ├── controllers/
+│ ├── routes/
+│ ├── middleware/
+│ ├── models/
+│ ├── utils/
+│ ├── prisma/
+│ ├── db/
+│ └── server.js
+frontend/
+├── src/
+│ ├── components/
+│ ├── pages/
+│ ├── context/
+│ ├── hooks/
+│ ├── services/
+│ └── App.jsx
+
 
 ---
 
-## 🛠️ Installation & Setup
+## ⚙️ Setup Instructions
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (>= 18.x recommended)
-- npm or yarn package manager
-- Git for version control
+1. **Clone the repository**
 
-### Steps
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/mindquest.git
-cd mindquest
+git clone https://github.com/sayedpalestine7/MindQuest
+    cd interactive-course-builder/backend
 
-# Install dependencies
-cd frontend
-npm install
+2. Install backend dependencie
+    npm install
 
-# Run the development server
-npm run dev
+3. Create .env file in backend/
+    PORT=5000
+    MONGO_URI=mongodb://localhost:27017/coursebuilder
+    POSTGRES_URL=postgresql://USER:PASSWORD@localhost:5432/coursebuilder
+    JWT_SECRET=your_super_secret_key
+
+4. Initialize Prisma
+    npx prisma generate
+    npx prisma migrate dev --name init
+
+5. Start backend server
+    npm run dev
+
+6.Frontend setup
+    Go to frontend/ and install dependencies:
+    npm install
+    npm start
+
+🔗 Links
+
+GitHub Repository: <your-repo-url>
+
+Project Documentation: TBD
+
+📝 License
+
+This project is licensed under the MIT License.
+
+👨‍💻 Author
+
+Sayed Qutob
+Ahmad Dardouk
+Computer Engineering Student | Graduation Project
