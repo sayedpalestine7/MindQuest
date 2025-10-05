@@ -1,53 +1,25 @@
-import express from 'express';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import prisma from "./prisma/client.js";
+import { connectMongoDB } from "./db/mongoConnect.js";
+
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+app.use(cors());
+app.use(express.json());
 
-app.post('/api/auth/register', (req, res) => {
-    // Registration logic here
-    res.send('User registered');
+// Connect databases
+connectMongoDB();
+prisma.$connect()
+    .then(() => console.log("✅ PostgreSQL connected via Prisma"))
+    .catch(err => console.error("❌ Prisma connection error:", err));
+
+// Test route
+app.get("/", (req, res) => {
+    res.send("MindQuest backend running successfully!");
 });
 
-app.post('/api/auth/login', (req, res) => {
-    // Login logic here
-    res.send('User logged in');
-});
-
-app.get('/api/topics', (req, res) => {
-    // Fetch topics logic here
-    res.send('List of topics');
-});
-
-app.get('/api/topics/:id/lessons', (req, res) => {
-    // Fetch specific topic logic here
-    res.send(`Details of topic ${req.params.id}`);
-});
-
-app.get('/api/lessons/:id', (req, res) => {
-    // Fetch lessons logic here
-    res.send('List of lessons');
-});
-
-app.post('/api/quiz/:quizId/submit', (req, res) => {
-    // Submit quiz logic here
-    res.send(`Quiz ${req.params.quizId} submitted`);
-});
-
-app.post('/api/games/:gameId/submit', (req, res) => {
-    // Submit quiz logic here
-    res.send(`Quiz ${req.params.quizId} submitted`);
-});
-
-app.get('/api/user/progress', (req, res) => {
-    // Fetch user progress logic here
-    res.send('User progress data');
-});
-
-app.post('/api/admin/lessons', (req, res) => {
-    // Update user progress logic here
-    res.send('User progress updated');
-});
-
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
