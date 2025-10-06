@@ -1,0 +1,112 @@
+### GET /
+GET http://localhost:5000
+
+### Register a new user
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "123456"
+}
+
+
+### Login user to get JWT token
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "123456"
+}
+
+
+### Fetch all todos GET /TODOS (protected)
+# GET http://localhost:5000/todos
+# Authorization:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzU5NTczMjYyLCJleHAiOjE3NTk2NTk2NjJ9.82mPzcYN5C1FD9PcoXfLZWi2w8PvUHgUXBOgff40gpI
+
+# ### Create a new todo POST /TODOS (protected)
+# POST http://localhost:5000/todos
+# Authorization:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzU5NTczMjYyLCJleHAiOjE3NTk2NTk2NjJ9.82mPzcYN5C1FD9PcoXfLZWi2w8PvUHgUXBOgff40gpI
+# Content-Type: application/json
+
+# {
+#     "task": "Finish coding the project"
+# }
+
+
+# ### Update a todo PUT /TODOS/:id (protected)
+# PUT http://localhost:5000/todos/2
+# Authorization:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzU5NTczMjYyLCJleHAiOjE3NTk2NTk2NjJ9.82mPzcYN5C1FD9PcoXfLZWi2w8PvUHgUXBOgff40gpI
+# Content-Type: application/json
+
+# {
+#     "completed": 1
+# }
+
+
+# CRUD Operations for Courses
+
+### Create a new course
+POST http://localhost:5000/api/courses
+Content-Type: application/json
+
+{
+  "title": "Data Structures 101",
+  "description": "Learn the fundamentals of stacks, queues, and linked lists.",
+  "difficulty": "beginner",
+  "thumbnail": "https://example.com/image.jpg"
+}
+
+### Get all courses
+GET http://localhost:5000/api/courses
+
+### Get a course by ID
+GET http://localhost:5000/api/courses/68e438dbc018f4f2816fa2c0
+
+### Update a course by ID
+PUT http://localhost:5000/api/courses/68e438dbc018f4f2816fa2c0
+Content-Type: application/json
+
+{
+  "title": "Data Structures 102",
+  "description": "An advanced look at data structures including trees and graphs.",
+  "difficulty": "intermediate",
+  "thumbnail": "https://example.com/newimage.jpg"
+}
+
+### Delete a course by ID
+DELETE http://localhost:5000/api/courses/68e438dbc018f4f2816fa2c0
+
+
+
+# CRUD Operations for Lessons
+
+### Create a new lesson
+POST http://localhost:5000/api/lessons
+Content-Type: application/json
+
+{
+  "title": "Introduction to Stacks",
+  "content": "Stacks are linear data structures that follow the LIFO principle...",
+  "courseId": "68e438dbc018f4f2816fa2c0"
+}
+
+### Get all lessons
+GET http://localhost:5000/api/lessons/course/68e438dbc018f4f2816fa2c0
+### Get a lesson by ID
+GET http://localhost:5000/api/lessons/68e4401cde9a2040799f1982
+### Update a lesson by ID
+PUT http://localhost:5000/api/lessons/68e44051de9a2040799f1985
+Content-Type: application/json
+
+{
+  "title": "Stacks and Their Applications",
+  "content": "Stacks are used in various applications such as expression evaluation, backtracking algorithms...",
+  "courseId": "68e438dbc018f4f2816fa2c0"
+}
+
+### Delete a lesson by ID
+DELETE http://localhost:5000/api/lessons/68e44051de9a2040799f1985
