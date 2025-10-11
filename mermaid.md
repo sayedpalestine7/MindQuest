@@ -42,7 +42,7 @@ classDiagram
         +thumpnail : Image
         +lessons: Lesson[]
         +quizzes: Quiz
-        +progress: Progress
+        +progress: Int
         +scoreOnFinish: Int
         +difficulty : String
     }
@@ -75,17 +75,12 @@ classDiagram
         +correctAnswer: String
     }
 
-    class Progress {
-        +userId: String
-        +courseId: String
-        +completion: Number
-    }
-
-    User --> Progress
+    Student --> Course
     Course --> Lesson
     Lesson --> Field
     Course --> Quiz
     Quiz --> Question
-
+    Field --> Question
+    Teacher --> Course
     
 ```
