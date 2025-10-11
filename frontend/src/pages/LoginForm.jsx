@@ -40,7 +40,6 @@ function LoginForm() {
     });
   };
 
-
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -54,6 +53,7 @@ function LoginForm() {
       return;
     }
   }
+
   const handleGoogleSignIn = () => { }
 
   return (
