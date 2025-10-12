@@ -262,7 +262,7 @@ function SignUp() {
                     Sign up with Google
                   </GoogleSignInButton>
                   <AuthLink
-                    question="Don't have an account?"
+                    question="Already have an account?"
                     linkText="Login"
                     href="/login"
                     className="mt-4"
