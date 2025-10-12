@@ -49,7 +49,9 @@ function ManageQuizzes() {
           name: "Alice Johnson",
           email: "alice.johnson@example.com",
           specialization: "Algorithms",
-          certificate: "https://i.pravatar.cc/150?img=1",
+          certificates: [
+            "https://i.pravatar.cc/150?img=1"
+          ],
           experience: "5 years of teaching experience in data structures",
         },
         {
@@ -57,7 +59,9 @@ function ManageQuizzes() {
           name: "Bob Smith",
           email: "bob.smith@example.com",
           specialization: "Software Engineering",
-          certificate: "https://i.pravatar.cc/150?img=2",
+          certificates: [
+            "https://i.pravatar.cc/150?img=2"
+          ],
           experience: "7 years of professional software development",
         },
         {
@@ -65,7 +69,9 @@ function ManageQuizzes() {
           name: "Charlie Brown",
           email: "charlie.brown@example.com",
           specialization: "Database Systems",
-          certificate: "https://i.pravatar.cc/150?img=3",
+          certificates: [
+            "https://i.pravatar.cc/150?img=3"
+          ],
           experience: "Taught SQL and NoSQL courses for 4 years",
         },
         {
@@ -73,10 +79,12 @@ function ManageQuizzes() {
           name: "Diana Prince",
           email: "diana.prince@example.com",
           specialization: "Artificial Intelligence",
-          certificate: "https://i.pravatar.cc/150?img=4",
+          certificates: [
+            "https://i.pravatar.cc/150?img=4"
+          ],
           experience: "Research assistant in AI at university level",
         },
-      ]
+      ];
 
       setTeachers(fakeTeachers)
       setFilteredTeachers(fakeTeachers)

@@ -11,6 +11,7 @@ import Institution from '../components/signUp/Institution.jsx'
 import SpecializationSelect from "../components/signUp/SpecializationSelect.jsx"
 import AuthLink from '../components/login/AuthLink.jsx'
 import CertificationUpload from "../components/signUp/CertificationUpload"
+import { ProfileImageUpload } from '../components/signUp/ProfileImageUpload'
 
 
 function TeacherSignUp() {
@@ -25,6 +26,7 @@ function TeacherSignUp() {
     const [isLoading, setIsLoading] = useState(false);
     const [certificationFile, setCertificationFile] = useState(null);
     const [uploadingCert, setUploadingCert] = useState(false);
+    const [profileImage, setProfileImage] = useState(null);
 
     const specializations = [
         "Software Engineering",
@@ -88,6 +90,39 @@ function TeacherSignUp() {
         setFile(null);
         toast("File removed");
     }
+
+    // Profile image handlers
+    const handleImageChange = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Check file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("File size must be less than 5MB");
+            return;
+        }
+
+        // Check file type
+        if (!file.type.startsWith('image/')) {
+            toast.error("Please upload an image file");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setProfileImage({
+                file: file,
+                preview: e.target.result
+            });
+            toast.success("Profile image added!");
+        };
+        reader.readAsDataURL(file);
+    }
+
+    const removeImage = () => {
+        setProfileImage(null);
+        toast("Profile image removed");
+    }
     return (
         <div className="flex items-center justify-center min-h-screen ">
             <div className="card card-bordered max-w-2xl w-full shadow-md ">
@@ -110,6 +145,14 @@ function TeacherSignUp() {
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Profile Image Upload */}
+                            <ProfileImageUpload
+                                imagePreview={profileImage?.preview}
+                                handleImageChange={handleImageChange}
+                                removeImage={removeImage}
+                                isLoading={isLoading}
+                            />
+
                             {/* Name + Email */}
                             <div className='flex flex-col md:flex-row justify-center gap-6'>
                                 <NameInput

@@ -1,12 +1,11 @@
-// src/pages/admin/teacher-verification/TeacherDialog.jsx
-import React from "react"
 
+import { X } from "lucide-react"
 export default function TeacherDialog({ teacher, onClose, onAction }) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-3xl w-full relative">
         <button className="absolute top-2 right-2 text-gray-500" onClick={onClose}>
-          ✕
+          <X className="hover:scale-110 hover:text-red-500 hover:bg-gray-100 rounded p-1 transition-all duration-200 cursor-pointer" />
         </button>
 
         <h2 className="text-xl font-bold mb-2">{teacher.name}</h2>

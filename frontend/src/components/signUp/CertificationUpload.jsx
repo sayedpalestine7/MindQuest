@@ -64,7 +64,7 @@ function CertificationUpload({
           />
         </label>
       ) : (
-        <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-green-200 rounded-lg">
           <div className="flex items-center gap-3">
             <FileText className="w-8 h-8 text-primary" />
             <div>
