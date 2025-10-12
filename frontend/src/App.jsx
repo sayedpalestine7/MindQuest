@@ -15,7 +15,6 @@ function App() {
     <>
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/" element={<HomePage />} />
       <Route path="/admin" element={<AdminForm />} />
       <Route path="/admin/courses" element={<ManageCourses />} />
       <Route path="/admin/users" element={<ManageUsers />} />
