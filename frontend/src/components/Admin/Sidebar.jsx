@@ -5,7 +5,7 @@ const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Manage Courses", href: "/admin/courses", icon: BookOpen },
   { name: "Manage Users", href: "/admin/users", icon: Users },
-  { name: "Manage Quizzes", href: "/admin/quizzes", icon: FileQuestion },
+  { name: "Teacher Verification", href: "/admin/verification", icon: FileQuestion },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ]
 
@@ -13,7 +13,7 @@ function Sidebar() {
   const location = useLocation()
 
   return (
-    <aside className="h-screen w-64 bg-gray-900 text-gray-100 border-r border-gray-800 flex flex-col">
+    <aside className="m-h-screen w-64 bg-gray-900 text-gray-100 border-r border-gray-800 flex flex-col">
       <div className="flex items-center justify-center h-16 border-b border-gray-800 text-xl font-bold">
         Admin Panel
       </div>

@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react'
+import React, { useEffect , useState} from 'react'
 import { motion } from "framer-motion"
-import { useState } from 'react'
 import { GoogleSignInButton } from '../components/login/GoogleSignInButton.jsx'
 import EmailInput from '../components/login/EmailInput.jsx'
 import { PasswordInput } from '../components/login/PasswordInput.jsx'
