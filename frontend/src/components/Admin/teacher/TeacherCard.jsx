@@ -31,7 +31,7 @@ export default function TeacherCard({ teacher, onView, onAction }) {
       
       {/* Bottons */}
       <div className="flex gap-2 py-3">
-        <button onClick={onView} className="flex-1 border text-base-200 rounded py-1 hover:bg-gray-100 hover:text-indigo-900 ">
+        <button onClick={onView} className="flex-1 border border-gray-700 text-base-200 rounded py-1 hover:bg-gray-100 hover:text-gray-700 ">
           View
         </button>
         <button
