@@ -8,11 +8,13 @@ import ManageVerification from "./components/Admin/ManageVerification";
 import ManageUsers from "./components/Admin/ManageUsers";
 import Settings from "./components/Admin/Settings";
 import TeacherSignUp from "./pages/TeacherSignUp";
+import HomePage from "./pages/HomePage"
 function App() {
 
   return (
     <>
     <Routes>
+      <Route path="/" element={<HomePage />} />
       <Route path="/admin" element={<AdminForm />} />
       <Route path="/admin/courses" element={<ManageCourses />} />
       <Route path="/admin/users" element={<ManageUsers />} />
