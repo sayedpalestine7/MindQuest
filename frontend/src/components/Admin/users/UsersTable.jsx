@@ -1,76 +1,164 @@
-import React from "react"
-import UserRow from "./UserRow"
+import { SearchBar } from "./SearchBar.jsx"
+import { FilterBar } from "./FilterBar.jsx"
+import { UserRow } from "./UserRow.jsx"
+// import { UserProfileDialog } from "./UserProfileDialog.jsx"
+// import { BanUserDialog } from "./BanUserDialog"
+import { useEffect, useState, useMemo } from "react"
+import { motion } from "framer-motion"
+function UsersTable() {
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [sortField, setSortField] = useState("name")
+  const [sortOrder, setSortOrder] = useState("asc")
+  const [userTypeFilter, setUserTypeFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [userToBan, setUserToBan] = useState(null)
 
-function UserTable() {
-  // Fake users for testing
-  const fakeUsers = [
-    {
-      id: 1,
-      name: "Alice Johnson",
-      email: "alice@example.com",
-      avatar: "https://i.pravatar.cc/150?img=1",
-      progress: 85,
-      points: 1200,
-      status: "active",
-    },
-    {
-      id: 2,
-      name: "Bob Smith",
-      email: "bob@example.com",
-      avatar: "https://i.pravatar.cc/150?img=2",
-      progress: 60,
-      points: 950,
-      status: "banned",
-    },
-    {
-      id: 3,
-      name: "Charlie Brown",
-      email: "charlie@example.com",
-      avatar: "",
-      progress: 45,
-      points: 500,
-      status: "active",
-    },
-  ]
+  useEffect(() => {
+    // Simulate API call
+    setTimeout(() => {
+      const fakeData = [
+        {
+          id: 1,
+          name: "Alice Johnson",
+          email: "alice@example.com",
+          userType: "teacher",
+          avatar: "https://i.pravatar.cc/150?img=1",
+          points: 1200,
+          status: "active",
+        },
+        {
+          id: 2,
+          name: "Bob Smith",
+          email: "bob@example.com",
+          userType: "student",
+          avatar: "https://i.pravatar.cc/150?img=2",
+          points: 950,
+          status: "active",
+        },
+        {
+          id: 3,
+          name: "Charlie Brown",
+          email: "charlie@example.com",
+          userType: "teacher",
+          avatar: "https://i.pravatar.cc/150?img=3",
+          points: 600,
+          status: "banned",
+        },
+        {
+          id: 4,
+          name: "Dana White",
+          email: "dana@example.com",
+          userType: "student",
+          avatar: "https://i.pravatar.cc/150?img=4",
+          points: 750,
+          status: "active",
+        },
+        {
+          id: 5,
+          name: "Ethan Miller",
+          email: "ethan@example.com",
+          userType: "teacher",
+          avatar: "https://i.pravatar.cc/150?img=5",
+          points: 1340,
+          status: "active",
+        },
+      ]
+      setUsers(fakeData)
+      setLoading(false)
+    }, 600) // simulate network delay
+  }, [])
 
-  // Example event handlers
-  const handleView = (user) => {
-    alert(`Viewing ${user.name}`)
+  function handleSort(field) {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+    } else {
+      setSortField(field)
+      setSortOrder("asc")
+    }
   }
 
-  const handleBan = (user) => {
-    alert(`${user.name} is now ${user.status === "banned" ? "unbanned" : "banned"}`)
+  function handleBanUser() {
+    if (!userToBan) return
+    setUsers(
+      users.map((u) =>
+        u.id === userToBan.id
+          ? { ...u, status: u.status === "banned" ? "active" : "banned" }
+          : u
+      )
+    )
+    setUserToBan(null)
   }
+
+  const filteredUsers = useMemo(() => {
+    return users
+      .filter((u) => {
+        const matchSearch =
+          u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          u.email.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchType = userTypeFilter === "all" || u.userType === userTypeFilter
+        const matchStatus = statusFilter === "all" || u.status === statusFilter
+        return matchSearch && matchType && matchStatus
+      })
+      .sort((a, b) => {
+        const aVal = typeof a[sortField] === "string" ? a[sortField].toLowerCase() : a[sortField]
+        const bVal = typeof b[sortField] === "string" ? b[sortField].toLowerCase() : b[sortField]
+        return sortOrder === "asc" ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1)
+      })
+  }, [users, searchQuery, sortField, sortOrder, userTypeFilter, statusFilter])
+
+  if (loading) return <div className="p-8 text-center">Loading...</div>
 
   return (
-    <div className="overflow-x-auto p-6">
-      <table className="table w-full">
+    <div className="p-6 border rounded-lg bg-white shadow">
+      <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      <FilterBar
+        userTypeFilter={userTypeFilter}
+        setUserTypeFilter={setUserTypeFilter}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+      />
+
+      <table className="w-full mt-4 border-collapse">
         <thead>
-          <tr>
-            <th>Avatar</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Progress</th>
-            <th>Points</th>
-            <th>Status</th>
-            <th>Actions</th>
+          <tr className="border-b">
+            <th className="p-2 text-left">Avatar</th>
+            <th className="p-2 cursor-pointer" onClick={() => handleSort("name")}>Name</th>
+            <th className="p-2">Email</th>
+            <th className="p-2">User Type</th>
+            <th className="p-2 cursor-pointer" onClick={() => handleSort("points")}>Points</th>
+            <th className="p-2">Status</th>
+            <th className="p-2 text-right">Actions</th>
           </tr>
         </thead>
-
         <tbody>
-          {fakeUsers.map((user, index) => (
-            <UserRow
-              key={user.id}
-              user={user}
-              index={index}
-              onView={() => handleView(user)}
-              onBan={() => handleBan(user)}
-            />
-          ))}
+          {filteredUsers.length === 0 ? (
+            <tr><td colSpan="7" className="text-center py-4 text-gray-500">No users found</td></tr>
+          ) : (
+            filteredUsers.map((user, i) => (
+              <motion.tr
+                key={user.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <UserRow
+                  user={user}
+                  onView={() => setSelectedUser(user)}
+                  onBan={() => setUserToBan(user)}
+                />
+              </motion.tr>
+            ))
+          )}
         </tbody>
       </table>
+
+      {/* <UserProfileDialog user={selectedUser} onClose={() => setSelectedUser(null)} />
+      <BanUserDialog user={userToBan} onCancel={() => setUserToBan(null)} onConfirm={handleBanUser} /> */}
     </div>
   )
 }
 
-export default UserTable
+export default UsersTable
