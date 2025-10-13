@@ -118,6 +118,7 @@ function UsersTable() {
 
   return (
     <div className="p-6 border border-gray-700 rounded-lg bg-gray-900 shadow ">
+      
       <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <FilterBar
         userTypeFilter={userTypeFilter}
