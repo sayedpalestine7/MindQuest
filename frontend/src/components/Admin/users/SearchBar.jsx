@@ -6,7 +6,7 @@ export function SearchBar({ searchQuery, setSearchQuery }) {
         placeholder="Search by name or email..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        className="w-full border rounded px-4 py-2 pl-9"
+        className="w-full border border-gray-700 rounded px-4 py-2 pl-9 bg-gray-900 text-gray-100"
       />
     </div>
   )

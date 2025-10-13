@@ -112,7 +112,7 @@ function UsersTable() {
   if (loading) return <div className="p-8 text-center">Loading...</div>
 
   return (
-    <div className="p-6 border rounded-lg bg-white shadow">
+    <div className="p-6 border border-gray-700 rounded-lg bg-gray-900 shadow ">
       <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <FilterBar
         userTypeFilter={userTypeFilter}
@@ -123,14 +123,14 @@ function UsersTable() {
 
       <table className="w-full mt-4 border-collapse">
         <thead>
-          <tr className="border-b">
-            <th className="p-2 text-left">Avatar</th>
-            <th className="p-2 cursor-pointer" onClick={() => handleSort("name")}>Name</th>
-            <th className="p-2">Email</th>
+          <tr className="border-b text-white">
+            <th className="p-2 text-start">Avatar</th>
+            <th className="p-2 cursor-pointer text-start" onClick={() => handleSort("name")}>Name</th>
+            <th className="p-2 text-start">Email</th>
             <th className="p-2">User Type</th>
             <th className="p-2 cursor-pointer" onClick={() => handleSort("points")}>Points</th>
             <th className="p-2">Status</th>
-            <th className="p-2 text-right">Actions</th>
+            <th className="p-2 text-end">Actions</th>
           </tr>
         </thead>
         <tbody>
