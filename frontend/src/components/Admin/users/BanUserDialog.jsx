@@ -1,5 +1,5 @@
 
-function BanUserDialog({ user, onCancel, onConfirm }) {
+export function BanUserDialog({ user, onCancel, onConfirm }) {
 if (!user) return null
   const isBanned = user.status === "banned"
   return (

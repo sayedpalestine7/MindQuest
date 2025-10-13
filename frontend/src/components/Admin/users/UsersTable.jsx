@@ -1,10 +1,11 @@
 import { SearchBar } from "./SearchBar.jsx"
 import { FilterBar } from "./FilterBar.jsx"
 import { UserRow } from "./UserRow.jsx"
-// import { UserProfileDialog } from "./UserProfileDialog.jsx"
-// import { BanUserDialog } from "./BanUserDialog"
+import {UserProfileDialog} from "./UserProfileDialog.jsx"
+import {BanUserDialog} from "./BanUserDialog"
 import { useEffect, useState, useMemo } from "react"
 import { motion } from "framer-motion"
+import {Loader2} from 'lucide-react'
 function UsersTable() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -109,7 +110,11 @@ function UsersTable() {
       })
   }, [users, searchQuery, sortField, sortOrder, userTypeFilter, statusFilter])
 
-  if (loading) return <div className="p-8 text-center">Loading...</div>
+  if (loading) return (
+              <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+  )
 
   return (
     <div className="p-6 border border-gray-700 rounded-lg bg-gray-900 shadow ">
@@ -155,8 +160,8 @@ function UsersTable() {
         </tbody>
       </table>
 
-      {/* <UserProfileDialog user={selectedUser} onClose={() => setSelectedUser(null)} />
-      <BanUserDialog user={userToBan} onCancel={() => setUserToBan(null)} onConfirm={handleBanUser} /> */}
+      <UserProfileDialog user={selectedUser} onClose={() => setSelectedUser(null)} />
+      <BanUserDialog user={userToBan} onCancel={() => setUserToBan(null)} onConfirm={handleBanUser} />
     </div>
   )
 }
