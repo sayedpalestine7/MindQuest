@@ -34,7 +34,7 @@
         ];
 
         return (
-            <div className="p-6">
+            <div className="">
     <motion.div
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
