@@ -193,5 +193,17 @@ Authorization: Bearer {{token}}
 
 ###
 GET http://localhost:5000/api/progress/student/{{userId}}
+Authorization: Bearer {{token}}
 
+###
+POST http://localhost:5000/api/progress/quizCompleted
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "studentId": "{{userId}}",
+  "courseId": "{{courseId}}",
+  "quizScore": 8,
+  "totalScore": 10
+}
 

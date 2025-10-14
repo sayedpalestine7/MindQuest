@@ -31,4 +31,5 @@ app.use("/api/quizzes", quizRoutes);
 app.use("/api/progress", progressRoutes);
 
 const PORT = process.env.PORT || 5000;
+// app utl http://localhost:5000
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
