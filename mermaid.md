@@ -1,86 +1,90 @@
 ``` mermaid
 classDiagram
-    class Admin {
+    class User {
         +id: String
         +name: String
         +email: String
         +password: String
+        +profileImage: String
+        +role: "admin" | "teacher" | "student"
+        +createdAt: Date
+        +teacherData?: TeacherData
+        +studentData?: StudentData
     }
 
-    class Teacher {
-        +id: String
-        +name: String
-        +email: String
-        +password: String
-        +profileImage: Image
-        +createAt: Date
+    class TeacherData {
         +specialization: String
-        +instetution: String
+        +institution: String
         +certification: File
-        +numberOfStudent: Int
-        +numberOfCoures: Int
         +score: Int
     }
 
-    Teacher : +getNumberOfCourses(Int)
-
-    class Student {
-        +id: String
-        +name: String
-        +email: String
-        +password: String
-        +profileImage: Image
+    class StudentData {
         +score: Int
-        +createAt: Date
-        +numberOfFinishedCoureses : Int
+        +finishedCourses: Int
     }
 
     class Course {
         +id: String
         +title: String
         +description: String
-        +thumpnail : Image
-        +lessons: Lesson[]
-        +quizzes: Quiz
-        +progress: Int
+        +thumbnail: Image
+        +teacherId: ObjectId
+        +lessonIds: ObjectId[]
+        +quizId: ObjectId
+        +difficulty: String
         +scoreOnFinish: Int
-        +difficulty : String
+        +createdAt: Date
     }
 
     class Lesson {
         +id: String
         +title: String
-        +content: Field[]
+        +fields: ObjectId[]
+        +createdAt: Date
     }
 
     class Field {
-        +paragraph : String
-        +image : Image
-        +video : Link
-        +animation : File
-        +minigame : File
-        +questions : Question[]
+        +id: String
+        +type: "paragraph" | "image" | "youtube" | "html" | "minigame" | "question"
+        +content: Mixed
+        +questionId?: ObjectId
     }
 
     class Quiz {
         +id: String
         +title: String
-        +questions: Question[]
+        +questionIds: ObjectId[]
     }
 
     class Question {
         +id: String
         +text: String
-        +answerField : String
+        +type: "mcq" | "tf" | "short"
+        +options: String[]
         +correctAnswer: String
+        +points: Int
+        +explanation: String
     }
 
-    Student --> Course
-    Course --> Lesson
-    Lesson --> Field
-    Course --> Quiz
-    Quiz --> Question
-    Field --> Question
-    Teacher --> Course
-    
+    class Progress {
+        +id: String
+        +studentId: ObjectId
+        +courseId: ObjectId
+        +completedLessons: ObjectId[]
+        +quizScore: Int
+        +totalScore: Int
+        +status: "in-progress" | "completed"
+    }
+
+    %% Relationships
+    User "1" --> "many" Course : creates >
+    Course "1" --> "many" Lesson
+    Lesson "1" --> "many" Field
+    Field "1" --> "0..1" Question
+    Course "1" --> "1" Quiz
+    Quiz "1" --> "many" Question
+    User "1" --> "many" Progress : tracks >
+    Course "1" --> "many" Progress : has >
+
 ```

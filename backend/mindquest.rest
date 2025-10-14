@@ -1,88 +1,209 @@
-### GET /
+### Base Test
 GET http://localhost:5000
 
-### Register a new user
+###
 POST http://localhost:5000/api/auth/register
 Content-Type: application/json
 
 {
-  "name": "Sayed",
-  "email": "sayed@example.com",
-  "password": "123456"
+  "name": "Sayed Qutob",
+  "email": "sayed123@example.com",
+  "password": "123456",
+  "role": "teacher",
+  "teacherData": {
+    "specialization": "Computer Engineering",
+    "institution": "An-Najah National University",
+    "certification": "https://example.com/cert.pdf"
+  }
 }
 
+###
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
 
-### Login user to get JWT token
+{
+  "name": "Ahmad Dardouk",
+  "email": "ahmad@example.com",
+  "password": "123456",
+  "role": "student"
+}
+
+###
+# @name login
 POST http://localhost:5000/api/auth/login
 Content-Type: application/json
 
 {
-  "name": "Test User",
-  "email": "test@example.com",
+  "email": "sayed123@example.com",
   "password": "123456"
 }
 
-
-# CRUD Operations for Courses
-
-### Create a new course
+###
+@token = {{login.response.body.token}}
+@userId = {{login.response.body.user._id}}
+###
+# @name createCourse
 POST http://localhost:5000/api/courses
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "title": "Data Structures 101",
-  "description": "Learn the fundamentals of stacks, queues, and linked lists.",
-  "difficulty": "beginner",
-  "thumbnail": "https://example.com/image.jpg"
+  "description": "Learn stacks, queues, and linked lists interactively.",
+  "thumbnail": "https://example.com/image.jpg",
+  "teacherId": "{{userId}}",
+  "difficulty": "easy",
+  "scoreOnFinish": 50
 }
 
-### Get all courses
+###
+@courseId = {{createCourse.response.body.course._id}}
+###
 GET http://localhost:5000/api/courses
 
-### Get a course by ID
-GET http://localhost:5000/api/courses/68e438dbc018f4f2816fa2c0
+###
+GET http://localhost:5000/api/courses/{{courseId}}
 
-### Update a course by ID
-PUT http://localhost:5000/api/courses/68e438dbc018f4f2816fa2c0
+###
+PUT http://localhost:5000/api/courses/{{courseId}}
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "title": "Data Structures 102",
-  "description": "An advanced look at data structures including trees and graphs.",
-  "difficulty": "intermediate",
+  "description": "Advanced trees and graph structures.",
+  "difficulty": "medium",
   "thumbnail": "https://example.com/newimage.jpg"
 }
 
-### Delete a course by ID
-DELETE http://localhost:5000/api/courses/68e438dbc018f4f2816fa2c0
+###
+DELETE http://localhost:5000/api/courses/{{courseId}}
+Authorization: Bearer {{token}}
 
-
-
-# CRUD Operations for Lessons
-
-### Create a new lesson
+###
+# @name createLesson
 POST http://localhost:5000/api/lessons
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
-  "title": "Introduction to Stacks",
-  "content": "Stacks are linear data structures that follow the LIFO principle...",
-  "courseId": "68e438dbc018f4f2816fa2c0"
+  "title": "Introduction to Stacks 2",
+  "courseId": "{{courseId}}"
 }
 
-### Get all lessons
-GET http://localhost:5000/api/lessons/course/68e438dbc018f4f2816fa2c0
-### Get a lesson by ID
-GET http://localhost:5000/api/lessons/68e4401cde9a2040799f1982
-### Update a lesson by ID
-PUT http://localhost:5000/api/lessons/68e44051de9a2040799f1985
+###
+@lessonId = {{createLesson.response.body.lesson._id}}
+###
+GET http://localhost:5000/api/lessons/course/{{courseId}}
+
+###
+GET http://localhost:5000/api/lessons/{{lessonId}}
+
+###
+PUT http://localhost:5000/api/lessons/{{lessonId}}
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
-  "title": "Stacks and Their Applications",
-  "content": "Stacks are used in various applications such as expression evaluation, backtracking algorithms...",
-  "courseId": "68e438dbc018f4f2816fa2c0"
+  "title": "Stacks and Applications"
 }
 
-### Delete a lesson by ID
-DELETE http://localhost:5000/api/lessons/68e44051de9a2040799f1985
+###
+DELETE http://localhost:5000/api/lessons/{{lessonId}}
+Authorization: Bearer {{token}}
+
+###
+POST http://localhost:5000/api/fields
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "lessonId": "{{lessonId}}",
+  "type": "paragraph",
+  "content": "Stacks are linear data structures that follow the LIFO principle.",
+  "order": 1
+}
+
+###
+POST http://localhost:5000/api/fields
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "lessonId": "{{lessonId}}",
+  "type": "image",
+  "content": {
+    "url": "https://example.com/stack-illustration.png"
+  },
+  "order": 2
+}
+
+###
+GET http://localhost:5000/api/fields/lesson/{{lessonId}}
+
+###
+# @name createQuestion
+POST http://localhost:5000/api/questions
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "text": "What does LIFO stand for?",
+  "type": "mcq",
+  "options": ["Last In First Out", "First In First Out"],
+  "correctAnswer": "Last In First Out",
+  "points": 2,
+  "explanation": "LIFO means the last element inserted is the first one removed."
+}
+
+###
+@questionId = {{createQuestion.response.body.question._id}}
+###
+GET http://localhost:5000/api/questions
+
+###
+POST http://localhost:5000/api/quizzes
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Data Structures Quiz 1",
+  "courseId": "{{courseId}}",
+  "questionIds": [
+    "{{questionId}}"
+  ]
+}
+
+###
+GET http://localhost:5000/api/quizzes/course/{{courseId}}
+
+###
+POST http://localhost:5000/api/progress
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "studentId": "{{userId}}",
+  "courseId": "{{courseId}}",
+  "completedLessons": ["{{lessonId}}"],
+  "quizScore": 8,
+  "totalScore": 10,
+  "status": "completed"
+}
+
+###
+GET http://localhost:5000/api/progress/student/{{userId}}
+Authorization: Bearer {{token}}
+
+###
+POST http://localhost:5000/api/progress/quizCompleted
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "studentId": "{{userId}}",
+  "courseId": "{{courseId}}",
+  "quizScore": 8,
+  "totalScore": 10
+}
+
