@@ -87,7 +87,7 @@ Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "title": "Introduction to Stacks",
+  "title": "Introduction to Stacks 2",
   "courseId": "{{courseId}}"
 }
 

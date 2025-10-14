@@ -1,18 +1,20 @@
 import express from "express";
 import {
-    createCourse,
-    getCourses,
-    getCourseById,
-    updateCourse,
-    deleteCourse,
+  createCourse,
+  getCourses,
+  getCourseById,
+  updateCourse,
+  deleteCourse,
 } from "../controllers/courseController.js";
+import { protect, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", createCourse);
+// Only teachers can create or edit courses
+router.post("/", protect, requireRole(["teacher", "admin"]), createCourse);
 router.get("/", getCourses);
 router.get("/:id", getCourseById);
-router.put("/:id", updateCourse);
-router.delete("/:id", deleteCourse);
+router.put("/:id", protect, requireRole(["teacher", "admin"]), updateCourse);
+router.delete("/:id", protect, requireRole(["teacher", "admin"]), deleteCourse);
 
 export default router;

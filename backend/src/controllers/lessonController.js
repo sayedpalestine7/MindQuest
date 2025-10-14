@@ -4,14 +4,21 @@ import Course from "../models/mongo/courseModel.js";
 // 📘 Create a new lesson and link it to a course
 export const createLesson = async (req, res) => {
   try {
+    // debug: log incoming body and courseId
+    console.debug('[createLesson] req.body =', JSON.stringify(req.body));
     const { title } = req.body;
 
+    console.debug('[createLesson] req.body.courseId =', req.body.courseId);
     const course = await Course.findById(req.body.courseId);
+    console.debug('[createLesson] course found =', course ? course._id.toString() : null);
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    const lesson = await Lesson.create({ title, courseId: course._id, fieldIds: [] });
+    const createPayload = { title, courseId: course._id, fieldIds: [] };
+    console.debug('[createLesson] createPayload =', JSON.stringify(createPayload));
+
+    const lesson = await Lesson.create(createPayload);
 
     // link lesson to course
     course.lessonIds.push(lesson._id);
