@@ -9,6 +9,7 @@ import ManageUsers from "./components/Admin/ManageUsers";
 import Settings from "./components/Admin/Settings";
 import TeacherSignUp from "./pages/TeacherSignUp";
 import HomePage from "./pages/HomePage";
+import TeacherCourseBuilder from "./pages/TeacherCourseBuilder";
 function App() {
 
   return (
@@ -25,6 +26,9 @@ function App() {
       <Route path="/login" element={<LoginForm />} />
       <Route path="/signup" element={<SignUpForm />} />
       <Route path="/teacher/signup" element={<TeacherSignUp />} />
+
+  
+      <Route path="/teacher/courseBuilder" element={<TeacherCourseBuilder />} />
     </Routes>
     </>
   )
