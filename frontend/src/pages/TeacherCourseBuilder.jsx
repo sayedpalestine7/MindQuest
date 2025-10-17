@@ -1,137 +1,319 @@
-import React, { useState } from "react"
-import { Plus, Save, BookOpen, FileText, Image, Youtube, Gamepad2, ChevronRight } from "lucide-react"
+// /src/pages/TeacherCourseBuilder.jsx
+import React, { useState, useEffect } from "react"
+import Header from "../components/courseBuilder/Header"
+import Sidebar from "../components/courseBuilder/Sidebar"
+import CourseInfo from "../components/courseBuilder/CourseInfo"
+import LessonEditor from "../components/courseBuilder/LessonEditor"
+import QuizSection from "../components/courseBuilder/QuizSection"
+import PreviewModal from "../components/courseBuilder/PreviewModal"
 
 export default function TeacherCourseBuilder() {
-  const [lessons, setLessons] = useState([{ id: 1, title: "Lesson 1" }])
-  const [selectedLesson, setSelectedLesson] = useState(1)
-  const [courseInfo, setCourseInfo] = useState({
+  /* ---------- STATE ---------- */
+  const [saveStatus, setSaveStatus] = useState("saved")
+  const [isQuizSectionOpen, setIsQuizSectionOpen] = useState(false)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [draggedLessonId, setDraggedLessonId] = useState(null)
+  const [draggedFieldId, setDraggedFieldId] = useState(null)
+
+  const [course, setCourse] = useState({
     title: "",
     description: "",
     difficulty: "beginner",
     thumbnail: "",
+    finalQuiz: { questions: [], passingScore: 70, points: 100 },
   })
 
-  // Add a new lesson
+  const [lessons, setLessons] = useState([
+    { id: "1", title: "Lesson 1", fields: [] },
+  ])
+  const [selectedLessonId, setSelectedLessonId] = useState("1")
+
+  const selectedLesson = lessons.find((l) => l.id === selectedLessonId)
+
+  /* ---------- EFFECTS ---------- */
+  // Auto-save to localStorage after 2s
+  useEffect(() => {
+    setSaveStatus("unsaved")
+    const timeoutId = setTimeout(() => {
+      setSaveStatus("saving")
+      localStorage.setItem("course-data", JSON.stringify({ course, lessons }))
+      console.log("[Auto-save] course data saved")
+      setTimeout(() => setSaveStatus("saved"), 500)
+    }, 2000)
+    return () => clearTimeout(timeoutId)
+  }, [course, lessons])
+
+  // Load saved data on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("course-data")
+    if (saved) {
+      try {
+        const { course: c, lessons: l } = JSON.parse(saved)
+        setCourse(c)
+        setLessons(l)
+        console.log("[Load] course data loaded")
+      } catch (err) {
+        console.error("Error loading saved data:", err)
+      }
+    }
+  }, [])
+
+  /* ---------- LESSON HANDLERS ---------- */
   const addLesson = () => {
-    const newLesson = { id: lessons.length + 1, title: `Lesson ${lessons.length + 1}` }
-    setLessons([...lessons, newLesson])
-    setSelectedLesson(newLesson.id)
+    const newId = String(lessons.length + 1)
+    setLessons([...lessons, { id: newId, title: `Lesson ${newId}`, fields: [] }])
+    setSelectedLessonId(newId)
   }
 
+  const deleteLesson = (id) => {
+    if (lessons.length === 1) return
+    const filtered = lessons.filter((l) => l.id !== id)
+    setLessons(filtered)
+    if (selectedLessonId === id) setSelectedLessonId(filtered[0].id)
+  }
+
+  const updateLessonTitle = (id, title) =>
+    setLessons(lessons.map((l) => (l.id === id ? { ...l, title } : l)))
+
+  /* ---------- FIELD HANDLERS ---------- */
+  const addField = (type) => {
+    if (!selectedLesson) return
+    const newField = { id: `${selectedLesson.id}-${Date.now()}`, type, content: "" }
+    setLessons(
+      lessons.map((l) =>
+        l.id === selectedLessonId ? { ...l, fields: [...l.fields, newField] } : l
+      )
+    )
+  }
+
+  const deleteField = (fieldId) => {
+    if (!selectedLesson) return
+    const updated = selectedLesson.fields.filter((f) => f.id !== fieldId)
+    setLessons(
+      lessons.map((l) =>
+        l.id === selectedLessonId ? { ...l, fields: updated } : l
+      )
+    )
+  }
+
+  const updateField = (fieldId, content, htmlContent, language, answer, explanation) => {
+    setLessons(
+      lessons.map((l) =>
+        l.id === selectedLessonId
+          ? {
+              ...l,
+              fields: l.fields.map((f) =>
+                f.id === fieldId
+                  ? { ...f, content, htmlContent, language, answer, explanation }
+                  : f
+              ),
+            }
+          : l
+      )
+    )
+  }
+
+  const handleHtmlFileUpload = (fieldId, file) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const htmlContent = e.target?.result
+      updateField(fieldId, file.name, htmlContent)
+    }
+    reader.readAsText(file)
+  }
+
+  const handleImageUpload = (file, fieldId) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const url = e.target?.result
+      if (fieldId) {
+        updateField(fieldId, url)
+      } else {
+        setCourse({ ...course, thumbnail: url })
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  /* ---------- DRAG HANDLERS (LESSONS) ---------- */
+  const handleDragStart = (e, lessonId) => {
+    setDraggedLessonId(lessonId)
+    e.dataTransfer.effectAllowed = "move"
+  }
+  const handleDragOver = (e) => e.preventDefault()
+  const handleDrop = (e, targetLessonId) => {
+    e.preventDefault()
+    if (!draggedLessonId || draggedLessonId === targetLessonId) return
+
+    const draggedIndex = lessons.findIndex((l) => l.id === draggedLessonId)
+    const targetIndex = lessons.findIndex((l) => l.id === targetLessonId)
+    const reordered = [...lessons]
+    const [draggedLesson] = reordered.splice(draggedIndex, 1)
+    reordered.splice(targetIndex, 0, draggedLesson)
+    setLessons(reordered)
+    setDraggedLessonId(null)
+  }
+  const handleDragEnd = () => setDraggedLessonId(null)
+
+  /* ---------- DRAG HANDLERS (FIELDS) ---------- */
+  const handleFieldDragStart = (e, fieldId) => {
+    setDraggedFieldId(fieldId)
+    e.dataTransfer.effectAllowed = "move"
+  }
+  const handleFieldDragOver = (e) => e.preventDefault()
+  const handleFieldDrop = (e, targetFieldId) => {
+    e.preventDefault()
+    if (!draggedFieldId || draggedFieldId === targetFieldId || !selectedLesson) return
+
+    const draggedIndex = selectedLesson.fields.findIndex((f) => f.id === draggedFieldId)
+    const targetIndex = selectedLesson.fields.findIndex((f) => f.id === targetFieldId)
+    const reordered = [...selectedLesson.fields]
+    const [draggedField] = reordered.splice(draggedIndex, 1)
+    reordered.splice(targetIndex, 0, draggedField)
+
+    setLessons(
+      lessons.map((l) =>
+        l.id === selectedLessonId ? { ...l, fields: reordered } : l
+      )
+    )
+    setDraggedFieldId(null)
+  }
+  const handleFieldDragEnd = () => setDraggedFieldId(null)
+
+  /* ---------- QUIZ HANDLERS ---------- */
+  const addQuizQuestion = () => {
+    const newQ = {
+      id: `quiz-${Date.now()}`,
+      question: "",
+      options: ["", "", "", ""],
+      correctAnswerIndex: 0,
+    }
+    setCourse({
+      ...course,
+      finalQuiz: {
+        ...course.finalQuiz,
+        questions: [...course.finalQuiz.questions, newQ],
+      },
+    })
+  }
+
+  const updateQuizQuestion = (id, field, value) =>
+    setCourse({
+      ...course,
+      finalQuiz: {
+        ...course.finalQuiz,
+        questions: course.finalQuiz.questions.map((q) =>
+          q.id === id ? { ...q, [field]: value } : q
+        ),
+      },
+    })
+
+  const updateQuizOption = (id, optIndex, value) =>
+    setCourse({
+      ...course,
+      finalQuiz: {
+        ...course.finalQuiz,
+        questions: course.finalQuiz.questions.map((q) =>
+          q.id === id
+            ? { ...q, options: q.options.map((opt, i) => (i === optIndex ? value : opt)) }
+            : q
+        ),
+      },
+    })
+
+  const deleteQuizQuestion = (id) =>
+    setCourse({
+      ...course,
+      finalQuiz: {
+        ...course.finalQuiz,
+        questions: course.finalQuiz.questions.filter((q) => q.id !== id),
+      },
+    })
+
+  const updateQuizSettings = (field, value) =>
+    setCourse({
+      ...course,
+      finalQuiz: { ...course.finalQuiz, [field]: value },
+    })
+
+  /* ---------- SAVE / PREVIEW ---------- */
+  const handleSave = () => {
+    console.log("Saving course:", { course, lessons })
+    alert("Course saved successfully! (Check console for data)")
+  }
+
+  /* ---------- RENDER ---------- */
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r p-4 flex flex-col">
-        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-blue-600">
-          <BookOpen className="w-5 h-5" /> Course Builder
-        </h2>
-        <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
-          {lessons.map((lesson) => (
-            <button
-              key={lesson.id}
-              onClick={() => setSelectedLesson(lesson.id)}
-              className={`text-left p-3 rounded-md border ${
-                selectedLesson === lesson.id ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              {lesson.title}
-            </button>
-          ))}
+    <div className="min-h-screen bg-black-20">
+      {/* Header */}
+      <Header
+        saveStatus={saveStatus}
+        onPreview={() => setIsPreviewOpen(true)}
+        onSave={handleSave}
+      />
+
+      {/* Main Layout */}
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex gap-6">
+          <Sidebar
+            lessons={lessons}
+            selectedLessonId={selectedLessonId}
+            setSelectedLessonId={setSelectedLessonId}
+            addLesson={addLesson}
+            deleteLesson={deleteLesson}
+            updateLessonTitle={updateLessonTitle}
+            handleDragStart={handleDragStart}
+            handleDragOver={handleDragOver}
+            handleDrop={handleDrop}
+            handleDragEnd={handleDragEnd}
+            draggedLessonId={draggedLessonId}
+          />
+
+          {/* Editor */}
+          <main className="flex-1 space-y-6">
+            <CourseInfo
+              course={course}
+              setCourse={setCourse}
+              handleImageUpload={handleImageUpload}
+            />
+
+            <LessonEditor
+              selectedLesson={selectedLesson}
+              draggedFieldId={draggedFieldId}
+              handleFieldDragStart={handleFieldDragStart}
+              handleFieldDragOver={handleFieldDragOver}
+              handleFieldDrop={handleFieldDrop}
+              handleFieldDragEnd={handleFieldDragEnd}
+              addField={addField}
+              deleteField={deleteField}
+              updateField={updateField}
+              handleHtmlFileUpload={handleHtmlFileUpload}
+              handleImageUpload={handleImageUpload}
+            />
+
+            <QuizSection
+              course={course}
+              setCourse={setCourse}
+              isQuizSectionOpen={isQuizSectionOpen}
+              setIsQuizSectionOpen={setIsQuizSectionOpen}
+              addQuizQuestion={addQuizQuestion}
+              updateQuizQuestion={updateQuizQuestion}
+              updateQuizOption={updateQuizOption}
+              deleteQuizQuestion={deleteQuizQuestion}
+              updateQuizSettings={updateQuizSettings}
+            />
+          </main>
         </div>
-        <button
-          onClick={addLesson}
-          className="mt-4 flex items-center justify-center gap-2 text-sm py-2 border rounded-md hover:bg-gray-100"
-        >
-          <Plus className="w-4 h-4" /> Add Lesson
-        </button>
-      </aside>
+      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 p-8 overflow-y-auto">
-        {/* Course Info Section */}
-        <section className="bg-white border-2 rounded-xl p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-4 text-gray-800">Course Info</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">Title</label>
-              <input
-                type="text"
-                className="w-full border rounded-md p-2"
-                placeholder="Enter course title..."
-                value={courseInfo.title}
-                onChange={(e) => setCourseInfo({ ...courseInfo, title: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Difficulty</label>
-              <select
-                className="w-full border rounded-md p-2"
-                value={courseInfo.difficulty}
-                onChange={(e) => setCourseInfo({ ...courseInfo, difficulty: e.target.value })}
-              >
-                <option value="beginner">Beginner</option>
-                <option value="intermediate">Intermediate</option>
-                <option value="advanced">Advanced</option>
-              </select>
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">Description</label>
-              <textarea
-                rows="3"
-                className="w-full border rounded-md p-2"
-                placeholder="Write a brief description..."
-                value={courseInfo.description}
-                onChange={(e) => setCourseInfo({ ...courseInfo, description: e.target.value })}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">Thumbnail (URL)</label>
-              <input
-                type="text"
-                className="w-full border rounded-md p-2"
-                placeholder="Paste image link..."
-                value={courseInfo.thumbnail}
-                onChange={(e) => setCourseInfo({ ...courseInfo, thumbnail: e.target.value })}
-              />
-            </div>
-          </div>
-          <button className="mt-6 flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-            <Save className="w-4 h-4" /> Save Course
-          </button>
-        </section>
-
-        {/* Lesson Editor Section */}
-        <section className="bg-white border-2 rounded-xl p-6">
-          <h2 className="text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-600" /> {lessons.find((l) => l.id === selectedLesson)?.title}
-          </h2>
-          <p className="text-gray-600 mb-4">Add different content blocks below:</p>
-          <div className="flex flex-wrap gap-3 mb-6">
-            {[
-              { icon: <FileText className="w-5 h-5" />, label: "Paragraph" },
-              { icon: <Image className="w-5 h-5" />, label: "Image" },
-              { icon: <Youtube className="w-5 h-5" />, label: "YouTube" },
-              { icon: <Gamepad2 className="w-5 h-5" />, label: "Mini-game" },
-            ].map((block, i) => (
-              <button
-                key={i}
-                className="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-gray-50 text-sm"
-              >
-                {block.icon} {block.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="border-t pt-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-700">Lesson Content</h3>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </div>
-            <div className="text-gray-500 text-sm">No content blocks yet — add one above.</div>
-          </div>
-        </section>
-      </main>
+      {/* Preview Modal */}
+      {isPreviewOpen && (
+        <PreviewModal
+          course={course}
+          lessons={lessons}
+          onClose={() => setIsPreviewOpen(false)}
+        />
+      )}
     </div>
   )
 }
-// This is a simplified course builder interface for teachers to create and manage courses.

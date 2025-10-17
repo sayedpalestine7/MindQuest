@@ -10,6 +10,7 @@ import Settings from "./components/Admin/Settings";
 import TeacherSignUp from "./pages/TeacherSignUp";
 import HomePage from "./pages/HomePage";
 import TeacherCourseBuilder from "./pages/TeacherCourseBuilder";
+import StudentCoursePage from "./pages/StudentCoursePage";
 function App() {
 
   return (
@@ -29,6 +30,7 @@ function App() {
 
   
       <Route path="/teacher/courseBuilder" element={<TeacherCourseBuilder />} />
+      <Route path="/student/coursePage" element={<StudentCoursePage />} />
     </Routes>
     </>
   )
