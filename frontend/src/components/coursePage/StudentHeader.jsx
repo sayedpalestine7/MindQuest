@@ -6,12 +6,10 @@ import { Button } from "../courseBuilder/UI"
 export default function StudentHeader({
   courseTitle,
   progress,
-  isDarkMode,
-  setIsDarkMode,
   onRestart,
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b-2 border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md">
+    <header className="sticky top-0 z-20 border-b-2 border-gray-200 bg-white/80 backdrop-blur-md">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         {/* Left: Course Info */}
         <div className="flex items-center gap-3">
@@ -19,10 +17,10 @@ export default function StudentHeader({
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+            <h1 className="text-lg font-bold text-gray-900">
               {courseTitle || "Course"}
             </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-gray-500">
               Progress: {progress}%
             </p>
           </div>
@@ -39,20 +37,6 @@ export default function StudentHeader({
           >
             <RotateCcw className="w-4 h-4" />
             Restart
-          </Button>
-
-          {/* Dark Mode */}
-          <Button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            variant="outline"
-            size="sm"
-            className="bg-transparent"
-          >
-            {isDarkMode ? (
-              <Sun className="w-4 h-4 text-yellow-400" />
-            ) : (
-              <Moon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-            )}
           </Button>
 
           {/* Avatar placeholder */}

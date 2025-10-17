@@ -11,7 +11,6 @@ export default function StudentCoursePage() {
   const [lessons, setLessons] = useState([])
   const [currentLessonId, setCurrentLessonId] = useState(null)
   const [completedLessons, setCompletedLessons] = useState([])
-  const [isDarkMode, setIsDarkMode] = useState(false)
   const [isQuizOpen, setIsQuizOpen] = useState(false)
 
   /* -------------------- LOAD COURSE DATA -------------------- */
@@ -32,9 +31,8 @@ export default function StudentCoursePage() {
 
     // Restore student progress
     if (progress) {
-      const { completedLessons: c, isDarkMode: d } = JSON.parse(progress)
+      const { completedLessons: c } = JSON.parse(progress)
       setCompletedLessons(c || [])
-      setIsDarkMode(d || false)
     }
   }, [])
 
@@ -43,15 +41,10 @@ export default function StudentCoursePage() {
     const data = {
       currentLessonId,
       completedLessons,
-      isDarkMode,
     }
     localStorage.setItem("student-progress", JSON.stringify(data))
-  }, [currentLessonId, completedLessons, isDarkMode])
+  }, [currentLessonId, completedLessons])
 
-  /* -------------------- DARK MODE -------------------- */
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDarkMode)
-  }, [isDarkMode])
 
   /* -------------------- HELPERS -------------------- */
   const currentLesson = lessons.find((l) => l.id === currentLessonId)
@@ -87,18 +80,16 @@ export default function StudentCoursePage() {
   /* -------------------- RENDER -------------------- */
   if (!course)
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-600 dark:text-gray-300">
+      <div className="min-h-screen flex items-center justify-center text-gray-600">
         <p>No course data found. Please create a course first.</p>
       </div>
     )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors">
+    <div className="min-h-screen bg-black-20 transition-colors">
       <StudentHeader
         courseTitle={course.title}
         progress={progress}
-        isDarkMode={isDarkMode}
-        setIsDarkMode={setIsDarkMode}
         onRestart={handleRestartCourse}
       />
 

@@ -26,13 +26,20 @@ export function Button({
   ...props
 }) {
   const base =
-    "inline-flex items-center justify-center gap-2 font-medium rounded-2xl transition-transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2"
+    "inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2"
   const variants = {
     default:
       "px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm hover:brightness-95",
     outline:
       "px-3 py-1.5 border-2 bg-transparent text-foreground hover:bg-opacity-5",
     ghost: "px-2 py-1 bg-transparent hover:bg-gray-100",
+    paragraphBtn: "px-2 py-1 bg-white hover:bg-blue-100 hover:border-blue-500",
+    imageBtn: "px-2 py-1 bg-white hover:bg-purple-100 hover:border-purple-500",
+    youtubeBtn: "px-2 py-1 bg-white hover:bg-red-100 hover:border-red-500",
+    codeBtn: "px-2 py-1 bg-white hover:bg-green-100 hover:border-green-500",
+    questionBtn: "px-2 py-1 bg-white hover:bg-orange-100 hover:border-orange-500",
+    gameBtn: "px-2 py-1 bg-white hover:bg-purple-100 hover:border-purple-500",
+    animationBtn: "px-2 py-1 bg-white hover:bg-blue-100 hover:border-blue-500",
   }
   const sizes = {
     sm: "text-sm h-8",
@@ -96,7 +103,7 @@ Select.displayName = "Select"
 
 /* ===== Card ===== */
 export function Card({ children, className = "", ...props }) {
-  const base = "rounded-xl bg-white p-4"
+  const base = "rounded-xl bg-white p-4 shadow-lg"
   return (
     <div className={`${base} ${className}`} {...props}>
       {children}

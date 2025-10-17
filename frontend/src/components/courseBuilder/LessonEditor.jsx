@@ -48,13 +48,13 @@ export default function LessonEditor({
           Add Content Block:
         </p>
         <div className="flex flex-wrap gap-2">
-          <FieldButton icon={<FileText className="w-4 h-4 text-blue-600" />} label="Paragraph" onClick={() => addField("paragraph")} />
-          <FieldButton icon={<ImageIcon className="w-4 h-4 text-purple-600" />} label="Image" onClick={() => addField("image")} />
-          <FieldButton icon={<Youtube className="w-4 h-4 text-pink-600" />} label="YouTube" onClick={() => addField("youtube")} />
-          <FieldButton icon={<Code2 className="w-4 h-4 text-green-600" />} label="Code" onClick={() => addField("code")} />
-          <FieldButton icon={<HelpCircle className="w-4 h-4 text-orange-600" />} label="Question" onClick={() => addField("question")} />
-          <FieldButton icon={<Gamepad2 className="w-4 h-4 text-purple-600" />} label="Mini-game" onClick={() => addField("minigame")} />
-          <FieldButton icon={<Sparkles className="w-4 h-4 text-blue-600" />} label="Animation" onClick={() => addField("animation")} />
+          <FieldButton icon={<FileText className="w-4 h-4 text-blue-600" />} label="Paragraph" onClick={() => addField("paragraph")} type={"paragraphBtn"} />
+          <FieldButton icon={<ImageIcon className="w-4 h-4 text-purple-600" />} label="Image" onClick={() => addField("image")} type={"imageBtn"}/>
+          <FieldButton icon={<Youtube className="w-4 h-4 text-pink-600" />} label="YouTube" onClick={() => addField("youtube")} type={"youtubeBtn"} />
+          <FieldButton icon={<Code2 className="w-4 h-4 text-green-600" />} label="Code" onClick={() => addField("code")} type={"codeBtn"} />
+          <FieldButton icon={<HelpCircle className="w-4 h-4 text-orange-600" />} label="Question" onClick={() => addField("question")} type={"questionBtn"} />
+          <FieldButton icon={<Gamepad2 className="w-4 h-4 text-purple-600" />} label="Mini-game" onClick={() => addField("minigame")} type={"gameBtn"} />
+          <FieldButton icon={<Sparkles className="w-4 h-4 text-blue-600" />} label="Animation" onClick={() => addField("animation")} type={"animationBtn"} />
         </div>
       </div>
 
@@ -74,7 +74,7 @@ export default function LessonEditor({
               onDragOver={handleFieldDragOver}
               onDrop={(e) => handleFieldDrop(e, field.id)}
               onDragEnd={handleFieldDragEnd}
-              className={`p-4 bg-white rounded-xl border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-move ${draggedFieldId === field.id ? "opacity-50" : ""
+              className={`p-4 bg-white rounded-xl border-2 border-gray-300 hover:border-black/50 transition-colors cursor-move ${draggedFieldId === field.id ? "opacity-50" : ""
                 }`}
             >
               {/* Field Header */}
@@ -113,11 +113,11 @@ export default function LessonEditor({
 
 /* --- Subcomponents --- */
 
-function FieldButton({ icon, label, onClick }) {
+function FieldButton({ icon, label, onClick, type }) {
   return (
     <Button
       onClick={onClick}
-      variant="outline"
+      variant={type}
       className="gap-2 border-2 hover:border-blue-500 hover:bg-blue-50 hover:scale-105 active:scale-95 transition-all duration-200"
     >
       {icon}
