@@ -5,11 +5,17 @@ import { motion } from "framer-motion"
 import Header from "../components/courseBrowse/Header.jsx"
 import SearchFilters from "../components/courseBrowse/SearchFilters.jsx"
 import CourseCard from "../components/courseBrowse/CourseCard.jsx"
+const difficultyMap = {
+  "All Levels": "all",
+  Beginner: "beginner",
+  Intermediate: "intermediate",
+  Advanced: "advanced",
+}
 
 export default function BrowseCoursesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedDifficulty, setSelectedDifficulty] = useState("all")
+  const [selectedDifficulty, setSelectedDifficulty] = useState("All Levels")
   const [enrolledCourses, setEnrolledCourses] = useState([1, 2, 3, 4])
 
   const allCourses = [
@@ -101,17 +107,23 @@ export default function BrowseCoursesPage() {
     "Mobile Development",
   ]
 
-  const filteredCourses = allCourses.filter((course) => {
-    const matchesSearch =
-      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+const filteredCourses = allCourses.filter((course) => {
+  const matchesSearch =
+    course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.tags.some((tag) =>
+      tag.toLowerCase().includes(searchQuery.toLowerCase())
+    )
 
-    const matchesCategory = selectedCategory === "all" || course.category === selectedCategory
-    const matchesDifficulty = selectedDifficulty === "all" || course.difficulty === selectedDifficulty
+  const matchesCategory =
+    selectedCategory === "all" || course.category === selectedCategory
 
-    return matchesSearch && matchesCategory && matchesDifficulty
-  })
+  const difficultyValue = difficultyMap[selectedDifficulty] || "all"
+  const matchesDifficulty =
+    difficultyValue === "all" || course.difficulty === difficultyValue
+
+  return matchesSearch && matchesCategory && matchesDifficulty
+})
 
   const handleEnroll = (id) => {
     if (enrolledCourses.includes(id)) {
