@@ -11,6 +11,8 @@ import TeacherSignUp from "./pages/TeacherSignUp";
 import HomePage from "./pages/HomePage";
 import TeacherCourseBuilder from "./pages/TeacherCourseBuilder";
 import StudentCoursePage from "./pages/StudentCoursePage";
+import StudentProfilePage from './pages/StudentProfilePage.jsx'
+import BrowseCoursesPage from './pages/BrowseCoursesPage.jsx'
 function App() {
 
   return (
@@ -22,7 +24,9 @@ function App() {
       <Route path="/admin/users" element={<ManageUsers />} />
       <Route path="/admin/verification" element={<ManageVerification />} />
       <Route path="/admin/Settings" element={<Settings />}/>
-      
+       
+      <Route path="/student" element={<StudentProfilePage />}/>
+      <Route path="/courses" element={<BrowseCoursesPage />} />
 
       <Route path="/login" element={<LoginForm />} />
       <Route path="/signup" element={<SignUpForm />} />
