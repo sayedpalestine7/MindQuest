@@ -13,6 +13,7 @@ import TeacherCourseBuilder from "./pages/TeacherCourseBuilder";
 import StudentCoursePage from "./pages/StudentCoursePage";
 import StudentProfilePage from './pages/StudentProfilePage.jsx'
 import BrowseCoursesPage from './pages/BrowseCoursesPage.jsx'
+import TeacherProfilePage from "./pages/TeacherProfilePage.jsx";
 function App() {
 
   return (
@@ -27,6 +28,8 @@ function App() {
        
       <Route path="/student" element={<StudentProfilePage />}/>
       <Route path="/courses" element={<BrowseCoursesPage />} />
+      <Route path="/teacher" element={<TeacherProfilePage />} />
+
 
       <Route path="/login" element={<LoginForm />} />
       <Route path="/signup" element={<SignUpForm />} />
