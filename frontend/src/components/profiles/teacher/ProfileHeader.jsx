@@ -1,27 +1,34 @@
-import React from "react"
+import { motion } from "framer-motion"
+import { Edit, Sparkles } from "lucide-react"
 
-export default function ProfileHeader({ profileData, stats, onEdit }) {
+export default function ProfileHeader({ onEdit }) {
   return (
-    <div style={{ background: "#fff", padding: "2rem", borderRadius: "12px", marginBottom: "2rem" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+    <motion.div
+      className="flex items-center justify-between bg-white shadow rounded-2xl p-6"
+      initial={{ y: -30, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.6 }}
+    >
+      <div className="flex items-center space-x-4">
         <img
-          src={profileData.avatar}
-          alt="Avatar"
-          style={{ width: "100px", height: "100px", borderRadius: "50%", objectFit: "cover" }}
+          src="/default-avatar.png"
+          alt="Teacher"
+          className="w-20 h-20 rounded-full border-4 border-blue-200 object-cover"
         />
-        <div style={{ flex: 1 }}>
-          <h2 style={{ margin: 0 }}>{profileData.name}</h2>
-          <p>{profileData.title} • {profileData.department}</p>
-          <p style={{ color: "#666" }}>{profileData.email}</p>
-          <button onClick={onEdit} style={{ marginTop: "0.5rem", background: "transparent", border: "1px solid #ccc", padding: "0.4rem 0.8rem", borderRadius: "6px" }}>
-            Edit Profile
-          </button>
-        </div>
-        <div style={{ textAlign: "center" }}>
-          <p style={{ color: "#666", marginBottom: "0.2rem" }}>Total Revenue</p>
-          <p style={{ fontWeight: "bold", fontSize: "1.5rem", color: "#16a34a" }}>${stats.totalRevenue.toLocaleString()}</p>
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+            Alaa Al-Din <Sparkles className="text-yellow-500" />
+          </h2>
+          <p className="text-gray-500">Software Engineering | Algorithms</p>
         </div>
       </div>
-    </div>
+
+      <button
+        onClick={onEdit}
+        className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+      >
+        <Edit className="w-4 h-4 mr-2" /> Edit Profile
+      </button>
+    </motion.div>
   )
 }
