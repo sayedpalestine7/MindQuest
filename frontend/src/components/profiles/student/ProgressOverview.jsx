@@ -17,10 +17,16 @@ export default function ProgressOverview({ stats }) {
           <span className="font-semibold">{stats.overallProgress}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-3">
+        <motion.div
+          className="bg-blue-600  h-3 rounded-full"
+          initial={{ width: 0 }}
+          animate={{ width:`${stats.overallProgress}%`}}
+          transition={{ duration: 1.2 }}
+        >
           <div
-            className="bg-blue-600 h-3 rounded-full"
             style={{ width: `${stats.overallProgress}%` }}
-          ></div>
+          />
+          </motion.div>
         </div>
       </div>
 

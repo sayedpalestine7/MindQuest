@@ -14,11 +14,12 @@ export default function EnrolledCourses({ courses }) {
         {courses.map((course , i) => (
           
         <motion.div
+        key={i}
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: i*0.2 }}
         >
-          <div key={course.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition">
+          <div key={course.id} className="border shadow-sm rounded-lg overflow-hidden hover:shadow-lg transition">
             <img src={course.thumbnail} alt={course.title} className="w-full h-40 object-cover" />
             <div className="p-4">
               <h4 className="font-semibold mb-1">{course.title}</h4>
