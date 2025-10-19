@@ -1,7 +1,13 @@
 import React from "react"
+import { motion } from "framer-motion"
 
 export default function ProgressOverview({ stats }) {
   return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6  }}
+    >
     <div className="bg-white rounded-xl shadow p-6">
       <h3 className="text-xl font-bold mb-6">Progress Overview</h3>
 
@@ -33,5 +39,6 @@ export default function ProgressOverview({ stats }) {
         </div>
       </div>
     </div>
+    </motion.div>
   )
 }

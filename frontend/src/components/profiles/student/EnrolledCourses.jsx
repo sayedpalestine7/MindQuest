@@ -1,11 +1,23 @@
+import { motion } from "framer-motion"
 
 export default function EnrolledCourses({ courses }) {
-  
+
   return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+    >
     <div className="bg-white rounded-xl shadow p-6">
       <h3 className="text-xl font-bold mb-6">Enrolled Courses</h3>
       <div className="grid md:grid-cols-2 gap-4">
-        {courses.map((course) => (
+        {courses.map((course , i) => (
+          
+        <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: i*0.2 }}
+        >
           <div key={course.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition">
             <img src={course.thumbnail} alt={course.title} className="w-full h-40 object-cover" />
             <div className="p-4">
@@ -24,8 +36,10 @@ export default function EnrolledCourses({ courses }) {
               </button>
             </div>
           </div>
+          </motion.div>
         ))}
       </div>
     </div>
+    </motion.div>
   )
 }

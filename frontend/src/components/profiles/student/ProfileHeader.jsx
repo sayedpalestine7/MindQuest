@@ -1,7 +1,13 @@
 import React from "react"
+import { motion } from "framer-motion"
 
 export default function ProfileHeader({ profileData, stats, onEdit }) {
   return (
+    <motion.div
+      initial={{ y: -30, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.6 }}
+    >
     <div className="bg-white rounded-xl shadow p-6 flex flex-col md:flex-row items-center justify-between gap-6">
       <div className="flex items-center gap-6">
         <img
@@ -26,5 +32,6 @@ export default function ProfileHeader({ profileData, stats, onEdit }) {
         <p className="text-3xl font-bold text-blue-600">{stats.totalPoints}</p>
       </div>
     </div>
+    </motion.div>
   )
 }

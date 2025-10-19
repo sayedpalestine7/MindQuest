@@ -7,6 +7,7 @@ import EnrolledCourses from "../components/profiles/student/EnrolledCourses"
 import RecentActivity from "../components/profiles/student/RecentActivity"
 import Achievements from "../components/profiles/student/Achievements"
 import EditProfileModal from "../components/profiles/student/EditProfileModal"
+import { motion } from "framer-motion"
 
 export default function StudentProfilePage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -52,6 +53,11 @@ export default function StudentProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
+    >
       <Header onLogout={() => alert("Logged out")} />
 
       <div className="container mx-auto p-6 space-y-8 max-w-7xl">
@@ -74,6 +80,7 @@ export default function StudentProfilePage() {
           onSave={handleSaveProfile}
         />
       )}
+      </motion.div>
     </div>
   )
 }
