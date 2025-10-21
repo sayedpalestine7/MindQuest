@@ -20,7 +20,7 @@ export default function Header({ onLogout }) {
           </div>
 
           <div className="flex gap-3">
-            <button className="border px-4 py-2 rounded-md hover:bg-gray-100">Browse Courses</button>
+            <button className="border px-4 py-2 rounded-md hover:bg-gray-100">Create Courses</button>
             <button onClick={onLogout} className="border px-4 py-2 rounded-md hover:bg-gray-100">Logout</button>
           </div>
         </div>

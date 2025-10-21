@@ -8,9 +8,9 @@ export default function EnrolledCourses({ courses }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8 }}
     >
-    <div className="bg-white rounded-xl shadow p-6">
+    <div className="bg-white rounded-xl shadow p-6 ">
       <h3 className="text-xl font-bold mb-6">Enrolled Courses</h3>
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         {courses.map((course , i) => (
           
         <motion.div
