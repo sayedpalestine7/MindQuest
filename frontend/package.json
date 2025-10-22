@@ -12,6 +12,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@radix-ui/react-avatar": "^1.1.10",
+    "axios": "^1.12.2",
     "clsx": "^2.1.1",
     "firebase": "^12.3.0",
     "lucide-react": "^0.544.0",

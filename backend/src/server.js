@@ -10,6 +10,7 @@ import fieldRoutes from "./routes/fieldRoutes.js";
 import questionRoutes from "./routes/questionRoutes.js";
 import quizRoutes from "./routes/quizRoutes.js";
 import progressRoutes from "./routes/progressRoutes.js";
+import animationRoutes from "./routes/animationRoutes.js";
 
 dotenv.config();
 connectMongoDB();
@@ -29,6 +30,7 @@ app.use("/api/fields", fieldRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/quizzes", quizRoutes);
 app.use("/api/progress", progressRoutes);
+app.use('/api/animations', animationRoutes);
 
 const PORT = process.env.PORT || 5000;
 // app utl http://localhost:5000

@@ -7,6 +7,7 @@ const lessonSchema = new mongoose.Schema(
     videoUrl: { type: String },
     duration: { type: Number }, // in minutes or seconds
     course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
+    animationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Animation', default: null },
   },
   { timestamps: true }
 );
