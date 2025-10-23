@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 
 function SpecializationSelect({ formData, setFormData, specializations }) {
-  const [customSpec, setCustomSpec] = useState(formData.customSpecialization || "");
+  const [customSpec, setCustomSpec] = useState(
+    formData.customSpecialization || ""
+  );
 
-  // Update local state if formData.customSpecialization changes
   // Sync local state with formData
   useEffect(() => {
     setCustomSpec(formData.customSpecialization || "");
@@ -32,17 +33,26 @@ function SpecializationSelect({ formData, setFormData, specializations }) {
 
       <select
         id="specialization"
-        value={specializations.includes(formData.specialization) ? formData.specialization : "Other"}
+        value={
+          formData.specialization && specializations.includes(formData.specialization)
+            ? formData.specialization
+            : formData.specialization === "Other"
+            ? "Other"
+            : ""
+        }
         onChange={handleChange}
         className="w-full px-3 py-2 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 transition-all duration-200"
       >
-        <option value="">Select your specialization</option>
+        <option value="">Select your specialization</option> {/* Empty default */}
         {specializations.map((spec) => (
-          <option key={spec} value={spec}>{spec}</option>
+          <option key={spec} value={spec}>
+            {spec}
+          </option>
         ))}
         <option value="Other">Other</option>
       </select>
 
+      {/* Show text input if “Other” is selected */}
       {formData.specialization === "Other" && (
         <input
           type="text"

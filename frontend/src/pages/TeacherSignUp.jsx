@@ -42,7 +42,6 @@ function TeacherSignUp() {
         "Cybersecurity",
         "Cloud Computing",
         "DevOps",
-        "Other",
     ]
     const handleSubmit = (e) => {
         e.preventDefault();
