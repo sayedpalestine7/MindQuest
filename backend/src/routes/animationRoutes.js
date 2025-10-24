@@ -4,21 +4,22 @@ import {
   saveAnimation,
   downloadAnimation,
   getAnimationById,
-  getTeacherAnimations
+  getTeacherAnimations,
+  patchAnimation,
+  deleteAnimation
 } from '../controllers/animationController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Save/Update Animation (temporary open route)
-router.post('/', saveAnimation);
-
-// Get Animation by ID
-router.get('/:id', getAnimationById);
-
-// List all animations for the current teacher
-router.get('/', getTeacherAnimations);
-
-// Download the self-contained HTML file
+// router.post('/', protect, saveAnimation);
+router.post('/' , saveAnimation);
+router.get('/', protect, getTeacherAnimations);
+router.get('/:id', protect, getAnimationById);
+router.put('/:id', protect, saveAnimation); // full update
+router.patch('/:id', protect, patchAnimation);
+router.delete('/:id', protect, deleteAnimation);
+// router.post('/download', protect, downloadAnimation);
 router.post('/download', downloadAnimation);
 
 export default router;

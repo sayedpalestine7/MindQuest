@@ -207,3 +207,120 @@ Authorization: Bearer {{token}}
   "totalScore": 10
 }
 
+// Animation Routes Tests
+
+@baseUrl = http://localhost:5000/api/animations
+@token = {{login.response.body.token}}
+
+### CREATE new animation
+# @name createAnimation
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Bouncing Ball Animation",
+  "stages": [
+    {
+      "stageId": 1,
+      "duration": 1.5,
+      "components": [
+        {
+          "id": 1,
+          "type": "circle",
+          "style": {
+            "top": "100px",
+            "left": "50px",
+            "width": "50px",
+            "height": "50px",
+            "color": "red"
+          },
+          "content": ""
+        }
+      ]
+    }
+  ],
+  "nextComponentId": 2
+}
+
+###
+@animationId = {{createAnimation.response.body._id}}
+
+### GET all animations for teacher
+GET {{baseUrl}}
+Authorization: Bearer {{token}}
+
+### GET animation by ID
+GET {{baseUrl}}/{{animationId}}
+Authorization: Bearer {{token}}
+
+### UPDATE animation by ID (full replace)
+PUT {{baseUrl}}/{{animationId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Updated Bouncing Ball Animation",
+  "stages": [
+    {
+      "stageId": 1,
+      "duration": 2.0,
+      "components": [
+        {
+          "id": 1,
+          "type": "circle",
+          "style": {
+            "top": "150px",
+            "left": "70px",
+            "width": "60px",
+            "height": "60px",
+            "color": "green"
+          },
+          "content": ""
+        }
+      ]
+    }
+  ],
+  "nextComponentId": 3
+}
+
+### PATCH animation by ID (partial update)
+PATCH {{baseUrl}}/{{animationId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Shortened Ball Animation"
+}
+
+### DELETE animation by ID
+DELETE {{baseUrl}}/{{animationId}}
+Authorization: Bearer {{token}}
+
+### DOWNLOAD animation as HTML
+POST {{baseUrl}}/download
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "stages": [
+    {
+      "stageId": 1,
+      "duration": 1.5,
+      "components": [
+        {
+          "id": 1,
+          "type": "circle",
+          "style": {
+            "top": "100px",
+            "left": "50px",
+            "width": "50px",
+            "height": "50px",
+            "color": "red"
+          },
+          "content": ""
+        }
+      ]
+    }
+  ]
+}

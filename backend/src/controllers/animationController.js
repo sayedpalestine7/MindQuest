@@ -1,65 +1,104 @@
 // controllers/animationController.js
-import animation from '../models/mongo/animation.js';
-// import { asyncHandler } from '../utils/asyncHandler.js'; // Uncomment if used
+import AnimationModel from '../models/mongo/animation.js';
 
-// Utility function to convert JavaScript-style props to CSS-style strings
-const toCssStyle = (styleObject) => {
-  return Object.entries(styleObject)
-    .map(([prop, value]) => {
-      const cssProp = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
-      return `${cssProp}:${value}`;
-    })
+// Utility: convert JS style object to CSS string
+const toCssStyle = (styleObject) =>
+  Object.entries(styleObject)
+    .map(([prop, value]) => `${prop.replace(/([A-Z])/g, '-$1').toLowerCase()}:${value}`)
     .join(';');
-};
 
-// 1. Save or Update Animation
+// 🔹 Create or Update Animation
 export const saveAnimation = async (req, res) => {
   const { _id, name, stages, nextComponentId } = req.body;
-  const teacherId = req.user.id; // Assuming user ID is available via middleware
+  const teacherId = req.user?.id || req.body.teacher;
 
   try {
     const animationData = { name, stages, nextComponentId, dateUpdated: Date.now() };
 
     let animation;
     if (_id) {
-      // Update existing
-      animation = await Animation.findByIdAndUpdate(_id, animationData, { new: true });
+      animation = await AnimationModel.findByIdAndUpdate(_id, animationData, { new: true });
       if (!animation) return res.status(404).json({ message: 'Animation not found' });
     } else {
-      // Create new
-      animation = await Animation.create({ ...animationData, teacher: teacherId });
+      animation = await AnimationModel.create({ ...animationData, teacher: teacherId });
     }
 
     res.status(200).json(animation);
   } catch (error) {
+    console.error("Error saving animation:", error.message);
     res.status(500).json({ message: 'Error saving animation', error: error.message });
   }
 };
 
-// 2. HTML Download Endpoint
+// 🔹 Get Animation by ID
+export const getAnimationById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const animation = await AnimationModel.findById(id);
+    if (!animation) return res.status(404).json({ message: 'Animation not found' });
+    res.status(200).json(animation);
+  } catch (error) {
+    console.error("Error fetching animation by ID:", error.message);
+    res.status(500).json({ message: 'Server failed to fetch animation.', error: error.message });
+  }
+};
+
+// 🔹 Get all animations for the teacher
+export const getTeacherAnimations = async (req, res) => {
+  const teacherId = req.user?.id;
+  if (!teacherId) return res.status(401).json({ message: "Not authorized." });
+
+  try {
+    const animations = await AnimationModel.find({ teacher: teacherId }).sort({ dateUpdated: -1 });
+    res.status(200).json(animations);
+  } catch (error) {
+    console.error("Error fetching teacher animations:", error.message);
+    res.status(500).json({ message: 'Server failed to fetch animations.', error: error.message });
+  }
+};
+
+// 🔹 Partial Update (PATCH)
+export const patchAnimation = async (req, res) => {
+  const { id } = req.params;
+  const updateData = req.body;
+
+  try {
+    const animation = await AnimationModel.findByIdAndUpdate(id, { ...updateData, dateUpdated: Date.now() }, { new: true });
+    if (!animation) return res.status(404).json({ message: 'Animation not found' });
+    res.status(200).json(animation);
+  } catch (error) {
+    console.error("Error patching animation:", error.message);
+    res.status(500).json({ message: 'Error updating animation', error: error.message });
+  }
+};
+
+// 🔹 Delete Animation
+export const deleteAnimation = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const animation = await AnimationModel.findByIdAndDelete(id);
+    if (!animation) return res.status(404).json({ message: 'Animation not found' });
+    res.status(200).json({ message: 'Animation deleted successfully' });
+  } catch (error) {
+    console.error("Error deleting animation:", error.message);
+    res.status(500).json({ message: 'Error deleting animation', error: error.message });
+  }
+};
+
+// 🔹 Download Animation as self-contained HTML
 export const downloadAnimation = async (req, res) => {
   const { stages } = req.body;
-
-  if (!stages || stages.length < 1) {
-    return res.status(400).send('Animation data is required.');
-  }
+  if (!stages || stages.length < 1) return res.status(400).send('Animation data is required.');
 
   const initialComponents = stages[0].components
-    .map(
-      (comp) => `
-        <div id="comp-${comp.id}" class="animated-component ${comp.type}" style="${toCssStyle(comp.style)}">
-          ${comp.content}
-        </div>`
-    )
+    .map(comp => `<div id="comp-${comp.id}" class="animated-component ${comp.type}" style="${toCssStyle(comp.style)}">${comp.content}</div>`)
     .join('\n');
 
   const animationScript = `
     const stages = ${JSON.stringify(stages)};
-
-    function toCssProp(prop) {
-      return prop.replace(/([A-Z])/g, '-$1').toLowerCase();
-    }
-
+    function toCssProp(prop) { return prop.replace(/([A-Z])/g, '-$1').toLowerCase(); }
     function runAnimation() {
       let currentTime = 0;
       for (let i = 1; i < stages.length; i++) {
@@ -85,66 +124,24 @@ export const downloadAnimation = async (req, res) => {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Teacher Animation</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    #animation-container {
-      position: relative;
-      width: 800px;
-      height: 600px;
-      border: 2px solid #ccc;
-      margin: 20px auto;
-      overflow: hidden;
-      background-color: #f8f8f8;
-    }
-    .animated-component {
-      position: absolute;
-      box-sizing: border-box;
-      transition: all 0s ease-in-out;
-      cursor: default;
-    }
-    .circle { border-radius: 50%; }
-    .square { border-radius: 0; }
-    .triangle {
-      width: 0;
-      height: 0;
-      border-left: 50px solid transparent;
-      border-right: 50px solid transparent;
-      border-bottom-width: 100px;
-      border-bottom-style: solid;
-    }
-    .text {
-      white-space: nowrap;
-      font-size: 24px;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Teacher Animation</title>
+<style>
+  #animation-container { position: relative; width: 800px; height: 600px; border: 2px solid #ccc; margin: 20px auto; overflow: hidden; background-color: #f8f8f8; }
+  .animated-component { position: absolute; box-sizing: border-box; transition: all 0s ease-in-out; cursor: default; }
+  .circle { border-radius: 50%; } .square { border-radius: 0; }
+  .triangle { width:0; height:0; border-left:50px solid transparent; border-right:50px solid transparent; border-bottom-width:100px; border-bottom-style:solid; }
+  .text { white-space: nowrap; font-size:24px; font-weight:bold; display:flex; align-items:center; justify-content:center; }
+</style>
 </head>
 <body>
-  <div id="animation-container">
-    ${initialComponents}
-  </div>
-  <script>
-    ${animationScript}
-  </script>
+<div id="animation-container">${initialComponents}</div>
+<script>${animationScript}</script>
 </body>
 </html>
-  `;
+`;
 
   res.setHeader('Content-Type', 'text/html');
   res.setHeader('Content-Disposition', 'attachment; filename="animation.html"');
   res.send(finalHTML);
-};
-
-// 3. Other necessary CRUD functions (placeholders)
-export const getAnimationById = async (req, res) => {
-  // TODO: implement findById logic
-};
-
-export const getTeacherAnimations = async (req, res) => {
-  // TODO: implement find by teacher logic
 };

@@ -10,7 +10,7 @@ import fieldRoutes from "./routes/fieldRoutes.js";
 import questionRoutes from "./routes/questionRoutes.js";
 import quizRoutes from "./routes/quizRoutes.js";
 import progressRoutes from "./routes/progressRoutes.js";
-import animationRoutes from "./routes/animationRoutes.js";
+import animationRoutes from './routes/animationRoutes.js';
 
 dotenv.config();
 connectMongoDB();

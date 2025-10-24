@@ -1,4 +1,3 @@
-// models/Animation.js
 import mongoose from 'mongoose';
 
 // Schema for a single animated component
@@ -6,7 +5,7 @@ const ComponentSchema = new mongoose.Schema(
   {
     id: { type: Number, required: true },
     type: { type: String, enum: ['circle', 'square', 'triangle', 'text'], required: true },
-    style: { type: Object, default: {} }, // Stores key CSS styles (top, left, width, height, color)
+    style: { type: Object, default: {} }, // CSS styles
     content: { type: String, default: '' } // For text components
   },
   { _id: false }
@@ -16,41 +15,20 @@ const ComponentSchema = new mongoose.Schema(
 const StageSchema = new mongoose.Schema(
   {
     stageId: { type: Number, required: true },
-    duration: { type: Number, default: 1.0 }, // Duration (in seconds) of transition TO this stage
+    duration: { type: Number, default: 1.0 },
     components: [ComponentSchema]
   },
   { _id: false }
 );
 
+// Main Animation Schema
 const AnimationSchema = new mongoose.Schema({
-  teacher: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  stages: {
-    type: [StageSchema],
-    required: true
-  },
-  nextComponentId: {
-    type: Number,
-    default: 1
-  },
-  dateCreated: {
-    type: Date,
-    default: Date.now
-  },
-  dateUpdated: {
-    type: Date,
-    default: Date.now
-  }
+  teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  name: { type: String, required: true, trim: true },
+  stages: { type: [StageSchema], required: true },
+  nextComponentId: { type: Number, default: 1 },
+  dateCreated: { type: Date, default: Date.now },
+  dateUpdated: { type: Date, default: Date.now }
 });
 
-const animation = mongoose.model('Animation', AnimationSchema);
-
-export default animation;
+export default mongoose.model('Animation', AnimationSchema);
