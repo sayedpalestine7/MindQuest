@@ -13,6 +13,8 @@ import NavigationButtons from '../components/signUp/NavigationButtons.jsx'
 import StepIndicator from '../components/signUp/StepIndicator.jsx'
 import toast from 'react-hot-toast'
 import { tr } from 'motion/react-client'
+import axios from "axios";
+
 function SignUp() {
 
   const [formData, setFormData] = useState({
@@ -35,17 +37,30 @@ function SignUp() {
     setError("");
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log("Submitted:", { ...formData, profileImage });
+      const formDataToSend = new FormData();
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("password", formData.password);
+      formDataToSend.append("role", "student"); // or "teacher"
+      if (profileImage) formDataToSend.append("profileImage", profileImage);
+
+      const res = await axios.post("http://localhost:5000/api/auth/register", formDataToSend, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
       toast.success("Sign up successful!");
+      console.log(res.data);
+
+      localStorage.setItem("token", res.data.token);
+      // Optional: redirect
+      // navigate("/login");
     } catch (err) {
       console.error(err);
-      toast.error("An error occurred during sign up. Please try again.");
+      toast.error(err.response?.data?.message || "Sign up failed");
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   // handle next step navigation
   const handleNext = () => {
@@ -154,9 +169,9 @@ function SignUp() {
       setIsLoading(true);
       await new Promise((resolve) => setTimeout(resolve, 2000));
       toast.success("Signed up with Google successfully!");
-    }catch (error) {
-      toast.error("Failed to sign up with Google"); 
-    }finally {setIsLoading(false);}
+    } catch (error) {
+      toast.error("Failed to sign up with Google");
+    } finally { setIsLoading(false); }
   }
 
 
@@ -256,8 +271,8 @@ function SignUp() {
                 <>
                   <Divider />
                   <GoogleSignInButton
-                  onClick={handleGoogleSignUp} 
-                  isLoading={isLoading}
+                    onClick={handleGoogleSignUp}
+                    isLoading={isLoading}
                   >
                     Sign up with Google
                   </GoogleSignInButton>

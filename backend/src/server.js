@@ -31,6 +31,8 @@ app.use("/api/questions", questionRoutes);
 app.use("/api/quizzes", quizRoutes);
 app.use("/api/progress", progressRoutes);
 app.use('/api/animations', animationRoutes);
+app.use("/uploads", express.static("uploads"));
+
 
 const PORT = process.env.PORT || 5000;
 // app utl http://localhost:5000

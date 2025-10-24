@@ -1,4 +1,4 @@
-import React, { useEffect , useState} from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion } from "framer-motion"
 import { GoogleSignInButton } from '../components/login/GoogleSignInButton.jsx'
 import EmailInput from '../components/login/EmailInput.jsx'
@@ -9,6 +9,9 @@ import { SubmitButton } from '../components/login/SubmitButton.jsx'
 import AuthLink from '../components/login/AuthLink.jsx'
 import WelcomeMsg from '../components/login/WelcomeMsg.jsx'
 import toast from 'react-hot-toast'
+import axios from "axios";
+
+
 function LoginForm() {
 
   const [email, setEmail] = useState("");
@@ -26,7 +29,7 @@ function LoginForm() {
     }
   }, []);
 
-    // 🧩 Mock login function (to be replaced with backend call later)
+  // 🧩 Mock login function (to be replaced with backend call later)
   const mockLogin = async (email, password) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -39,10 +42,11 @@ function LoginForm() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    setShake(false);
 
     if (!email || !password) {
       toast.error("Please fill in all fields");
@@ -51,7 +55,41 @@ function LoginForm() {
       setTimeout(() => setShake(false), 500);
       return;
     }
-  }
+
+    try {
+      const { data } = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password,
+      });
+
+      // ✅ Handle Remember Me
+      if (rememberMe) {
+        localStorage.setItem("rememberEmail", email);
+      } else {
+        localStorage.removeItem("rememberEmail");
+      }
+
+      // ✅ Store token and user info
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      toast.success(`Welcome back, ${data.user.name}! 👋`);
+
+      // ✅ Redirect after login (example)
+      window.location.href = "/";
+
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || "Invalid email or password";
+      toast.error(msg);
+      setError(msg);
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   const handleGoogleSignIn = () => { }
 
