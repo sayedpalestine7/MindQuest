@@ -21,7 +21,8 @@ function TeacherSignUp() {
         password: "",
         confirmPassword: "",
         institution: "",
-        specialization: "",
+        specialization: "",      
+        customSpecialization: "",
     })
     const [isLoading, setIsLoading] = useState(false);
     const [certificationFile, setCertificationFile] = useState(null);
@@ -42,7 +43,6 @@ function TeacherSignUp() {
         "Cloud Computing",
         "DevOps",
     ]
-
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsLoading(true);

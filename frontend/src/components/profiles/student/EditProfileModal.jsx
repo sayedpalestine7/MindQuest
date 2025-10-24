@@ -1,5 +1,5 @@
 import ProfileImageUpload from '../../signUp/ProfileImageUpload.jsx'
-
+import { motion } from 'framer-motion'
 export default function EditProfileModal({ editForm, setEditForm, onCancel, onSave }) {
   const handleImageChange = (e) => {
     const file = e.target.files?.[0]
@@ -21,6 +21,13 @@ export default function EditProfileModal({ editForm, setEditForm, onCancel, onSa
   }
 
   return (
+    <motion.div
+            className="fixed inset-0 flex items-center justify-center z-50"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        >
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md space-y-5">
         <h3 className="text-2xl font-bold">Edit Profile</h3>
@@ -65,5 +72,6 @@ export default function EditProfileModal({ editForm, setEditForm, onCancel, onSa
         </div>
       </div>
     </div>
+    </motion.div>
   )
 }
