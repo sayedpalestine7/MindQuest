@@ -23,7 +23,7 @@ export function UserRow({ user, onView, onBan }) {
       {/* Name */}
       <td className="p-2 font-medium text-white">{user.name}</td>
       {/* Email */}
-      <td className="p-2 text-gray-500 flex justify-start ">{user.email}</td>
+      <td className="p-2 text-gray-200 flex justify-start ">{user.email}</td>
       {/* User Type	 */}
       <td className="p-2 capitalize">
           {user.userType=== "teacher"?(
@@ -47,8 +47,8 @@ export function UserRow({ user, onView, onBan }) {
         </span>
       </td>
       {/* Actions */}
-      <td className="p-2 text-right space-x-2 flex justify-end">
-        <button onClick={onView} className="bg-blue-500 px-2 text-white rounded hover:bg-blue-700 flex justify-center items-center"><Eye className="h-4 w-4" />View</button>
+      <td className="p-2 text-right space-x-2 flex justify-center items-center">
+        {/* <button onClick={onView} className="bg-blue-500 px-2 text-white rounded hover:bg-blue-700 flex justify-center items-center"><Eye className="h-4 w-4" />View</button> */}
         <button onClick={onBan} className="bg-red-500 px-2 text-white rounded hover:bg-red-700 flex justify-center items-center">
           <Ban className="h-4 w-4" />{user.status === "banned" ? "Unban" : "Ban"}
         </button>

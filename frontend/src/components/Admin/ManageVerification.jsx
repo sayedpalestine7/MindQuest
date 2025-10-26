@@ -6,7 +6,7 @@ import TeacherDialog from "./teacher/TeacherDialog.jsx"
 import ConfirmDialog from "./teacher/ConfirmDialog.jsx"
 import Sidebar from './Sidebar.jsx'
 import { Loader2 } from "lucide-react"
-
+import toast from "react-hot-toast"
 // import PendingTeachers from './teacher/PendingTeachers.jsx'
 
 function ManageQuizzes() {
@@ -44,47 +44,47 @@ function ManageQuizzes() {
       await new Promise((res) => setTimeout(res, 600))
 
       const fakeTeachers = [
-  {
-    id: 1,
-    name: "Alice Johnson",
-    email: "alice.johnson@example.com",
-    specialization: "Algorithms",
-    institution: "MIT University",
-    certificates: [
-      "https://i.pravatar.cc/150?img=1"
-    ],
-  },
-  {
-    id: 2,
-    name: "Bob Smith",
-    email: "bob.smith@example.com",
-    specialization: "Software Engineering",
-    institution: "Stanford University",
-    certificates: [
-      "https://i.pravatar.cc/150?img=2"
-    ],
-  },
-  {
-    id: 3,
-    name: "Charlie Brown",
-    email: "charlie.brown@example.com",
-    specialization: "Database Systems",
-    institution: "Harvard University",
-    certificates: [
-      "https://i.pravatar.cc/150?img=3"
-    ],
-  },
-  {
-    id: 4,
-    name: "Diana Prince",
-    email: "diana.prince@example.com",
-    specialization: "Artificial Intelligence",
-    institution: "Oxford University",
-    certificates: [
-      "https://i.pravatar.cc/150?img=4"
-    ],
-  },
-];
+        {
+          id: 1,
+          name: "Alice Johnson",
+          email: "alice.johnson@example.com",
+          specialization: "Algorithms",
+          institution: "MIT University",
+          certificates: [
+            "https://i.pravatar.cc/150?img=1"
+          ],
+        },
+        {
+          id: 2,
+          name: "Bob Smith",
+          email: "bob.smith@example.com",
+          specialization: "Software Engineering",
+          institution: "Stanford University",
+          certificates: [
+            "https://i.pravatar.cc/150?img=2"
+          ],
+        },
+        {
+          id: 3,
+          name: "Charlie Brown",
+          email: "charlie.brown@example.com",
+          specialization: "Database Systems",
+          institution: "Harvard University",
+          certificates: [
+            "https://i.pravatar.cc/150?img=3"
+          ],
+        },
+        {
+          id: 4,
+          name: "Diana Prince",
+          email: "diana.prince@example.com",
+          specialization: "Artificial Intelligence",
+          institution: "Oxford University",
+          certificates: [
+            "https://i.pravatar.cc/150?img=4"
+          ],
+        },
+      ];
 
 
 
@@ -102,11 +102,13 @@ function ManageQuizzes() {
     try {
       // Simulate a short delay
       await new Promise((res) => setTimeout(res, 400))
-      alert(`Teacher ${action}d successfully`)
+      // alert(`Teacher ${action}d successfully`)
+      toast.success(`Teacher ${action}d successfully`)
       setTeachers(teachers.filter((t) => t.id !== teacherId))
       setActionDialog({ open: false, teacher: null, action: null })
     } catch (err) {
-      alert(`Failed to ${action} teacher`)
+      // alert(`Failed to ${action} teacher`)
+      toast.error(`Failed to ${action} teacher`)
     }
   }
 
@@ -135,7 +137,7 @@ function ManageQuizzes() {
           <input
             type="text"
             placeholder="Search by name, email, or specialization..."
-            className="w-full border border-gray-700 rounded px-4 py-2 pl-9 bg-gray-900"
+            className="w-full border border-gray-700 rounded px-4 py-2 pl-9 bg-gray-900 text-white"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -150,7 +152,7 @@ function ManageQuizzes() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : filteredTeachers.length === 0 ? (
-          <div className="text-center py-12 border rounded bg-white">
+          <div className="text-center text-gray-500 py-12">
             No pending teacher applications found.
           </div>
         ) : (
