@@ -44,47 +44,49 @@ function ManageQuizzes() {
       await new Promise((res) => setTimeout(res, 600))
 
       const fakeTeachers = [
-        {
-          id: 1,
-          name: "Alice Johnson",
-          email: "alice.johnson@example.com",
-          specialization: "Algorithms",
-          certificates: [
-            "https://i.pravatar.cc/150?img=1"
-          ],
-          experience: "5 years of teaching experience in data structures",
-        },
-        {
-          id: 2,
-          name: "Bob Smith",
-          email: "bob.smith@example.com",
-          specialization: "Software Engineering",
-          certificates: [
-            "https://i.pravatar.cc/150?img=2"
-          ],
-          experience: "7 years of professional software development",
-        },
-        {
-          id: 3,
-          name: "Charlie Brown",
-          email: "charlie.brown@example.com",
-          specialization: "Database Systems",
-          certificates: [
-            "https://i.pravatar.cc/150?img=3"
-          ],
-          experience: "Taught SQL and NoSQL courses for 4 years",
-        },
-        {
-          id: 4,
-          name: "Diana Prince",
-          email: "diana.prince@example.com",
-          specialization: "Artificial Intelligence",
-          certificates: [
-            "https://i.pravatar.cc/150?img=4"
-          ],
-          experience: "Research assistant in AI at university level",
-        },
-      ];
+  {
+    id: 1,
+    name: "Alice Johnson",
+    email: "alice.johnson@example.com",
+    specialization: "Algorithms",
+    institution: "MIT University",
+    certificates: [
+      "https://i.pravatar.cc/150?img=1"
+    ],
+  },
+  {
+    id: 2,
+    name: "Bob Smith",
+    email: "bob.smith@example.com",
+    specialization: "Software Engineering",
+    institution: "Stanford University",
+    certificates: [
+      "https://i.pravatar.cc/150?img=2"
+    ],
+  },
+  {
+    id: 3,
+    name: "Charlie Brown",
+    email: "charlie.brown@example.com",
+    specialization: "Database Systems",
+    institution: "Harvard University",
+    certificates: [
+      "https://i.pravatar.cc/150?img=3"
+    ],
+  },
+  {
+    id: 4,
+    name: "Diana Prince",
+    email: "diana.prince@example.com",
+    specialization: "Artificial Intelligence",
+    institution: "Oxford University",
+    certificates: [
+      "https://i.pravatar.cc/150?img=4"
+    ],
+  },
+];
+
+
 
       setTeachers(fakeTeachers)
       setFilteredTeachers(fakeTeachers)

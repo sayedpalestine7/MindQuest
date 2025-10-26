@@ -17,8 +17,7 @@ function AdminForm() {
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
 
       <Sidebar />
-
-
+      
       <div className="flex-1 p-8">
         <motion.div
           initial={{ opacity: 0, y: -15 }}
