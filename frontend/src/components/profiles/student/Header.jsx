@@ -1,6 +1,9 @@
 import { Brain } from "lucide-react"
 import { motion } from "framer-motion"
+import { useNavigate } from "react-router"
+
 export default function Header({ onLogout }) {
+  const navigate = useNavigate()
   return (
     <motion.div
       initial={{ y: -30, opacity: 0 }}
@@ -20,7 +23,7 @@ export default function Header({ onLogout }) {
           </div>
 
           <div className="flex gap-3">
-            <button className="border px-4 py-2 rounded-md hover:bg-gray-100">Browse Courses</button>
+            <button onClick={() => navigate("/courses")} className="border px-4 py-2 rounded-md hover:bg-gray-100">Browse Courses</button>
             <button onClick={onLogout} className="border px-4 py-2 rounded-md hover:bg-gray-100">Logout</button>
           </div>
         </div>

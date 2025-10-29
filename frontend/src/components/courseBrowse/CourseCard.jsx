@@ -1,5 +1,6 @@
 import { motion } from "framer-motion"
 import { Star, Users, Clock, BookOpen, CheckCircle2, Plus } from "lucide-react"
+import { Link } from "react-router"
 
 export default function CourseCard({ course, index, enrolledCourses, handleEnroll }) {
   const getDifficultyColor = (difficulty) => {
@@ -53,13 +54,24 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
         </div>
 
         <div className="mb-3">
-          <p className="text-sm text-gray-500 mb-1">By {course.instructor}</p>
-          <div className="flex flex-wrap gap-1">
-            {course.tags.map((tag) => (
-              <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                {tag}
-              </span>
-            ))}
+          <div className="mb-3">
+            <Link
+              to={`/teacher/${encodeURIComponent(course.instructor)}`}
+              className="text-sm text-indigo-600 hover:underline font-medium mb-1 inline-block"
+            >
+              By {course.instructor}
+            </Link>
+
+            <div className="flex flex-wrap gap-1">
+              {course.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 

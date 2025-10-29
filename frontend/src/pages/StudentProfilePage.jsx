@@ -58,7 +58,7 @@ export default function StudentProfilePage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
     >
-      <Header onLogout={() => alert("Logged out")} />
+      <Header onLogout={() => alert("Logged out")}  />
 
       <div className="container mx-auto p-6 space-y-8 max-w-7xl">
         <ProfileHeader profileData={profileData} stats={stats} onEdit={() => setIsEditModalOpen(true)} />
@@ -66,7 +66,7 @@ export default function StudentProfilePage() {
         <div className="">
           
           <div className="lg:col-span-2 space-y-6">
-            
+            TeacherHeader
             {/* <RecentActivity activities={activities} /> */}
             <EnrolledCourses courses={enrolledCourses} />
           </div>
