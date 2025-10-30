@@ -1,8 +1,9 @@
 import React from "react";
 
 export default function TeacherHeader({ teacher }) {
+  if (!teacher) return <p className="">no teacher what that name</p>;
   return (
-    <div className="bg-white rounded-lg p-8 mb-8 shadow">
+    <div className=" container mx-auto px-6 py-8 max-w-7xl ">
       <div className="flex flex-col md:flex-row gap-8">
         <div className="flex-shrink-0">
           <div className="w-32 h-32 rounded-full border-4 border-blue-300 overflow-hidden">
@@ -36,19 +37,20 @@ export default function TeacherHeader({ teacher }) {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 bg-gray-100 rounded text-center">
-              <div className="text-xl font-bold">{teacher.stats.totalStudents.toLocaleString()}</div>
+              <div className="text-xl font-bold">{teacher.totalStudents.toLocaleString()}</div>
               <div className="text-sm text-gray-500">Students</div>
             </div>
             <div className="p-4 bg-gray-100 rounded text-center">
-              <div className="text-xl font-bold">{teacher.stats.courses}</div>
+              <div className="text-xl font-bold">{teacher.courses.length}</div>
               <div className="text-sm text-gray-500">Courses</div>
             </div>
             <div className="p-4 bg-gray-100 rounded text-center">
-              <div className="text-xl font-bold">{teacher.stats.rating}</div>
+              <div className="text-xl font-bold">{teacher.rating || "-"}</div>
               <div className="text-sm text-gray-500">Rating</div>
             </div>
             <div className="p-4 bg-gray-100 rounded text-center">
-              <div className="text-xl font-bold">{teacher.stats.reviews.toLocaleString()}</div>
+              <div className="text-xl font-bold">{teacher.reviews.length}</div>
+
               <div className="text-sm text-gray-500">Reviews</div>
             </div>
           </div>
