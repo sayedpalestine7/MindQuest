@@ -3,7 +3,8 @@ import { motion } from "framer-motion"
 import { useNavigate } from "react-router"
 
 export default function Header({ onLogout }) {
-  const navigate = useNavigate()
+    const navigate = useNavigate()
+
   return (
     <motion.div
       initial={{ y: -30, opacity: 0 }}
@@ -18,7 +19,7 @@ export default function Header({ onLogout }) {
             </div>
             <div>
               <h1 className="font-bold text-gray-800">MindQuest</h1>
-              <p className="text-sm text-gray-500">Instructor Profile</p>
+              <p className="text-sm text-gray-500">Teacher Profile</p>
             </div>
           </div>
 

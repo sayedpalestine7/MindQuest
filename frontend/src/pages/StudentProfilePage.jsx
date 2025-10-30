@@ -66,7 +66,6 @@ export default function StudentProfilePage() {
         <div className="">
           
           <div className="lg:col-span-2 space-y-6">
-            TeacherHeader
             {/* <RecentActivity activities={activities} /> */}
             <EnrolledCourses courses={enrolledCourses} />
           </div>

@@ -1,4 +1,5 @@
 import React from "react";
+import { Clock ,BookOpen  } from 'lucide-react';
 
 export default function CourseCard({ course, enrolledCourses, handleEnroll }) {
   const getDifficultyColor = (difficulty) => {
@@ -25,8 +26,15 @@ export default function CourseCard({ course, enrolledCourses, handleEnroll }) {
 
       <div className="p-4 flex-1 flex flex-col">
         <h3 className="font-bold text-lg mb-2">{course.title}</h3>
-        <div className="text-sm text-gray-500 mb-2">{course.category}</div>
-        <div className="text-sm text-gray-500 mb-2">{course.duration} • {course.lessons} lessons</div>
+        <div className="text-sm text-gray-500 mb-2">
+          <span className="badge badge-outline">
+            {course.category}
+          </span>
+        </div>
+        <div className="flex justify-between py-2">
+          <div className="text-sm text-gray-500 mb-2 flex"><Clock className="scale-75"/>{course.duration}</div>
+          <div className="text-sm text-gray-500 mb-2 flex"><BookOpen className="scale-75"/>{course.lessons} lessons</div>
+        </div>
 
         <div className="mt-auto">
           {enrolledCourses.includes(course.id) ? (
