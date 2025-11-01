@@ -1,7 +1,337 @@
-### Base Test
+# ### Base Test
+# GET http://localhost:5000
+
+# ###
+# POST http://localhost:5000/api/auth/register
+# Content-Type: application/json
+
+# {
+#   "name": "Sayed Qutob",
+#   "email": "sayed123@example.com",
+#   "password": "123456",
+#   "role": "teacher",
+#   "teacherData": {
+#     "specialization": "Computer Engineering",
+#     "institution": "An-Najah National University",
+#     "certification": "https://example.com/cert.pdf"
+#   }
+# }
+
+# ###
+# POST http://localhost:5000/api/auth/register
+# Content-Type: application/json
+
+# {
+#   "name": "Ahmad Dardouk",
+#   "email": "ahmad@example.com",
+#   "password": "123456",
+#   "role": "student"
+# }
+
+# ###
+# # @name login
+# POST http://localhost:5000/api/auth/login
+# Content-Type: application/json
+
+# {
+#   "email": "sayed123@example.com",
+#   "password": "123456"
+# }
+
+# ###
+# @token = {{login.response.body.token}}
+# @userId = {{login.response.body.user._id}}
+# ###
+# # @name createCourse
+# POST http://localhost:5000/api/courses
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "title": "Data Structures 101",
+#   "description": "Learn stacks, queues, and linked lists interactively.",
+#   "thumbnail": "https://example.com/image.jpg",
+#   "teacherId": "{{userId}}",
+#   "difficulty": "easy",
+#   "scoreOnFinish": 50
+# }
+
+# ###
+# @courseId = {{createCourse.response.body.course._id}}
+# ###
+# GET http://localhost:5000/api/courses
+
+# ###
+# GET http://localhost:5000/api/courses/{{courseId}}
+
+# ###
+# PUT http://localhost:5000/api/courses/{{courseId}}
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "title": "Data Structures 102",
+#   "description": "Advanced trees and graph structures.",
+#   "difficulty": "medium",
+#   "thumbnail": "https://example.com/newimage.jpg"
+# }
+
+# ###
+# DELETE http://localhost:5000/api/courses/{{courseId}}
+# Authorization: Bearer {{token}}
+
+# ###
+# # @name createLesson
+# POST http://localhost:5000/api/lessons
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "title": "Introduction to Stacks 2",
+#   "courseId": "{{courseId}}"
+# }
+
+# ###
+# @lessonId = {{createLesson.response.body.lesson._id}}
+# ###
+# GET http://localhost:5000/api/lessons/course/{{courseId}}
+
+# ###
+# GET http://localhost:5000/api/lessons/{{lessonId}}
+
+# ###
+# PUT http://localhost:5000/api/lessons/{{lessonId}}
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "title": "Stacks and Applications"
+# }
+
+# ###
+# DELETE http://localhost:5000/api/lessons/{{lessonId}}
+# Authorization: Bearer {{token}}
+
+# ###
+# POST http://localhost:5000/api/fields
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "lessonId": "{{lessonId}}",
+#   "type": "paragraph",
+#   "content": "Stacks are linear data structures that follow the LIFO principle.",
+#   "order": 1
+# }
+
+# ###
+# POST http://localhost:5000/api/fields
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "lessonId": "{{lessonId}}",
+#   "type": "image",
+#   "content": {
+#     "url": "https://example.com/stack-illustration.png"
+#   },
+#   "order": 2
+# }
+
+# ###
+# GET http://localhost:5000/api/fields/lesson/{{lessonId}}
+
+# ###
+# # @name createQuestion
+# POST http://localhost:5000/api/questions
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "text": "What does LIFO stand for?",
+#   "type": "mcq",
+#   "options": ["Last In First Out", "First In First Out"],
+#   "correctAnswer": "Last In First Out",
+#   "points": 2,
+#   "explanation": "LIFO means the last element inserted is the first one removed."
+# }
+
+# ###
+# @questionId = {{createQuestion.response.body.question._id}}
+# ###
+# GET http://localhost:5000/api/questions
+
+# ###
+# POST http://localhost:5000/api/quizzes
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "title": "Data Structures Quiz 1",
+#   "courseId": "{{courseId}}",
+#   "questionIds": [
+#     "{{questionId}}"
+#   ]
+# }
+
+# ###
+# GET http://localhost:5000/api/quizzes/course/{{courseId}}
+
+# ###
+# POST http://localhost:5000/api/progress
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "studentId": "{{userId}}",
+#   "courseId": "{{courseId}}",
+#   "completedLessons": ["{{lessonId}}"],
+#   "quizScore": 8,
+#   "totalScore": 10,
+#   "status": "completed"
+# }
+
+# ###
+# GET http://localhost:5000/api/progress/student/{{userId}}
+# Authorization: Bearer {{token}}
+
+# ###
+# POST http://localhost:5000/api/progress/quizCompleted
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "studentId": "{{userId}}",
+#   "courseId": "{{courseId}}",
+#   "quizScore": 8,
+#   "totalScore": 10
+# }
+
+# // Animation Routes Tests
+
+# @baseUrl = http://localhost:5000/api/animations
+# @token = {{login.response.body.token}}
+
+# ### CREATE new animation
+# # @name createAnimation
+# POST {{baseUrl}}
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "name": "Bouncing Ball Animation",
+#   "stages": [
+#     {
+#       "stageId": 1,
+#       "duration": 1.5,
+#       "components": [
+#         {
+#           "id": 1,
+#           "type": "circle",
+#           "style": {
+#             "top": "100px",
+#             "left": "50px",
+#             "width": "50px",
+#             "height": "50px",
+#             "color": "red"
+#           },
+#           "content": ""
+#         }
+#       ]
+#     }
+#   ],
+#   "nextComponentId": 2
+# }
+
+# ###
+# @animationId = {{createAnimation.response.body._id}}
+
+# ### GET all animations for teacher
+# GET {{baseUrl}}
+# Authorization: Bearer {{token}}
+
+# ### GET animation by ID
+# GET {{baseUrl}}/{{animationId}}
+# Authorization: Bearer {{token}}
+
+# ### UPDATE animation by ID (full replace)
+# PUT {{baseUrl}}/{{animationId}}
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "name": "Updated Bouncing Ball Animation",
+#   "stages": [
+#     {
+#       "stageId": 1,
+#       "duration": 2.0,
+#       "components": [
+#         {
+#           "id": 1,
+#           "type": "circle",
+#           "style": {
+#             "top": "150px",
+#             "left": "70px",
+#             "width": "60px",
+#             "height": "60px",
+#             "color": "green"
+#           },
+#           "content": ""
+#         }
+#       ]
+#     }
+#   ],
+#   "nextComponentId": 3
+# }
+
+# ### PATCH animation by ID (partial update)
+# PATCH {{baseUrl}}/{{animationId}}
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "name": "Shortened Ball Animation"
+# }
+
+# ### DELETE animation by ID
+# DELETE {{baseUrl}}/{{animationId}}
+# Authorization: Bearer {{token}}
+
+# ### DOWNLOAD animation as HTML
+# POST {{baseUrl}}/download
+# Content-Type: application/json
+# Authorization: Bearer {{token}}
+
+# {
+#   "stages": [
+#     {
+#       "stageId": 1,
+#       "duration": 1.5,
+#       "components": [
+#         {
+#           "id": 1,
+#           "type": "circle",
+#           "style": {
+#             "top": "100px",
+#             "left": "50px",
+#             "width": "50px",
+#             "height": "50px",
+#             "color": "red"
+#           },
+#           "content": ""
+#         }
+#       ]
+#     }
+#   ]
+# }
+
+
+
+
+### 🧠 Base Test
 GET http://localhost:5000
 
-###
+### 👨‍🏫 Register Teacher
 POST http://localhost:5000/api/auth/register
 Content-Type: application/json
 
@@ -17,7 +347,7 @@ Content-Type: application/json
   }
 }
 
-###
+### 👨‍🎓 Register Student
 POST http://localhost:5000/api/auth/register
 Content-Type: application/json
 
@@ -28,7 +358,7 @@ Content-Type: application/json
   "role": "student"
 }
 
-###
+### 🔑 Login (Teacher)
 # @name login
 POST http://localhost:5000/api/auth/login
 Content-Type: application/json
@@ -38,33 +368,36 @@ Content-Type: application/json
   "password": "123456"
 }
 
-###
+### 🪪 Save token and userId from login response
 @token = {{login.response.body.token}}
 @userId = {{login.response.body.user._id}}
-###
+
+### 📘 Create a new course
 # @name createCourse
 POST http://localhost:5000/api/courses
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "title": "Data Structures 101",
+  "title": "Data Structures 102",
   "description": "Learn stacks, queues, and linked lists interactively.",
-  "thumbnail": "https://example.com/image.jpg",
+  "thumbnail": "https://picsum.photos/id/237/200/300",
   "teacherId": "{{userId}}",
-  "difficulty": "easy",
+  "rating": 4.5,
+  "difficulty": "Beginner",
   "scoreOnFinish": 50
 }
 
-###
+### Save courseId
 @courseId = {{createCourse.response.body.course._id}}
-###
+
+### 📚 Get all courses
 GET http://localhost:5000/api/courses
 
-###
+### 📘 Get course by ID
 GET http://localhost:5000/api/courses/{{courseId}}
 
-###
+### ✏️ Update course
 PUT http://localhost:5000/api/courses/{{courseId}}
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -72,34 +405,35 @@ Authorization: Bearer {{token}}
 {
   "title": "Data Structures 102",
   "description": "Advanced trees and graph structures.",
-  "difficulty": "medium",
+  "difficulty": "intermediate",
   "thumbnail": "https://example.com/newimage.jpg"
 }
 
-###
+### 🗑️ Delete course
 DELETE http://localhost:5000/api/courses/{{courseId}}
 Authorization: Bearer {{token}}
 
-###
+### 📖 Create lesson
 # @name createLesson
 POST http://localhost:5000/api/lessons
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "title": "Introduction to Stacks 2",
+  "title": "Introduction to Stacks 3",
   "courseId": "{{courseId}}"
 }
 
-###
+### Save lessonId
 @lessonId = {{createLesson.response.body.lesson._id}}
-###
+
+### 📚 Get all lessons for course
 GET http://localhost:5000/api/lessons/course/{{courseId}}
 
-###
+### 📖 Get lesson by ID
 GET http://localhost:5000/api/lessons/{{lessonId}}
 
-###
+### ✏️ Update lesson
 PUT http://localhost:5000/api/lessons/{{lessonId}}
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -108,11 +442,11 @@ Authorization: Bearer {{token}}
   "title": "Stacks and Applications"
 }
 
-###
+### 🗑️ Delete lesson
 DELETE http://localhost:5000/api/lessons/{{lessonId}}
 Authorization: Bearer {{token}}
 
-###
+### 🧩 Create field (paragraph)
 POST http://localhost:5000/api/fields
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -124,7 +458,7 @@ Authorization: Bearer {{token}}
   "order": 1
 }
 
-###
+### 🧩 Create field (image)
 POST http://localhost:5000/api/fields
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -138,10 +472,10 @@ Authorization: Bearer {{token}}
   "order": 2
 }
 
-###
+### 🧩 Get fields for lesson
 GET http://localhost:5000/api/fields/lesson/{{lessonId}}
 
-###
+### ❓ Create question
 # @name createQuestion
 POST http://localhost:5000/api/questions
 Content-Type: application/json
@@ -156,12 +490,13 @@ Authorization: Bearer {{token}}
   "explanation": "LIFO means the last element inserted is the first one removed."
 }
 
-###
+### Save questionId
 @questionId = {{createQuestion.response.body.question._id}}
-###
+
+### ❓ Get all questions
 GET http://localhost:5000/api/questions
 
-###
+### 🧠 Create quiz
 POST http://localhost:5000/api/quizzes
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -169,15 +504,13 @@ Authorization: Bearer {{token}}
 {
   "title": "Data Structures Quiz 1",
   "courseId": "{{courseId}}",
-  "questionIds": [
-    "{{questionId}}"
-  ]
+  "questionIds": ["{{questionId}}"]
 }
 
-###
+### 🧠 Get quiz for course
 GET http://localhost:5000/api/quizzes/course/{{courseId}}
 
-###
+### 📊 Save student progress
 POST http://localhost:5000/api/progress
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -191,11 +524,11 @@ Authorization: Bearer {{token}}
   "status": "completed"
 }
 
-###
+### 📊 Get student progress
 GET http://localhost:5000/api/progress/student/{{userId}}
 Authorization: Bearer {{token}}
 
-###
+### 📊 Quiz completed update
 POST http://localhost:5000/api/progress/quizCompleted
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -207,12 +540,10 @@ Authorization: Bearer {{token}}
   "totalScore": 10
 }
 
-// Animation Routes Tests
-
+### 🎬 Animation API Tests ////////////////////////////////////////////////////////
 @baseUrl = http://localhost:5000/api/animations
-@token = {{login.response.body.token}}
 
-### CREATE new animation
+### 🎨 Create animation
 # @name createAnimation
 POST {{baseUrl}}
 Content-Type: application/json
@@ -243,18 +574,18 @@ Authorization: Bearer {{token}}
   "nextComponentId": 2
 }
 
-###
+### Save animationId
 @animationId = {{createAnimation.response.body._id}}
 
-### GET all animations for teacher
+### 🎬 Get all animations
 GET {{baseUrl}}
 Authorization: Bearer {{token}}
 
-### GET animation by ID
+### 🎬 Get animation by ID
 GET {{baseUrl}}/{{animationId}}
 Authorization: Bearer {{token}}
 
-### UPDATE animation by ID (full replace)
+### ✏️ Update animation
 PUT {{baseUrl}}/{{animationId}}
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -284,7 +615,7 @@ Authorization: Bearer {{token}}
   "nextComponentId": 3
 }
 
-### PATCH animation by ID (partial update)
+### 🔧 Partial update (PATCH)
 PATCH {{baseUrl}}/{{animationId}}
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -293,11 +624,11 @@ Authorization: Bearer {{token}}
   "name": "Shortened Ball Animation"
 }
 
-### DELETE animation by ID
+### 🗑️ Delete animation
 DELETE {{baseUrl}}/{{animationId}}
 Authorization: Bearer {{token}}
 
-### DOWNLOAD animation as HTML
+### 💾 Download animation as HTML
 POST {{baseUrl}}/download
 Content-Type: application/json
 Authorization: Bearer {{token}}

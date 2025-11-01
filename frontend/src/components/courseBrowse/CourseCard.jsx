@@ -4,11 +4,11 @@ import { Star, Users, Clock, BookOpen, CheckCircle2, Plus } from "lucide-react"
 export default function CourseCard({ course, index, enrolledCourses, handleEnroll }) {
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
-      case "beginner":
+      case "Beginner":
         return "bg-green-100 text-green-700"
-      case "intermediate":
+      case "Intermediate":
         return "bg-yellow-100 text-yellow-700"
-      case "advanced":
+      case "Advanced":
         return "bg-red-100 text-red-700"
       default:
         return "bg-gray-100 text-gray-600"

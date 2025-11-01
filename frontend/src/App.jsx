@@ -14,7 +14,8 @@ import StudentCoursePage from "./pages/StudentCoursePage";
 import StudentProfilePage from './pages/StudentProfilePage.jsx'
 import BrowseCoursesPage from './pages/BrowseCoursesPage.jsx'
 import TeacherProfilePage from "./pages/TeacherProfilePage.jsx";
-import AnimationStudioPage from "./pages/AnimationStudioPage.jsx";
+// import AnimationStudioPage from "./pages/AnimationStudioPage.jsx";
+import AnimationStudioPage from "./pages/StudioPage.jsx";
 
 
 function App() {
@@ -42,7 +43,7 @@ function App() {
       <Route path="/teacher/courseBuilder" element={<TeacherCourseBuilder />} />
       <Route path="/student/coursePage" element={<StudentCoursePage />} />
 
-      <Route path="/teacher/studio" element={<AnimationStudioPage />} />
+      <Route path="//studio" element={<AnimationStudioPage />} />
       <Route path="/teacher/studio/:id" element={<AnimationStudioPage />} />
 
     </Routes>
