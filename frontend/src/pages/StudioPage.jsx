@@ -1,7 +1,7 @@
-import CanvasStudio from "../components/Studio/CanvasStudio";
+// import CanvasStudio from "../components/Studio/CanvasStudio";
 
-function StudioPage() {
-  return <CanvasStudio />;
-}
+// function StudioPage() {
+//   return <CanvasStudio />;
+// }
 
-export default StudioPage;
+// export default StudioPage;
