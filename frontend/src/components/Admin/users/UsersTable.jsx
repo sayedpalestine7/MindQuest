@@ -136,7 +136,7 @@ function UsersTable() {
             <th className="p-2">User Type</th>
             <th className="p-2 cursor-pointer" onClick={() => handleSort("points")}>Points</th>
             <th className="p-2">Status</th>
-            <th className="p-2 text-end">Actions</th>
+            <th className="p-2">Actions</th>
           </tr>
         </thead>
         <tbody>

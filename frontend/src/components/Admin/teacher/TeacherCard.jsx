@@ -2,51 +2,53 @@
 import React from "react"
 import { motion } from "framer-motion"
 
-export default function TeacherCard({ teacher, onView, onAction }) {
+export default function TeacherCard({ teacher, onView }) {
+  const profileImage =
+    teacher.certificates && teacher.certificates.length > 0
+      ? teacher.certificates[0] // first image in array
+      : "/default-avatar.png"   // fallback image
+
   return (
-<motion.div
-        initial={{ opacity: 0, y: 25 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{
-          duration: 0.6,
-          delay: 0.1,
-          ease: [0.25, 0.1, 0.25, 1],
-        }}
-        whileHover={{
-          y: -4,
-          scale: 1.02,
-          boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
-          transition: { duration: 0.3 },
-        }}
-      >
-      <div className="relative overflow-hidden bg-gray-900 border border-gray-700 rounded-xl shadow-md p-3">
-      <div className="mb-4 flex justify-between ">
-        <div>
-          <h3 className="font-semibold text-base-200">{teacher.name}</h3>
-          <p className="text-sm text-base-200">{teacher.email}</p>
+    <motion.div
+      initial={{ opacity: 0, y: 25 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.6,
+        delay: 0.1,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
+      whileHover={{
+        y: -4,
+        scale: 1.02,
+        boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
+        transition: { duration: 0.3 },
+      }}
+    >
+      <div className="relative overflow-hidden bg-gray-900 border border-gray-700 rounded-xl shadow-md p-4 flex flex-col items-center text-center">
+        {/* Profile Image */}
+        <img
+          src={profileImage}
+          alt={teacher.name}
+          className="w-20 h-20 rounded-full object-cover border border-gray-700 mb-3"
+        />
+
+        {/* Name */}
+        <h3 className="font-semibold text-base-200 text-lg">{teacher.name}</h3>
+
+        {/* Specialization */}
+        <span className="mt-1 px-3 py-1 text-xs text-base-200 bg-gray-700 rounded-full">
+          {teacher.specialization}
+        </span>
+
+        {/* View Button */}
+        <div className="w-full mt-4">
+          <button
+            onClick={onView}
+            className="w-full border border-gray-700 text-base-200 rounded py-1 hover:bg-gray-100 hover:text-gray-700"
+          >
+            View
+          </button>
         </div>
-        <span className="p-2 text-xs text-base-200 bg-gray-700 rounded radio-xl ">{teacher.specialization}</span>
-      </div>
-      <p className="text-xs text-base-200 mb-2">{teacher.experience} years experience</p>
-      
-      {/* Bottons */}
-      <div className="flex gap-2 py-3">
-        <button onClick={onView} className="flex-1 border border-gray-700 text-base-200 rounded py-1 hover:bg-gray-100 hover:text-gray-700 ">
-          View
-        </button>
-        <button
-          onClick={() => onAction("approve")}
-          className="flex-1 bg-green-600 text-white rounded py-1 hover:bg-green-700"
-        >
-          Approve
-        </button>
-        <button
-          onClick={() => onAction("reject")}
-          className="flex-1 bg-red-600 text-white rounded py-1 hover:bg-red-700"
-        >
-          Reject
-        </button>
-      </div>
       </div>
     </motion.div>
   )

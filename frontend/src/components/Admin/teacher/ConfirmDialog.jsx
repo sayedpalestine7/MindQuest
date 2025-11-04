@@ -3,12 +3,12 @@ import React from "react"
 
 export default function ConfirmDialog({ teacher, action, onCancel, onConfirm }) {
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md text-center">
-        <h3 className="text-xl font-bold mb-3">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-gray-900 text-wh rounded-lg p-6 w-full max-w-md text-center">
+        <h3 className="text-xl font-bold mb-3 text-white">
           {action === "approve" ? "Approve Teacher" : "Reject Application"}
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-400 mb-6">
           {action === "approve"
             ? `Are you sure you want to approve ${teacher.name}?`
             : `Are you sure you want to reject ${teacher.name}'s application?`}

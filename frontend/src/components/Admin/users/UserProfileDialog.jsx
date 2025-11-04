@@ -1,3 +1,4 @@
+// not used currently but may be useful later
 export function UserProfileDialog({ user, onClose }) {
 if (!user) return null
   return (

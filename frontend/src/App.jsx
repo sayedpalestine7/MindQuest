@@ -17,6 +17,8 @@ import TeacherProfilePage from "./pages/TeacherProfilePage.jsx";
 // import AnimationStudioPage from "./pages/AnimationStudioPage.jsx";
 import AnimationStudioPage from "./pages/StudioPage.jsx";
 
+import AnimationStudioPage from "./pages/AnimationStudioPage.jsx";
+import TeacherPage from "./pages/TeacherPage.jsx";
 
 function App() {
 
@@ -33,6 +35,10 @@ function App() {
       <Route path="/student" element={<StudentProfilePage />}/>
       <Route path="/courses" element={<BrowseCoursesPage />} />
       <Route path="/teacher" element={<TeacherProfilePage />} />
+
+      <Route path="/teacher/:instructor" element={<TeacherPage />} />
+
+
 
 
       <Route path="/login" element={<LoginForm />} />

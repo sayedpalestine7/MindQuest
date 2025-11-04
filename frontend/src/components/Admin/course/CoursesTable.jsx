@@ -5,6 +5,7 @@ import FiltersBar from "./FiltersBar"
 import CourseCard from "./CourseCard"
 import CourseDialog from "./CourseDialog"
 import DeleteDialog from "./DeleteDialog"
+import { Loader2 } from "lucide-react"
 
 export default function CoursesTable() {
   const [courses, setCourses] = useState([])
@@ -19,55 +20,59 @@ export default function CoursesTable() {
 
   // 🧪 Use fake data during development
   useEffect(() => {
-    const fakeCourses = [
-      {
-        id: 1,
-        title: "React Fundamentals",
-        description: "Learn the basics of React, including hooks and components.",
-        category: "Web Development",
-        teacher: { id: "t1", name: "Alice Johnson" },
-        studentsEnrolled: 120,
-        createdAt: "2025-09-12",
-        status: "published",
-      },
-      {
-        id: 2,
-        title: "Advanced Node.js",
-        description: "Deep dive into backend development with Node.js and Express.",
-        category: "Backend",
-        teacher: { id: "t2", name: "Bob Smith" },
-        studentsEnrolled: 85,
-        createdAt: "2025-08-25",
-        status: "draft",
-      },
-      {
-        id: 3,
-        title: "Machine Learning 101",
-        description: "Introduction to machine learning algorithms and models.",
-        category: "Data Science",
-        teacher: { id: "t3", name: "Charlie Brown" },
-        studentsEnrolled: 190,
-        createdAt: "2025-09-30",
-        status: "published",
-      },
-      {
-        id: 4,
-        title: "UI/UX Design Principles",
-        description: "Understand user experience and design interfaces that work.",
-        category: "Design",
-        teacher: { id: "t1", name: "Alice Johnson" },
-        studentsEnrolled: 60,
-        createdAt: "2025-07-18",
-        status: "draft",
-      },
-    ]
+  const fakeCourses = [
+    {
+      id: 1,
+      title: "React Fundamentals",
+      description: "Learn the basics of React, including hooks and components.",
+      category: "Web Development",
+      teacher: { id: "t1", name: "Alice Johnson" },
+      studentsEnrolled: 120,
+      createdAt: "2025-09-12",
+      status: "published",
+      thumbnail: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&w=800&q=80",
+    },
+    {
+      id: 2,
+      title: "Advanced Node.js",
+      description: "Deep dive into backend development with Node.js and Express.",
+      category: "Backend",
+      teacher: { id: "t2", name: "Bob Smith" },
+      studentsEnrolled: 85,
+      createdAt: "2025-08-25",
+      status: "draft",
+      thumbnail: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?auto=format&fit=crop&w=800&q=80",
+    },
+    {
+      id: 3,
+      title: "Machine Learning 101",
+      description: "Introduction to machine learning algorithms and models.",
+      category: "Data Science",
+      teacher: { id: "t3", name: "Charlie Brown" },
+      studentsEnrolled: 190,
+      createdAt: "2025-09-30",
+      status: "published",
+      thumbnail: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&w=800&q=80",
+    },
+    {
+      id: 4,
+      title: "UI/UX Design Principles",
+      description: "Understand user experience and design interfaces that work.",
+      category: "Design",
+      teacher: { id: "t1", name: "Alice Johnson" },
+      studentsEnrolled: 60,
+      createdAt: "2025-07-18",
+      status: "draft",
+      thumbnail: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?auto=format&fit=crop&w=800&q=80",
+    },
+  ]
 
-    // simulate loading delay
-    setTimeout(() => {
-      setCourses(fakeCourses)
-      setLoading(false)
-    }, 800)
-  }, [])
+  setTimeout(() => {
+    setCourses(fakeCourses)
+    setLoading(false)
+  }, 800)
+}, [])
+
 
   // Backend fetch (use later)
   // const fetchCourses = async () => {
@@ -126,9 +131,9 @@ export default function CoursesTable() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="loader"></div>
-      </div>
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
     )
   }
 
@@ -155,7 +160,7 @@ export default function CoursesTable() {
       <p className="text-sm text-gray-500">
         Showing {filtered.length} of {courses.length} courses
       </p>
-
+      {/* grid gap-6 md:grid-cols-2 lg:grid-cols-3 */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <AnimatePresence mode="popLayout">
           {filtered.map((course) => (

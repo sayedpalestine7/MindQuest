@@ -76,9 +76,7 @@ export default function TeacherProfilePage() {
           <PerformanceSection stats={stats} />
           <StatsSection stats={stats} />
           <CoursesSection courses={teacherCourses} />
-          
         </div>
-
 
         {/* Edit Profile Modal */}
         <EditProfileDialog
