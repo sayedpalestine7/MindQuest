@@ -11,6 +11,7 @@ import questionRoutes from "./routes/questionRoutes.js";
 import quizRoutes from "./routes/quizRoutes.js";
 import progressRoutes from "./routes/progressRoutes.js";
 import animationRoutes from './routes/animationRoutes.js';
+import teacherRoutes from "./routes/teacherRoutes.js";
 
 dotenv.config();
 connectMongoDB();
@@ -31,6 +32,7 @@ app.use("/api/questions", questionRoutes);
 app.use("/api/quizzes", quizRoutes);
 app.use("/api/progress", progressRoutes);
 app.use('/api/animations', animationRoutes);
+app.use('/api/teacher', teacherRoutes);
 app.use("/uploads", express.static("uploads"));
 
 

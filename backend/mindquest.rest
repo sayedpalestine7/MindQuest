@@ -1,24 +1,24 @@
 # ### Base Test
 # GET http://localhost:5000
 
-# ###
-# POST http://localhost:5000/api/auth/register
-# Content-Type: application/json
 
-# {
-#   "name": "Sayed Qutob",
-#   "email": "sayed123@example.com",
-#   "password": "123456",
-#   "role": "teacher",
-#   "teacherData": {
-#     "specialization": "Computer Engineering",
-#     "institution": "An-Najah National University",
-#     "certification": "https://example.com/cert.pdf"
-#   }
-# }
+###
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+{
+  "name": "Sayed Qutob",
+  "email": "sayed123@example.com",
+  "password": "123456",
+  "role": "teacher",
+  "teacherData": {
+    "specialization": "Computer Engineering",
+    "institution": "An-Najah National University",
+    "certification": "https://example.com/cert.pdf"
+  }
+}
 
 # ###
-# POST http://localhost:5000/api/auth/register
+#  POST http://localhost:5000/api/auth/register
 # Content-Type: application/json
 
 # {

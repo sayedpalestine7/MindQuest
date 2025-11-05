@@ -9,7 +9,7 @@ import Header from "../components/profiles/treacherInfo/Header";
 
 const teachersData = {
   "Sarah Mitchell": {
-    name: "Sarah Mitchell",
+    name: "Sayed Qutob",
     totalStudents: 12450,
     expertise: ["HTML", "CSS", "JavaScript"],
     courses: [

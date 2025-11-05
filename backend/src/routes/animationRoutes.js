@@ -25,7 +25,7 @@
 // export default router;
 
 import express from "express";
-import Animation from "../models/Animation.js";
+import Animation from "../models/mongo/animation.js";
 
 const router = express.Router();
 

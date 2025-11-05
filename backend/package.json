@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "This is the backend for MindQuest, an interactive learning platform that offers a variety of educational games and quizzes to enhance knowledge retention and make learning fun.",
   "main": "index.js",
+  "types": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js"
