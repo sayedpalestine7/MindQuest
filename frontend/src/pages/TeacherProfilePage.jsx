@@ -13,6 +13,7 @@ import PerformanceSection from "../components/profiles/teacher/PerformanceSectio
 import EditProfileDialog from "../components/profiles/teacher/EditProfileDialog";
 
 export default function TeacherProfilePage() {
+  
   const { id } = useParams();
 
   const [profileData, setProfileData] = useState(null);
@@ -50,7 +51,11 @@ const stats = {
   rating: profileData.rating?.toFixed(1) || "0.0",
   totalPoints: profileData.totalPoints || 0,
 };
-
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/login"; // redirect after logout
+  };
 
   // ✅ Temporary — until you connect courses API
   const teacherCourses = [
@@ -66,7 +71,7 @@ const stats = {
         transition={{ duration: 0.6 }}
       >
         {/* Page Header */}
-        <Header onLogout={() => alert("Logged out")} />
+        <Header onLogout={handleLogout} />
 
         {/* Profile Info Section */}
         <div className="container mx-auto p-6 space-y-8 max-w-7xl">

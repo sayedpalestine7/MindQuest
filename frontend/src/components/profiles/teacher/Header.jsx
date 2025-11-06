@@ -1,6 +1,7 @@
 import { Brain } from "lucide-react"
 import { motion } from "framer-motion"
 export default function Header({ onLogout }) {
+  
   return (
     <motion.div
       initial={{ y: -30, opacity: 0 }}
