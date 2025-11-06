@@ -1,10 +1,15 @@
 import express from "express";
-import { getTeacherByID , putTeacherByID } from "../controllers/teacherController.js";
-
+import { getTeacherByID, putTeacherByID, getTeacherByUserId } from "../controllers/teacherController.js";
 
 const router = express.Router();
 
-router.get("/:id", getTeacherByID);
-router.put("/:id", putTeacherByID);
+// Get teacher by MongoDB _id
+router.get("/id/:id", getTeacherByID);
 
-export default router
+// Get teacher by userId
+router.get("/user/:userId", getTeacherByUserId);
+
+// Update teacher by _id
+router.put("/id/:id", putTeacherByID);
+
+export default router;

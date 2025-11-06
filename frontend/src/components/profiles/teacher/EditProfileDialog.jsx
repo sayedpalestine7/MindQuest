@@ -36,7 +36,7 @@ export default function EditProfileDialog({ open, onClose, profileData, setProfi
     setIsSaving(true);
     try {
       const { data } = await axios.put(
-        `http://localhost:5000/api/teacher/${form._id}`,
+        `http://localhost:5000/api/teacher/id/${form._id}`,
         form
       );
 

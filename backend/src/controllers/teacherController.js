@@ -3,14 +3,35 @@ import bcrypt from "bcryptjs"
 
 // get teacher by id
 export const getTeacherByID = async (req, res) => {
-    try {
-        const teacher = await Teacher.findById(req.params.id).lean();
-        if (!teacher) return res.status(404).json({ message: "Teacher Not Found" })
-        res.json(teacher)
-    } catch (err) {
-        console.error("Error Gettng teacher:", err);
-        res.status(500).json({ message: "Server error" });
+  try {
+    let teacher = await Teacher.findById(req.params.id).lean();
+
+    // If not found, try userId
+    if (!teacher) {
+      teacher = await Teacher.findOne({ userId: req.params.id }).lean();
     }
+
+    if (!teacher) return res.status(404).json({ message: "Teacher Not Found" });
+
+    res.json(teacher);
+  } catch (err) {
+    console.error("Error getting teacher:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// get teacher by userId
+export const getTeacherByUserId  = async (req,res)=>{
+  const { userId } = req.params;
+
+  try {
+    const teacher = await Teacher.findOne({ userId });
+    if (!teacher) return res.status(404).json({ message: "Teacher not found" });
+
+    res.status(200).json(teacher);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 // update teacher by id

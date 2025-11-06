@@ -24,7 +24,7 @@ export default function TeacherProfilePage() {
   useEffect(() => {
     const fetchTeacher = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/teacher/${id}`);
+        const res = await fetch(`http://localhost:5000/api/teacher/id/${id}`);
         if (!res.ok) throw new Error("Failed to fetch teacher data");
         
         const data = await res.json();
