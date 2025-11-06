@@ -1,16 +1,27 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import { BookOpen, Users, Star, Award } from "lucide-react"
+import { motion } from "framer-motion";
+import { BookOpen, Users, Star, Award } from "lucide-react";
 
-const stats = [
-  { title: "Courses", value: 12, icon: BookOpen },
-  { title: "Students", value: 340, icon: Users },
-  { title: "Rating", value: "4.8", icon: Star },
-  { title: "Achievements", value: 5, icon: Award },
-]
+// Optional: define icons for each stat
+const iconsMap = {
+  totalCourses: BookOpen,
+  totalStudents: Users,
+  averageRating: Star,
+  totalPoints: Award,
+};
 
-export default function StatsSection() {
+export default function StatsSection({ stats }) {
+  if (!stats) return null;
+
+  // Convert object into an array of { title, value, icon }
+  const statsArray = [
+    { title: "Courses", value: stats.totalCourses || 0, icon: BookOpen },
+    { title: "Students", value: stats.totalStudents || 0, icon: Users },
+    { title: "Rating", value: stats.averageRating || 0, icon: Star },
+    { title: "Achievements", value: stats.totalPoints || 0, icon: Award },
+  ];
+
   return (
     <motion.div
       className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
@@ -18,7 +29,7 @@ export default function StatsSection() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
     >
-      {stats.map((stat, i) => (
+      {statsArray.map((stat, i) => (
         <motion.div
           key={i}
           className="bg-white rounded-2xl shadow p-4 flex items-center space-x-4"
@@ -32,5 +43,5 @@ export default function StatsSection() {
         </motion.div>
       ))}
     </motion.div>
-  )
+  );
 }

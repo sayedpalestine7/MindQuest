@@ -10,10 +10,11 @@ import AuthLink from '../components/login/AuthLink.jsx'
 import WelcomeMsg from '../components/login/WelcomeMsg.jsx'
 import toast from 'react-hot-toast'
 import axios from "axios";
+import { useNavigate } from 'react-router'
 
 
 function LoginForm() {
-
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -75,8 +76,14 @@ function LoginForm() {
 
       toast.success(`Welcome back, ${data.user.name}! 👋`);
 
-      // ✅ Redirect after login (example)
-      window.location.href = "/";
+      // Redirect after login
+      if (data.user.role === "teacher") {
+        navigate(`/teacher/${data.user._id}`);
+      } else if (data.user.role === "student") {
+        // navigate(`/student/profile/${data.user._id}`);
+      } else {
+        navigate("/"); // fallback
+      }
 
     } catch (err) {
       console.error(err);

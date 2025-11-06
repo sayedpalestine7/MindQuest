@@ -34,7 +34,7 @@ function App() {
        
       <Route path="/student" element={<StudentProfilePage />}/>
       <Route path="/courses" element={<BrowseCoursesPage />} />
-      <Route path="/teacher" element={<TeacherProfilePage />} />
+      <Route path="/teacher/:id" element={<TeacherProfilePage />} />
 
       <Route path="/teacher/:instructor" element={<TeacherPage />} />
 
