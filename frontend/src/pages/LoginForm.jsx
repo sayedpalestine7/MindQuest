@@ -70,9 +70,10 @@ function LoginForm() {
         localStorage.removeItem("rememberEmail");
       }
 
-      // ✅ Store token and user info
+      // Store token and user info
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("userId", data.user._id);
 
       toast.success(`Welcome back, ${data.user.name}! 👋`);
 
@@ -80,7 +81,7 @@ function LoginForm() {
       if (data.user.role === "teacher") {
         navigate(`/teacher/${data.user._id}`);
       } else if (data.user.role === "student") {
-        // navigate(`/student/profile/${data.user._id}`);
+        navigate(`/student/${data.user._id}`);
       } else {
         navigate("/"); // fallback
       }

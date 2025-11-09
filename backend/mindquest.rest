@@ -17,6 +17,9 @@
 #   }
 # }
 
+# asem123@example.com
+# 123456 as a teacher for testing
+
 # ###
 #  POST http://localhost:5000/api/auth/register
 # Content-Type: application/json

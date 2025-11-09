@@ -1,24 +1,54 @@
 import ProfileImageUpload from '../../signUp/ProfileImageUpload.jsx'
 import { motion } from 'framer-motion'
-export default function EditProfileModal({ editForm, setEditForm, onCancel, onSave }) {
+import axios from "axios";
+import toast from "react-hot-toast";
+import { useState } from "react";
+
+export default function EditProfileModal({profileData , editForm, setEditForm, onCancel, onSave }) {
+  
+  const [form, setForm] = useState(profileData || {});
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+
   const handleImageChange = (e) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      // Check file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
-        alert("File size too large! Please select an image smaller than 5MB.")
-        return
+        toast.error("File too large! Please select an image under 5MB.");
+        return;
       }
-      
-      const reader = new FileReader()
-      reader.onload = (ev) => setEditForm({ ...editForm, avatar: ev.target.result })
-      reader.readAsDataURL(file)
+      const reader = new FileReader();
+      reader.onload = (ev) => setForm((prev) => ({ ...prev, profileImage: ev.target.result }));
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const removeImage = () => {
-    setEditForm({ ...editForm, avatar: "" })
-  }
+    setForm((prev) => ({ ...prev, profileImage: "" }));
+  };
+
+    const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const { data } = await axios.put(
+        `http://localhost:5000/api/student/id/${form._id}`,
+        form
+      );
+      setProfileData(data);
+      toast.success("Profile updated successfully ✅");
+      onClose();
+    } catch (err) {
+      console.error("❌ Update error:", err);
+      toast.error(err.response?.data?.message || "Failed to update profile");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <motion.div
@@ -32,12 +62,12 @@ export default function EditProfileModal({ editForm, setEditForm, onCancel, onSa
       <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md space-y-5">
         <h3 className="text-2xl font-bold">Edit Profile</h3>
 
-        <ProfileImageUpload 
-          imagePreview={editForm.avatar}
-          handleImageChange={handleImageChange}
-          removeImage={removeImage}
-          isLoading={false}
-        />
+          <ProfileImageUpload
+            imagePreview={form.profileImage}
+            handleImageChange={handleImageChange}
+            removeImage={removeImage}
+            isLoading={false}
+          />
 
         <div className="space-y-3">
           <input

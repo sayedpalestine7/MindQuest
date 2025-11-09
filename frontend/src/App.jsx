@@ -1,4 +1,3 @@
-
 import { Route, Routes } from "react-router";
 import SignUpForm from "./pages/SignUpForm";  
 import LoginForm from "./pages/LoginForm";
@@ -12,8 +11,9 @@ import HomePage from "./pages/HomePage";
 import TeacherCourseBuilder from "./pages/TeacherCourseBuilder";
 import StudentCoursePage from "./pages/StudentCoursePage";
 import StudentProfilePage from './pages/StudentProfilePage.jsx'
-import BrowseCoursesPage from './pages/BrowseCoursesPage.jsx'
+import BrowseCoursesPage from './pages/BrowseCoursesPage.jsx';
 import TeacherProfilePage from "./pages/TeacherProfilePage.jsx";
+
 // import AnimationStudioPage from "./pages/AnimationStudioPage.jsx";
 // import AnimationStudioPage from "./pages/StudioPage.jsx";
 
@@ -32,7 +32,7 @@ function App() {
       <Route path="/admin/verification" element={<ManageVerification />} />
       <Route path="/admin/Settings" element={<Settings />}/>
        
-      <Route path="/student" element={<StudentProfilePage />}/>
+      <Route path="/student/:id" element={<StudentProfilePage />}/>
       <Route path="/courses" element={<BrowseCoursesPage />} />
       <Route path="/teacher/:id" element={<TeacherProfilePage />} />
 
