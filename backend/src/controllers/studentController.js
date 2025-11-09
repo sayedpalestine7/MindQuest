@@ -34,7 +34,11 @@ export const putStudentByID = async (req, res) => {
     if (name) updateData.name = name;
     if (email) updateData.email = email;
     if (studentData) updateData.studentData = studentData;
-    if (profileImage) updateData.profileImage = profileImage; 
+    
+    // IMPORTANT: Handle profileImage even if it's empty string (to delete it)
+    if (profileImage !== undefined) {
+      updateData.profileImage = profileImage;
+    }
 
     // Hash new password if provided
     if (password) {
