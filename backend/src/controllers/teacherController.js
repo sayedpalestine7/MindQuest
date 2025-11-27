@@ -1,4 +1,6 @@
 import { Teacher } from "../models/mongo/teacherSchema.js"
+import User from "../models/mongo/userModel.js";
+
 import bcrypt from "bcryptjs"
 
 // get teacher by id
@@ -47,22 +49,27 @@ export const putTeacherByID = async (req, res) => {
       "experience",
     ];
 
-    // Filter allowed fields only
     const updates = {};
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
 
-    // Update teacher and return new version
+    // 1️⃣ Update Teacher collection
     const updated = await Teacher.findByIdAndUpdate(req.params.id, updates, {
       new: true,
-      runValidators: true, // ensures schema validation still applies
+      runValidators: true,
     }).lean();
 
     if (!updated)
       return res.status(404).json({ message: "Teacher not found" });
 
-    // Clean response
+    // 2️⃣ Update User collection so admin sees the changes
+    await User.findByIdAndUpdate(updated.userId, {
+      name: updates.name,
+      email: updates.email,
+      profileImage: updates.avatar,
+    });
+
     delete updated.__v;
 
     res.status(200).json(updated);
