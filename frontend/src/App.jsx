@@ -13,6 +13,7 @@ import StudentCoursePage from "./pages/StudentCoursePage";
 import StudentProfilePage from './pages/StudentProfilePage.jsx'
 import BrowseCoursesPage from './pages/BrowseCoursesPage.jsx';
 import TeacherProfilePage from "./pages/TeacherProfilePage.jsx";
+import UserNavigates from "./pages/UserNavigates.jsx"
 
 // import AnimationStudioPage from "./pages/AnimationStudioPage.jsx";
 // import AnimationStudioPage from "./pages/StudioPage.jsx";
@@ -26,6 +27,8 @@ function App() {
     <>
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/navigates" element={<UserNavigates />} />
+
       <Route path="/admin" element={<AdminForm />} />
       <Route path="/admin/courses" element={<ManageCourses />} />
       <Route path="/admin/users" element={<ManageUsers />} />
