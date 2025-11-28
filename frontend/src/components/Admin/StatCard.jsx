@@ -21,7 +21,7 @@ function StatCard({ title, value, Icon, index, trend }) {
       {/* Header */}
       <div className="relative overflow-hidden bg-gray-900 border border-gray-700 rounded-xl shadow-md">
         <div className="flex flex-row items-center justify-between px-4 pt-4 pb-2 ">
-          <h3 className="text-sm text-base-100 font-medium text-base-content/70">{title}</h3>
+          <h3 className="text-sm text-white font-medium text-base-content/70">{title}</h3>
           <div className="rounded-lg bg-primary/10 p-2">
             <Icon className="h-5 w-5 text-primary" />
           </div>

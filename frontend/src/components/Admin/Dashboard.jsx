@@ -42,11 +42,11 @@
         className="mb-8"
     >
         <h1 className="text-3xl font-extrabold bg-gradient-to-r from-sky-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent tracking-tight">
-        Quick Actions
+            Quick Actions
         </h1>
 
         <p className="text-[15px] text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">
-        Monitor performance, manage users, and keep your courses up to date with smooth administrative control.
+            Monitor performance, manage users, and keep your courses up to date with smooth administrative control.
         </p>
 
         {/* Optional subtle divider for professional look */}

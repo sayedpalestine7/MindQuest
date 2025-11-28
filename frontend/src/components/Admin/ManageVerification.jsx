@@ -38,79 +38,60 @@ function ManageQuizzes() {
 
   // ✅ Using fake teacher data instead of API
   const fetchPendingTeachers = async () => {
-    setLoading(true)
-    try {
-      // Simulate API delay
-      await new Promise((res) => setTimeout(res, 600))
+  setLoading(true);
+  try {
+    const res = await fetch("http://localhost:5000/api/admin/pending-teachers", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
 
-      const fakeTeachers = [
-        {
-          id: 1,
-          name: "Alice Johnson",
-          email: "alice.johnson@example.com",
-          specialization: "Algorithms",
-          institution: "MIT University",
-          certificates: [
-            "https://i.pravatar.cc/150?img=1"
-          ],
-        },
-        {
-          id: 2,
-          name: "Bob Smith",
-          email: "bob.smith@example.com",
-          specialization: "Software Engineering",
-          institution: "Stanford University",
-          certificates: [
-            "https://i.pravatar.cc/150?img=2"
-          ],
-        },
-        {
-          id: 3,
-          name: "Charlie Brown",
-          email: "charlie.brown@example.com",
-          specialization: "Database Systems",
-          institution: "Harvard University",
-          certificates: [
-            "https://i.pravatar.cc/150?img=3"
-          ],
-        },
-        {
-          id: 4,
-          name: "Diana Prince",
-          email: "diana.prince@example.com",
-          specialization: "Artificial Intelligence",
-          institution: "Oxford University",
-          certificates: [
-            "https://i.pravatar.cc/150?img=4"
-          ],
-        },
-      ];
+    const data = await res.json();
 
+    setTeachers(data);
+    setFilteredTeachers(data);
 
-
-      setTeachers(fakeTeachers)
-      setFilteredTeachers(fakeTeachers)
-    } catch (err) {
-      alert("Failed to load mock data")
-    } finally {
-      setLoading(false)
-    }
+  } catch (err) {
+    toast.error("Failed to load pending teachers");
+  } finally {
+    setLoading(false);
   }
+};
 
-  // Mock handler for approve/reject actions
-  const handleAction = async (teacherId, action) => {
-    try {
-      // Simulate a short delay
-      await new Promise((res) => setTimeout(res, 400))
-      // alert(`Teacher ${action}d successfully`)
-      toast.success(`Teacher ${action}d successfully`)
-      setTeachers(teachers.filter((t) => t.id !== teacherId))
-      setActionDialog({ open: false, teacher: null, action: null })
-    } catch (err) {
-      // alert(`Failed to ${action} teacher`)
-      toast.error(`Failed to ${action} teacher`)
+
+const handleAction = async (teacherId, action) => {
+  try {
+    let url = "";
+    if (action === "approve") {
+      url = `http://localhost:5000/api/admin/approve-teacher/${teacherId}`;
     }
+    if (action === "reject") {
+      url = `http://localhost:5000/api/admin/reject-teacher/${teacherId}`;
+    }
+
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.message || "Action failed");
+
+    toast.success(`Teacher ${action}d successfully`);
+
+    // Remove the approved teacher from UI
+    setTeachers(teachers.filter((t) => t.id !== teacherId));
+
+  } catch (err) {
+    toast.error(err.message);
+  } finally {
+    setActionDialog({ open: false, teacher: null, action: null });
   }
+};
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">

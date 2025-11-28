@@ -44,17 +44,33 @@ function UsersTable() {
     }
   }
 
-  function handleBanUser() {
-    if (!userToBan) return;
-    setUsers(
-      users.map((u) =>
-        u.id === userToBan.id
-          ? { ...u, status: u.status === "banned" ? "active" : "banned" }
-          : u
-      )
-    );
+async function handleBanUser() {
+  if (!userToBan) return;
+
+  try {
+    const res = await fetch(`http://localhost:5000/api/admin/ban-user/${userToBan.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to update user");
+
+    // Update state with the new status
+    setUsers(users.map(u => 
+      u.id === userToBan.id ? { ...u, status: data.user.status } : u
+    ));
+
     setUserToBan(null);
+
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
   }
+}
 
   const filteredUsers = useMemo(() => {
     return users

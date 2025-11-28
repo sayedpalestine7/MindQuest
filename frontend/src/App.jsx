@@ -41,9 +41,6 @@ function App() {
 
       <Route path="/teacher/:instructor" element={<TeacherPage />} />
 
-
-
-
       <Route path="/login" element={<LoginForm />} />
       <Route path="/signup" element={<SignUpForm />} />
       <Route path="/teacher/signup" element={<TeacherSignUp />} />

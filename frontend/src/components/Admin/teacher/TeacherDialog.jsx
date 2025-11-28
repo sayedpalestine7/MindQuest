@@ -2,11 +2,13 @@ import { X } from "lucide-react"
 
 export default function TeacherDialog({ teacher, onClose, onAction }) {
   const profileImage =
-    teacher.certificates && teacher.certificates.length > 0
+    teacher.certificates && teacher.certificates.length > 0 && teacher.certificates[0]
       ? (typeof teacher.certificates[0] === "string"
-          ? teacher.certificates[0]
-          : teacher.certificates[0].url)
+        ? teacher.certificates[0]
+        : teacher.certificates[0].url)
       : "/default-avatar.png"
+
+  const certificates = teacher.certificates?.filter(Boolean) || []
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -30,27 +32,32 @@ export default function TeacherDialog({ teacher, onClose, onAction }) {
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
             <p className="text-sm text-white">Specialization</p>
-            <p>{teacher.specialization}</p>
+            <p>{teacher.specialization || "-"}</p>
           </div>
           <div>
             <p className="text-sm text-white mb-2">Institution / University</p>
-            <p className="mb-4">{teacher.institution}</p>
+            <p className="mb-4">{teacher.institution || "-"}</p>
           </div>
         </div>
 
         <h3 className="font-medium mb-2">
-          Certificates ({teacher.certificates.length})
+          Certificates ({certificates.length})
         </h3>
+
         <div className="grid md:grid-cols-2 gap-4 mb-6">
-          {teacher.certificates.map((cert, i) => (
-            <div key={i} className="border rounded overflow-hidden">
-              <img
-                src={typeof cert === "string" ? cert : cert.url}
-                alt={`Certificate ${i + 1}`}
-                className="h-40 w-full object-cover"
-              />
-            </div>
-          ))}
+          {certificates.length > 0 ? (
+            certificates.map((cert, i) => (
+              <div key={i} className="border rounded overflow-hidden">
+                <img
+                  src={typeof cert === "string" ? cert : cert.url}
+                  alt={`Certificate ${i + 1}`}
+                  className="h-40 w-full object-cover"
+                />
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-400 col-span-2">No certificates available</p>
+          )}
         </div>
 
         <div className="flex gap-2">
