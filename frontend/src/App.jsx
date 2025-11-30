@@ -14,6 +14,7 @@ import StudentProfilePage from './pages/StudentProfilePage.jsx'
 import BrowseCoursesPage from './pages/BrowseCoursesPage.jsx';
 import TeacherProfilePage from "./pages/TeacherProfilePage.jsx";
 import UserNavigates from "./pages/UserNavigates.jsx"
+import TeacherCommunicationCenter from "./pages/TeacherCommunicationCenter.jsx"
 
 // import AnimationStudioPage from "./pages/AnimationStudioPage.jsx";
 // import AnimationStudioPage from "./pages/StudioPage.jsx";
@@ -44,6 +45,9 @@ function App() {
       <Route path="/login" element={<LoginForm />} />
       <Route path="/signup" element={<SignUpForm />} />
       <Route path="/teacher/signup" element={<TeacherSignUp />} />
+
+      <Route path="/chating" element={<TeacherCommunicationCenter />} />
+
 
   
       <Route path="/teacher/courseBuilder" element={<TeacherCourseBuilder />} />

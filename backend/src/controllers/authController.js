@@ -76,7 +76,7 @@ export const loginUser = async (req, res) => {
         message: "Your account is pending approval from the admin.",
       });
     }
-    if (user.role === "teacher" && user.status === "banned") {
+    if (user.status === "banned") {
       return res.status(403).json({
         message: "Your account is banned approval from the admin.",
       });
