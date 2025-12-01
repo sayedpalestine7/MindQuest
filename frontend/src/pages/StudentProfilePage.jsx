@@ -11,7 +11,7 @@ import ProfileHeader from "../components/profiles/student/ProfileHeader";
 import ProgressOverview from "../components/profiles/student/ProgressOverview";
 import EnrolledCourses from "../components/profiles/student/EnrolledCourses";
 import EditProfileModal from "../components/profiles/student/EditProfileModal";
-import TeachersSidebar from "../components/student-chat/TeacherSidebar";
+import TeacherSidebar from "../components/student-chat/TeacherSidebar";
 import ChatWindow from "../components/student-chat/ChatWindow";
 
 export default function StudentProfilePage() {
@@ -72,10 +72,10 @@ export default function StudentProfilePage() {
   // -------------------- FAKE TEACHERS FOR TESTING --------------------
   useEffect(() => {
     const fakeTeachers = [
-      { _id: "t1", name: "Dr. Sarah Johnson", subject: "Web Development", avatar: "/teacher1.png" },
-      { _id: "t2", name: "Prof. Mark Lee", subject: "Advanced JS", avatar: "/teacher2.png" },
-      { _id: "t3", name: "Eng. Julia Davis", subject: "React Fundamentals", avatar: "/teacher3.png" },
-      { _id: "t4", name: "Dr. John Smith", subject: "Python Data Science", avatar: "/teacher4.png" },
+      { _id: "t1", name: "Dr. Sarah Johnson", subject: "Web Development", avatar: "" },
+      { _id: "t2", name: "Prof. Mark Lee", subject: "Advanced JS", avatar: "" },
+      { _id: "t3", name: "Eng. Julia Davis", subject: "React Fundamentals", avatar: "" },
+      { _id: "t4", name: "Dr. John Smith", subject: "Python Data Science", avatar: "https://randomuser.me/api/portraits/men/32.jpg" },
     ];
     setTeachersList(fakeTeachers);
     setFilteredTeachers(fakeTeachers);
@@ -224,7 +224,7 @@ export default function StudentProfilePage() {
 
               {/* Chat Body */}
               <div className="flex flex-1 overflow-hidden">
-                <TeachersSidebar
+                <TeacherSidebar
                   teachers={filteredTeachers}
                   selectedTeacher={selectedTeacher}
                   onSelectTeacher={setSelectedTeacher}
