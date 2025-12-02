@@ -1,21 +1,30 @@
+import React, { useEffect, useRef } from "react";
+
 export default function ChatMessages({ messages }) {
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {messages.map(msg => (
-        <div 
+    <div className="flex flex-col gap-2">
+      {messages.map((msg) => (
+        <div
           key={msg.id}
           className={`flex ${msg.sender === "teacher" ? "justify-end" : "justify-start"}`}
         >
-          <div 
-            className={`p-3 rounded-lg max-w-xs 
-              ${msg.sender === "teacher" ? "bg-primary text-white" : "bg-base-300"}`
-            }
+          <div
+            className={`max-w-xs px-3 py-2 rounded-lg ${
+              msg.sender === "teacher" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"
+            }`}
           >
-            <p className="text-sm">{msg.content}</p>
-            <p className="text-xs opacity-70 mt-1">{msg.timestamp}</p>
+            {msg.content}
+            <div className="text-xs text-gray-400 mt-1 text-right">{msg.timestamp}</div>
           </div>
         </div>
       ))}
+      <div ref={messagesEndRef}></div>
     </div>
-  )
+  );
 }

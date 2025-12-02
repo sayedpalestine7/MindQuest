@@ -5,8 +5,8 @@ import React from "react";
 export default function TeacherListItem({ teacher, isSelected, onSelect }) {
   return (
     <div
-      className={`p-4 border-b cursor-pointer transition-colors ${
-        isSelected ? "bg-blue-50 border-blue-200" : "hover:bg-gray-50"
+      className={`p-4 border-b cursor-pointer transition-colors
+        ${isSelected ? "bg-blue-50 border-blue-200" : "hover:bg-gray-50"
       }`}
       onClick={onSelect}
     >
@@ -43,7 +43,6 @@ export default function TeacherListItem({ teacher, isSelected, onSelect }) {
             </div>
           )}
         </div>
-
         {/* Selection indicator */}
         {isSelected && (
           <div className="w-2 h-2 rounded-full bg-blue-600"></div>

@@ -2,25 +2,35 @@ export default function ChatHeader({ student }) {
   if (!student) return null
 
   return (
-    <div className="p-4 border-b bg-base-200 flex items-center justify-between">
+    <div className="flex items-center justify-between p-4 border-b bg-gray-100">
       <div className="flex items-center gap-3">
-
-        <div className="avatar">
-          <div className="w-10 rounded-full">
-            <img src={student.avatar} />
+        {/* Avatar with fallback */}
+        <div className="relative w-10 h-10">
+          <div className="w-full h-full rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+            {student.avatar ? (
+              <img 
+                src={student.avatar} 
+                alt={student.name} 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Hide image on error
+                  e.target.style.display = 'none';
+                }}
+              />
+            ) : null}
+            
+            {/* Fallback initials - always visible if no avatar or on error */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+              {student.name.charAt(0)}
+            </div>
           </div>
         </div>
-
+        
         <div>
-          <p className="font-semibold">{student.name}</p>
-          <p className="text-xs flex items-center gap-1">
-            <span className={`w-2 h-2 rounded-full ${student.status === "online" ? "bg-green-500" : "bg-gray-400"}`} />
-            {student.status === "online" ? "Active now" : "Offline"}
-          </p>
+          <div className="font-semibold">{student.name}</div>
+          <div className="text-sm text-gray-500">{student.subject}</div>
         </div>
       </div>
-
-      <div className="badge badge-outline text-xs">{student.course}</div>
     </div>
-  )
+  );
 }

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 
-// TeacherSidebar component
 export default function TeacherSidebar({
   teachers,
   selectedTeacher,
@@ -88,28 +87,28 @@ export default function TeacherSidebar({
               key={teacher._id}
               onClick={() => onSelectTeacher(teacher)}
               className={`w-full text-left p-3 border-b flex items-center gap-3 ${selectedTeacher?._id === teacher._id
-                  ? "bg-blue-100"
-                  : "hover:bg-gray-200"
+                ? "bg-blue-100"
+                : "hover:bg-gray-200"
                 }`}
             >
-{/* Avatar */}
-{teacher.avatar ? (
-  <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden">
-    <img 
-      src={teacher.avatar} 
-      alt={teacher.name} 
-      className="w-full h-full object-cover"
-      onError={(e) => {
-        e.target.style.display = 'none';
-        // Optionally show fallback initials
-      }}
-    />
-  </div>
-) : (
-  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold">
-    {teacher.name.charAt(0)}
-  </div>
-)}
+              {/* Avatar */}
+              {teacher.avatar ? (
+                <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden">
+                  <img
+                    src={teacher.avatar}
+                    alt={teacher.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      // Optionally show fallback initials
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold">
+                  {teacher.name.charAt(0)}
+                </div>
+              )}
               {/* <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold">
                 {teacher.name.charAt(0)}
               </div> */}

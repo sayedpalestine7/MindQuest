@@ -15,6 +15,7 @@ import TeacherSidebar from "../components/student-chat/TeacherSidebar";
 import ChatWindow from "../components/student-chat/ChatWindow";
 
 export default function StudentProfilePage() {
+  
   // -------------------- PROFILE STATES --------------------
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -203,20 +204,22 @@ export default function StudentProfilePage() {
         </div>
 
         {/* CHAT BUTTON */}
-        <button
-          onClick={() => setIsChatOpen(true)}
-          className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-xl hover:bg-blue-700 transition"
-        >
-          💬
-        </button>
-
+          <motion.button
+            onClick={() => setIsChatOpen(true)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="fixed bottom-8 right-8 z-40 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg font-semibold flex items-center gap-2 transition-colors"
+          >
+            <span>💬</span> Messages
+          </motion.button>
         {/* CHAT MODAL */}
         {isChatOpen && (
           <div className="modal modal-open">
             <div className="modal-box p-0 overflow-hidden w-[90vw] max-w-3xl h-[80vh] flex flex-col">
+              
               {/* Top Bar */}
               <div className="flex justify-between items-center p-4 border-b bg-gray-100">
-                <h3 className="font-semibold text-lg">Messaging Center</h3>
+                <h3 className="font-semibold text-lg">Student Messaging Center</h3>
                 <button className="btn btn-sm btn-error" onClick={() => setIsChatOpen(false)}>
                   Close
                 </button>
