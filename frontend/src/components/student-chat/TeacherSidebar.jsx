@@ -1,44 +1,62 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { io } from "socket.io-client";
+
+let socket;
 
 export default function TeacherSidebar({
-  teachers,
-  selectedTeacher,
-  onSelectTeacher,
+  users = [], // teachers list
+  selectedUser,
+  onSelectUser,
   searchValue,
   onSearch,
+  currentUserId, // studentId
 }) {
-  const [filter, setFilter] = useState("all"); // all | unread | course
-  const [selectedCourse, setSelectedCourse] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [courseFilter, setCourseFilter] = useState("");
+  const [usersList, setUsersList] = useState(users);
 
-  // Extract unique courses
-  const courses = [...new Set(teachers.map((t) => t.subject))];
+  useEffect(() => setUsersList(users), [users]);
 
-  // Filtered list based on search and filter
-  const filteredTeachers = teachers.filter((teacher) => {
-    // Search filter
+  useEffect(() => {
+    if (!currentUserId) return;
+    socket = io("http://localhost:5000");
+    socket.emit("join_room", { roomId: currentUserId });
+
+    socket.on("new_message", (msg) => {
+      setUsersList((prev) =>
+        prev.map((u) =>
+          u._id === msg.senderId || u._id === msg.receiverId
+            ? { ...u, unread: (u.unread || 0) + 1 }
+            : u
+        )
+      );
+    });
+
+    return () => socket.disconnect();
+  }, [currentUserId]);
+
+  const courses = [...new Set(usersList.map((u) => u.subject).filter(Boolean))];
+
+  const filteredUsers = usersList.filter((u) => {
+    const name = u.name || "";
+    const subject = u.subject || "";
     const matchesSearch =
-      teacher.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      teacher.subject.toLowerCase().includes(searchValue.toLowerCase());
-
-    // Filter type
+      name.toLowerCase().includes((searchValue || "").toLowerCase()) ||
+      subject.toLowerCase().includes((searchValue || "").toLowerCase());
     let matchesFilter = true;
-    if (filter === "unread") {
-      matchesFilter = teacher.unread && teacher.unread > 0;
-    } else if (filter === "course") {
-      matchesFilter = selectedCourse ? teacher.subject === selectedCourse : true;
-    }
-
+    if (filter === "unread") matchesFilter = u.unread && u.unread > 0;
+    else if (filter === "course") matchesFilter = courseFilter ? u.subject === courseFilter : true;
     return matchesSearch && matchesFilter;
   });
 
   return (
     <div className="w-80 border-r bg-gray-100 flex flex-col">
       {/* Search */}
-      <div className="p-4 border-b space-y-2">
+      <div className="p-4 border-b space-y-3">
         <input
           type="text"
-          className="input input-bordered w-full"
           placeholder="Search teachers..."
+          className="input input-bordered w-full"
           value={searchValue}
           onChange={(e) => onSearch(e.target.value)}
         />
@@ -49,76 +67,60 @@ export default function TeacherSidebar({
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`btn btn-sm ${filter === f ? "btn-primary" : "btn-outline"
-                }`}
+              className={`btn btn-sm ${filter === f ? "btn-primary" : "btn-outline"}`}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
           ))}
         </div>
 
-        {/* Course selection if filter === course */}
         {filter === "course" && (
           <div className="flex gap-2 flex-wrap mt-2">
             <button
-              className={`btn btn-sm ${selectedCourse === "" ? "btn-primary" : "btn-outline"}`}
-              onClick={() => setSelectedCourse("")}
+              className={`btn btn-sm ${courseFilter === "" ? "btn-primary" : "btn-outline"}`}
+              onClick={() => setCourseFilter("")}
             >
               All
             </button>
-            {courses.map((course) => (
+            {courses.map((c) => (
               <button
-                key={course}
-                className={`btn btn-sm ${selectedCourse === course ? "btn-primary" : "btn-outline"}`}
-                onClick={() => setSelectedCourse(course)}
+                key={c}
+                className={`btn btn-sm ${courseFilter === c ? "btn-primary" : "btn-outline"}`}
+                onClick={() => setCourseFilter(c)}
               >
-                {course}
+                {c}
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Teacher List */}
+      {/* List */}
       <div className="flex-1 overflow-y-auto">
-        {filteredTeachers.length > 0 ? (
-          filteredTeachers.map((teacher) => (
+        {filteredUsers.length > 0 ? (
+          filteredUsers.map((u) => (
             <button
-              key={teacher._id}
-              onClick={() => onSelectTeacher(teacher)}
-              className={`w-full text-left p-3 border-b flex items-center gap-3 ${selectedTeacher?._id === teacher._id
-                ? "bg-blue-100"
-                : "hover:bg-gray-200"
-                }`}
+              key={u._id || u.id}
+              onClick={() => {
+                onSelectUser(u);
+                setUsersList((prev) =>
+                  prev.map((uu) => (uu._id === u._id ? { ...uu, unread: 0 } : uu))
+                );
+              }}
+              className={`w-full text-left p-3 border-b flex items-center gap-3 ${
+                selectedUser?._id === u._id ? "bg-blue-100" : "hover:bg-gray-200"
+              }`}
             >
-              {/* Avatar */}
-              {teacher.avatar ? (
-                <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden">
-                  <img
-                    src={teacher.avatar}
-                    alt={teacher.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      // Optionally show fallback initials
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold">
-                  {teacher.name.charAt(0)}
-                </div>
-              )}
-              {/* <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white font-bold">
-                {teacher.name.charAt(0)}
-              </div> */}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm truncate">{teacher.name}</p>
-                <p className="text-xs text-gray-500 truncate">{teacher.subject}</p>
+              <div className="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold">
+                {u.name?.charAt(0) ?? "?"}
               </div>
-              {teacher.unread > 0 && (
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold truncate">{u.name}</p>
+                <p className="text-xs text-gray-500 truncate">{u.subject || ""}</p>
+              </div>
+              {u.unread > 0 && (
                 <div className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                  {teacher.unread}
+                  {u.unread}
                 </div>
               )}
             </button>

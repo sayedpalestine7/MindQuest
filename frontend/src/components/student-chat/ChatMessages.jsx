@@ -9,21 +9,22 @@ export default function ChatMessages({ messages }) {
 
   return (
     <div className="flex flex-col gap-2">
-      {messages.map((msg) => (
+      {messages.map((msg, index) => (
         <div
-          key={msg.id}
-          className={`flex ${msg.sender === "student" ? "justify-end" : "justify-start"}`}
+          key={msg._id || index} // fallback to index if _id is missing
+          className={`flex ${msg.sender === "teacher" ? "justify-end" : "justify-start"}`}
         >
           <div
-            className={`max-w-xs px-3 py-2 rounded-lg ${
-              msg.sender === "student" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"
-            }`}
+            className={`max-w-xs px-3 py-2 rounded-lg ${msg.sender === "teacher" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"
+              }`}
           >
             {msg.content}
             <div className="text-xs text-gray-400 mt-1 text-right">{msg.timestamp}</div>
           </div>
         </div>
       ))}
+
+
       <div ref={messagesEndRef}></div>
     </div>
   );

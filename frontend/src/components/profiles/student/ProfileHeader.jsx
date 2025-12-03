@@ -7,8 +7,8 @@ export default function ProfileHeader({ profileData, stats, onEdit }) {
   // Check both avatar and profileImage fields (avatar is used in parent state)
   const avatarSrc = profileData.avatar || profileData.profileImage || defaultAvatar;
   
-  console.log("ProfileHeader - profileData:", profileData);
-  console.log("ProfileHeader - avatarSrc:", avatarSrc);
+  // console.log("ProfileHeader - profileData:", profileData);
+  // console.log("ProfileHeader - avatarSrc:", avatarSrc);
 
   return (
     <motion.div
