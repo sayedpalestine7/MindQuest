@@ -23,8 +23,6 @@ export default function ChatMessages({ messages }) {
           </div>
         </div>
       ))}
-
-
       <div ref={messagesEndRef}></div>
     </div>
   );

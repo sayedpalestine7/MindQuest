@@ -4,12 +4,12 @@ import { io } from "socket.io-client";
 let socket;
 
 export default function TeacherSidebar({
-  users = [], // teachers list
+  users = [],
   selectedUser,
   onSelectUser,
   searchValue,
   onSearch,
-  currentUserId, // studentId
+  currentUserId,
 }) {
   const [filter, setFilter] = useState("all");
   const [courseFilter, setCourseFilter] = useState("");
@@ -17,6 +17,9 @@ export default function TeacherSidebar({
 
   useEffect(() => setUsersList(users), [users]);
 
+  const getTeacherId = (t) => t._id ?? t.id;
+
+  // Connect socket
   useEffect(() => {
     if (!currentUserId) return;
     socket = io("http://localhost:5000");
@@ -95,36 +98,46 @@ export default function TeacherSidebar({
         )}
       </div>
 
-      {/* List */}
+      {/* Teacher List */}
       <div className="flex-1 overflow-y-auto">
         {filteredUsers.length > 0 ? (
-          filteredUsers.map((u) => (
-            <button
-              key={u._id || u.id}
-              onClick={() => {
-                onSelectUser(u);
-                setUsersList((prev) =>
-                  prev.map((uu) => (uu._id === u._id ? { ...uu, unread: 0 } : uu))
-                );
-              }}
-              className={`w-full text-left p-3 border-b flex items-center gap-3 ${
-                selectedUser?._id === u._id ? "bg-blue-100" : "hover:bg-gray-200"
-              }`}
-            >
-              <div className="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold">
-                {u.name?.charAt(0) ?? "?"}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate">{u.name}</p>
-                <p className="text-xs text-gray-500 truncate">{u.subject || ""}</p>
-              </div>
-              {u.unread > 0 && (
-                <div className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                  {u.unread}
+          filteredUsers.map((u) => {
+            const getUserId = (user) => user._id ?? user.id;
+            const isSelected = selectedUser ? getUserId(selectedUser) === getUserId(u) : false;
+
+            return (
+              <button
+                key={getUserId(u)}
+                onClick={() => {
+                  onSelectUser(u);
+                  setUsersList((prev) =>
+                    prev.map((uu) => (getUserId(uu) === getUserId(u) ? { ...uu, unread: 0 } : uu))
+                  );
+                }}
+                className={`
+            w-full text-left p-3 border-b flex items-center gap-3 transition-colors
+            ${isSelected
+                    ? "!bg-blue-100 !text-black cursor-default"
+                    : "hover:!bg-gray-200 cursor-pointer"}
+          `}
+              >
+                <div className="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold">
+                  {u.name?.charAt(0) ?? "?"}
                 </div>
-              )}
-            </button>
-          ))
+                <div className="flex-1 min-w-0">
+                  <p className={`font-semibold truncate ${isSelected ? "text-blue-700" : ""}`}>
+                    {u.name}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">{u.subject || ""}</p>
+                </div>
+                {u.unread > 0 && (
+                  <div className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                    {u.unread}
+                  </div>
+                )}
+              </button>
+            );
+          })
         ) : (
           <p className="text-center text-gray-500 p-4">No teachers found</p>
         )}

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 
 export default function ChatMessages({ messages }) {
-  const messagesEndRef = useRef(null);
+  const messagesEndRef = useRef(null); 
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -26,5 +26,6 @@ export default function ChatMessages({ messages }) {
 
       <div ref={messagesEndRef}></div>
     </div>
+    
   );
 }
