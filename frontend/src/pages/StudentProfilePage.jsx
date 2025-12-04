@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import axios from "axios";
 
-import { socket } from "../../utils/socket.js";
+import { socket } from "../utils/socket.js";
 import Header from "../components/profiles/student/Header";
 import ProfileHeader from "../components/profiles/student/ProfileHeader";
 import ProgressOverview from "../components/profiles/student/ProgressOverview";
@@ -83,16 +83,20 @@ export default function StudentProfilePage() {
     fetchTeachers();
   }, []);
 
-  /* ================= LOAD CONVERSATION & SOCKET ================= */
+  /* ================= HANDLE TEACHER SELECTION & SOCKET ================= */
   useEffect(() => {
     if (!selectedTeacher || !studentId) return;
 
     const teacherId = selectedTeacher._id || selectedTeacher.id;
-    if (!teacherId) return;
-
     const roomId = `${teacherId}_${studentId}`;
-    setMessages([]); // clear previous messages when switching teacher
 
+    // Clear previous messages when switching teacher
+    setMessages([]);
+
+    // Join socket room
+    socket.emit("join_room", { roomId });
+
+    // Load conversation history
     const fetchConversation = async () => {
       try {
         const res = await axios.get(
@@ -100,10 +104,10 @@ export default function StudentProfilePage() {
         );
 
         const msgs = (res.data || []).map((m) => ({
-          id: m._id,
+          id: m._id || `${m.timestamp}-${Math.random()}`,
           sender: m.sender,
           content: m.content,
-          timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          timestamp: new Date(m.createdAt || m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         }));
 
         setMessages(msgs);
@@ -115,16 +119,28 @@ export default function StudentProfilePage() {
 
     fetchConversation();
 
-    // Join socket room for real-time updates
-    socket.emit("join_room", { roomId });
-
+    // Listen for real-time messages
     const handleNewMessage = (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      const msgTeacherId = msg.teacher || msg.teacherId;
+      const msgStudentId = msg.student || msg.studentId;
+
+      if (msgTeacherId === teacherId && msgStudentId === studentId) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: msg._id || `${msg.timestamp}-${Math.random()}`,
+            sender: msg.sender,
+            content: msg.content,
+            timestamp: new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          },
+        ]);
+      }
     };
 
     socket.on("new_message", handleNewMessage);
 
     return () => {
+      socket.emit("leave_room", { roomId });
       socket.off("new_message", handleNewMessage);
     };
   }, [selectedTeacher, studentId]);
@@ -134,7 +150,7 @@ export default function StudentProfilePage() {
     if (!text.trim() || !selectedTeacher || !studentId) return;
 
     const teacherId = selectedTeacher._id || selectedTeacher.id;
-    if (!teacherId) return;
+    const roomId = `${teacherId}_${studentId}`;
 
     const newMsg = {
       content: text,
@@ -147,26 +163,29 @@ export default function StudentProfilePage() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/api/chat/send", {
+      // Send to backend
+      await fetch("http://localhost:5000/api/chat/send", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(newMsg),
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || "Failed to send message");
-      }
+      // Emit via socket for real-time update
+      socket.emit("send_message", { ...newMsg, roomId });
 
-      // Emit via socket
-      const roomId = `${teacherId}_${studentId}`;
-      socket.emit("send_message", { roomId, ...newMsg });
-
-      // Update UI immediately
-      setMessages((prev) => [...prev, newMsg]);
+      // Update local UI immediately
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${newMsg.timestamp}-${Math.random()}`,
+          sender: newMsg.sender,
+          content: newMsg.content,
+          timestamp: new Date(newMsg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
     } catch (err) {
       console.error(err);
-      toast.error(err.message);
+      toast.error("Failed to send message");
     }
   };
 

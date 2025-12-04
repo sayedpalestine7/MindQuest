@@ -1,7 +1,4 @@
 import { useState, useEffect } from "react";
-import { io } from "socket.io-client";
-
-let socket;
 
 export default function TeacherSidebar({
   users = [],
@@ -10,6 +7,7 @@ export default function TeacherSidebar({
   searchValue,
   onSearch,
   currentUserId,
+  socket,
 }) {
   const [filter, setFilter] = useState("all");
   const [courseFilter, setCourseFilter] = useState("");
@@ -17,44 +15,51 @@ export default function TeacherSidebar({
 
   useEffect(() => setUsersList(users), [users]);
 
-  const getTeacherId = (t) => t._id ?? t.id;
+  const getUserId = (u) => u._id ?? u.id;
 
-  // Connect socket
+  /* ================= SOCKET: HANDLE NEW MESSAGE ================= */
   useEffect(() => {
-    if (!currentUserId) return;
-    socket = io("http://localhost:5000");
-    socket.emit("join_room", { roomId: currentUserId });
+    if (!socket) return;
 
-    socket.on("new_message", (msg) => {
+    const handleNewMessage = (msg) => {
+      const msgTeacherId = msg.teacher || msg.teacherId;
+      const msgStudentId = msg.student || msg.studentId;
+
+      // Only increment unread for this student
+      if (msgStudentId !== currentUserId) return;
+
       setUsersList((prev) =>
         prev.map((u) =>
-          u._id === msg.senderId || u._id === msg.receiverId
+          getUserId(u) === msgTeacherId
             ? { ...u, unread: (u.unread || 0) + 1 }
             : u
         )
       );
-    });
+    };
 
-    return () => socket.disconnect();
-  }, [currentUserId]);
+    socket.on("new_message", handleNewMessage);
+
+    return () => {
+      socket.off("new_message", handleNewMessage);
+    };
+  }, [socket, currentUserId]);
 
   const courses = [...new Set(usersList.map((u) => u.subject).filter(Boolean))];
 
   const filteredUsers = usersList.filter((u) => {
-    const name = u.name || "";
-    const subject = u.subject || "";
     const matchesSearch =
-      name.toLowerCase().includes((searchValue || "").toLowerCase()) ||
-      subject.toLowerCase().includes((searchValue || "").toLowerCase());
+      (u.name || "").toLowerCase().includes((searchValue || "").toLowerCase()) ||
+      (u.subject || "").toLowerCase().includes((searchValue || "").toLowerCase());
+
     let matchesFilter = true;
     if (filter === "unread") matchesFilter = u.unread && u.unread > 0;
     else if (filter === "course") matchesFilter = courseFilter ? u.subject === courseFilter : true;
+
     return matchesSearch && matchesFilter;
   });
 
   return (
     <div className="w-80 border-r bg-gray-100 flex flex-col">
-      {/* Search */}
       <div className="p-4 border-b space-y-3">
         <input
           type="text"
@@ -64,7 +69,6 @@ export default function TeacherSidebar({
           onChange={(e) => onSearch(e.target.value)}
         />
 
-        {/* Filters */}
         <div className="flex gap-2 flex-wrap mt-2">
           {["all", "unread", "course"].map((f) => (
             <button
@@ -98,11 +102,9 @@ export default function TeacherSidebar({
         )}
       </div>
 
-      {/* Teacher List */}
       <div className="flex-1 overflow-y-auto">
         {filteredUsers.length > 0 ? (
           filteredUsers.map((u) => {
-            const getUserId = (user) => user._id ?? user.id;
             const isSelected = selectedUser ? getUserId(selectedUser) === getUserId(u) : false;
 
             return (
@@ -110,16 +112,18 @@ export default function TeacherSidebar({
                 key={getUserId(u)}
                 onClick={() => {
                   onSelectUser(u);
+                  // reset unread count when selecting this teacher
                   setUsersList((prev) =>
-                    prev.map((uu) => (getUserId(uu) === getUserId(u) ? { ...uu, unread: 0 } : uu))
+                    prev.map((uu) =>
+                      getUserId(uu) === getUserId(u) ? { ...uu, unread: 0 } : uu
+                    )
                   );
                 }}
-                className={`
-            w-full text-left p-3 border-b flex items-center gap-3 transition-colors
-            ${isSelected
+                className={`w-full text-left p-3 border-b flex items-center gap-3 transition-colors ${
+                  isSelected
                     ? "!bg-blue-100 !text-black cursor-default"
-                    : "hover:!bg-gray-200 cursor-pointer"}
-          `}
+                    : "hover:!bg-gray-200 cursor-pointer"
+                }`}
               >
                 <div className="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold">
                   {u.name?.charAt(0) ?? "?"}

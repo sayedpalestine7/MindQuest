@@ -6,7 +6,7 @@ export default function ProfileHeader({ profileData, stats, onEdit }) {
   const defaultAvatar = "https://static.thenounproject.com/png/5100711-200.png";
   // Check both avatar and profileImage fields (avatar is used in parent state)
   const avatarSrc = profileData.avatar || profileData.profileImage || defaultAvatar;
-  
+
   // console.log("ProfileHeader - profileData:", profileData);
   // console.log("ProfileHeader - avatarSrc:", avatarSrc);
 
@@ -41,8 +41,11 @@ export default function ProfileHeader({ profileData, stats, onEdit }) {
         </div>
 
         <div className="text-center md:text-right">
-          <p className="text-sm text-gray-500">Total Points</p>
-          <p className="text-3xl font-bold text-blue-600">{stats.totalPoints}</p>
+          <div className="flex justify-center text-center md:text-right p-10">
+            <p className="text-3xl font-bold text-blue-600">Total Points:</p>
+            <p className="text-3xl font-bold text-blue-600">{stats.totalPoints}</p>
+          </div>
+
         </div>
       </div>
     </motion.div>

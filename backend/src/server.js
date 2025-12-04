@@ -27,43 +27,64 @@ dotenv.config();
 connectMongoDB();
 
 const app = express();
-app.use(cors());
 app.use(express.json());
+
+// --- CORS ---
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "*",
+    credentials: true,
+  })
+);
 
 // -------------------- SOCKET.IO SERVER --------------------
 const server = http.createServer(app);
 
-const io = new Server(server, {
+export const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: process.env.CLIENT_URL || "*",
+    methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
-// Make io available globally
-global.io = io;
+// -------------------- SOCKET MIDDLEWARE (optional auth) --------------------
+io.use((socket, next) => {
+  // Optional: token validation
+  const token = socket.handshake.auth?.token;
 
+  // If you want authentication:
+  // if (!token) return next(new Error("Not authenticated"));
+  // verify token here...
+
+  next();
+});
+
+// -------------------- SOCKET CONNECTION --------------------
 io.on("connection", (socket) => {
-  console.log("🟢 User connected:", socket.id);
+  console.log("🟢 Socket connected:", socket.id);
 
   // -------------------- JOIN ROOM --------------------
   socket.on("join_room", ({ teacherId, studentId }) => {
     if (!teacherId || !studentId) {
-      console.log("⚠️ Missing teacherId or studentId in join_room");
+      console.log("⚠️ Missing IDs in join_room event");
       return;
     }
 
+    // FIXED: consistent room format
     const roomId = `${teacherId}_${studentId}`;
-    socket.join(roomId);
 
-    console.log(`📌 Socket ${socket.id} joined room: ${roomId}`);
+    socket.join(roomId);
+    console.log(`📌 ${socket.id} joined room: ${roomId}`);
   });
 
-  // -------------------- SEND + SAVE MESSAGE --------------------
+  // -------------------- SEND MESSAGE --------------------
   socket.on("send_message", async (data) => {
     const { content, sender, teacherId, studentId } = data;
 
     if (!content || !sender || !teacherId || !studentId) {
-      console.log("⚠️ Invalid message payload received:", data);
+      console.log("⚠️ Invalid message payload:", data);
+      socket.emit("error_message", { error: "Invalid message payload" });
       return;
     }
 
@@ -81,16 +102,17 @@ io.on("connection", (socket) => {
 
       console.log("💬 Message saved:", newMessage._id);
 
-      // Broadcast to room
+      // Send message to both teacher & student in room
       io.to(roomId).emit("new_message", newMessage);
     } catch (err) {
       console.error("❌ Error saving message:", err);
+      socket.emit("error_message", { error: "Message save failed" });
     }
   });
 
   // -------------------- DISCONNECT --------------------
   socket.on("disconnect", () => {
-    console.log("🔴 User disconnected:", socket.id);
+    console.log("🔴 Socket disconnected:", socket.id);
   });
 });
 
