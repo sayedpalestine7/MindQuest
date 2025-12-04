@@ -5,7 +5,7 @@ let socket;
 
 export default function StudentSidebar({
   students,
-  selectedTeacher,
+  selectedStudent,
   onSelectStudent,
   searchValue,
   onSearch,
@@ -14,6 +14,8 @@ export default function StudentSidebar({
   const [filter, setFilter] = useState("all");
   const [courseFilter, setCourseFilter] = useState("");
   const [teachersList, setTeachersList] = useState(students);
+
+  const getStudentId = (s) => s._id ?? s.id;
 
   useEffect(() => {
     // Connect socket
@@ -40,7 +42,7 @@ export default function StudentSidebar({
 
   // Filter logic
   const courses = [...new Set(teachersList.map((t) => t.subject).filter(Boolean))];
-  const filteredTeachers = teachersList.filter((t) => {
+  const filteredStudents = teachersList.filter((t) => {
     const matchesSearch =
       t.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
       t.subject?.toLowerCase().includes(searchValue.toLowerCase());
@@ -94,36 +96,47 @@ export default function StudentSidebar({
         )}
       </div>
 
-      {/* Teacher List */}
+      {/* Student List */}
       <div className="flex-1 overflow-y-auto">
-        {filteredTeachers.map((t) => (
-          <button
-            key={t._id}
-            onClick={() => {
-              onSelectStudent(t);
-              // reset unread
-              setTeachersList((prev) =>
-                prev.map((tt) => (tt._id === t._id ? { ...tt, unread: 0 } : tt))
-              );
-            }}
-            className={`w-full text-left p-3 border-b flex items-center gap-3 ${
-              selectedTeacher?._id === t._id ? "bg-blue-100" : "hover:bg-gray-200"
-            }`}
-          >
-            <div className="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold">
-              {t.name?.charAt(0) ?? "?"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold truncate">{t.name}</p>
-              <p className="text-xs text-gray-500 truncate">{t.subject}</p>
-            </div>
-            {t.unread > 0 && (
-              <div className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                {t.unread}
+        {filteredStudents.map((student) => {
+          const isSelected = selectedStudent
+            ? getStudentId(selectedStudent) === getStudentId(student)
+            : false;
+
+          console.log("Rendering student:", student.name, "isSelected:", isSelected);
+
+          return (
+            <button
+              key={student._id ?? student.id ?? student.name}
+              onClick={() => onSelectStudent(student)}
+              className={`
+                w-full text-left p-3 border-b flex items-center gap-3 transition-colors
+                ${isSelected
+                  ? "!bg-blue-200 !text-black cursor-default"
+                  : "hover:!bg-blue-100 cursor-pointer"}
+                `}
+              >
+              <div className="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold">
+                {student.name?.charAt(0) ?? "?"}
               </div>
-            )}
-          </button>
-        ))}
+
+              <div className="flex-1 min-w-0">
+                <p className={`font-semibold truncate ${isSelected ? "text-blue-700" : ""}`}>
+                  {student.name}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{student.subject}</p>
+              </div>
+
+              {student.unread > 0 && (
+                <div className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                  {student.unread}
+                </div>
+              )}
+            </button>
+          );
+        })}
+
+
       </div>
     </div>
   );

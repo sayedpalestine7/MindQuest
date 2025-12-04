@@ -218,7 +218,7 @@ export default function TeacherProfilePage() {
                 <StudentSidebar
                   students={filteredStudents}
                   selectedStudent={selectedStudent}
-  onSelectStudent={setSelectedStudent} // ✅ correct
+                  onSelectStudent={setSelectedStudent} // ✅ correct
                   searchValue={studentSearch}
                   onSearch={handleSearchStudents}
                 />
