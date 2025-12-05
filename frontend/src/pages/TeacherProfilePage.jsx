@@ -18,11 +18,13 @@ import ChatWindow from "../components/teacher-chat/ChatWindow.jsx";
 export default function TeacherProfilePage() {
   const teacherId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
 
+  /* ====== Profile States ====== */
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
+  /* ====== Chat States ====== */
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [studentsList, setStudentsList] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
@@ -30,7 +32,7 @@ export default function TeacherProfilePage() {
   const [messages, setMessages] = useState([]);
   const [studentSearch, setStudentSearch] = useState("");
 
-  // ---------------- FETCH TEACHER PROFILE ----------------
+  /* ====== Fetch Profile ====== */
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -50,7 +52,7 @@ export default function TeacherProfilePage() {
     fetchProfile();
   }, [teacherId]);
 
-  // ---------------- FETCH STUDENTS ----------------
+  /* ====== Fetch Students ====== */
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -67,22 +69,19 @@ export default function TeacherProfilePage() {
     fetchStudents();
   }, []);
 
-  // ---------------- CHAT SOCKET & ROOM ----------------
+  /* ====== Chat Socket + Conversation ====== */
   useEffect(() => {
     if (!selectedStudent || !teacherId || !socket) return;
 
     const studentId = selectedStudent._id || selectedStudent.id;
     const roomId = `${teacherId}_${studentId}`;
 
-    console.log("Trying to join room:", roomId, "TeacherID:", teacherId, "StudentID:", studentId);
-
-    setMessages([]); // clear previous
+    setMessages([]); // Clear old messages
 
     // Join room
     socket.emit("join_room", { teacherId, studentId });
 
-
-    // Load previous messages
+    // Fetch past conversation
     const fetchConversation = async () => {
       try {
         const res = await axios.get(
@@ -105,26 +104,33 @@ export default function TeacherProfilePage() {
     };
     fetchConversation();
 
-    // Listen for real-time messages
+    // Listen for incoming messages
     const handleNewMessage = (msg) => {
       const msgTeacherId = msg.teacher || msg.teacherId;
       const msgStudentId = msg.student || msg.studentId;
 
+      // Skip messages sent by this client (optimistic UI)
+      if (msg.sender === "teacher" && msgTeacherId === msgTeacherId) return;
+
       if (msgTeacherId === teacherId && msgStudentId === studentId) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: msg._id ?? `${msg.timestamp}-${Math.random()}`,
-            sender: msg.sender,
-            content: msg.content,
-            timestamp: new Date(msg.createdAt || msg.timestamp).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          },
-        ]);
+        setMessages((prev) => {
+          if (prev.some(m => m.id === msg._id)) return prev; // prevent duplicates
+          return [
+            ...prev,
+            {
+              id: msg._id ?? `${msg.timestamp}-${Math.random()}`,
+              sender: msg.sender,
+              content: msg.content,
+              timestamp: new Date(msg.createdAt || msg.timestamp).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            },
+          ];
+        });
       }
     };
+
 
     socket.off("new_message", handleNewMessage);
     socket.on("new_message", handleNewMessage);
@@ -135,56 +141,32 @@ export default function TeacherProfilePage() {
     };
   }, [selectedStudent, teacherId]);
 
-  // ---------------- SEND MESSAGE ----------------
-const handleSendMessage = async (text) => {
-  if (!text.trim() || !selectedStudent || !teacherId || !socket) return;
+  /* ====== Send Message ====== */
+  const handleSendMessage = (text) => {
+    if (!text.trim() || !socket || !selectedStudent) return;
 
-  const studentId = selectedStudent._id || selectedStudent.id;
-  const roomId = `${teacherId}_${studentId}`;
+    const studentId = selectedStudent._id || selectedStudent.id;
 
-  const messagePayload = {
-    content: text,
-    sender: "teacher",
-    teacherId: teacherId,
-    studentId: studentId,
-  };
+    // Optimistic UI: add message instantly
+    const tempMessage = {
+      id: `temp-${Date.now()}`,
+      sender: "teacher",
+      content: text,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+    setMessages((prev) => [...prev, tempMessage]);
 
-  // Transform to backend expected keys
-  const backendPayload = {
-    content: messagePayload.content,
-    sender: messagePayload.sender,
-    teacher: messagePayload.teacherId,
-    student: messagePayload.studentId,
-  };
-
-  try {
-    const token = localStorage.getItem("token");
-
-    await axios.post("http://localhost:5000/api/chat/send", backendPayload, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    // Emit to socket
+    socket.emit("send_message", {
+      content: text,
+      sender: "teacher",
+      teacherId,
+      studentId,
     });
-  } catch (err) {
-    console.error(err);
-    toast.error("Failed to send message");
-  }
-
-  socket.emit("send_message", messagePayload);
+  };
 
 
-  // setMessages((prev) => [
-  //   ...prev,
-  //   {
-  //     id: `${Date.now()}-${Math.random()}`,
-  //     sender: messagePayload.sender,
-  //     content: messagePayload.content,
-  //     timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-  //   },
-  // ]);
-};
-
-
-
-  // ---------------- SEARCH STUDENTS ----------------
+  /* ====== Search Students ====== */
   const handleSearchStudents = (value) => {
     setStudentSearch(value);
     const filtered = studentsList.filter(
@@ -196,7 +178,7 @@ const handleSendMessage = async (text) => {
     if (filtered.length > 0) setSelectedStudent(filtered[0]);
   };
 
-  // ---------------- LOGOUT ----------------
+  /* ====== Logout ====== */
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
@@ -226,7 +208,7 @@ const handleSendMessage = async (text) => {
           <CoursesSection courses={profileData.courses ?? []} />
         </div>
 
-        {/* CHAT BUTTON */}
+        {/* Chat Button */}
         <motion.button
           onClick={() => setIsChatOpen(true)}
           whileHover={{ scale: 1.05 }}
@@ -236,7 +218,7 @@ const handleSendMessage = async (text) => {
           💬 Messages
         </motion.button>
 
-        {/* CHAT MODAL */}
+        {/* Chat Modal */}
         {isChatOpen && (
           <div className="modal modal-open">
             <div className="modal-box p-0 w-[90vw] max-w-3xl h-[80vh] flex flex-col">
@@ -253,11 +235,7 @@ const handleSendMessage = async (text) => {
                   onSearch={handleSearchStudents}
                 />
                 <div className="flex-1 border-l">
-                  <ChatWindow
-                    messages={messages}
-                    onSend={handleSendMessage}
-                    selectedStudent={selectedStudent}
-                  />
+                  <ChatWindow messages={messages} onSend={handleSendMessage} selectedStudent={selectedStudent} />
                 </div>
               </div>
             </div>

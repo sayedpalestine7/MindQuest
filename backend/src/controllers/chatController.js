@@ -26,16 +26,18 @@ export const getConversation = async (req, res) => {
     const { teacherId, studentId } = req.params;
 
     const messages = await Message.find({
-      teacher: teacherId,
-      student: studentId
-    })
-      .sort({ createdAt: 1 });
+      $or: [
+        { teacher: teacherId, student: studentId },
+        { teacher: teacherId, student: studentId } // You may only need one if stored consistently
+      ]
+    }).sort({ createdAt: 1 });
 
     res.json(messages);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // -------------------- TEACHER CHAT LIST --------------------
 // Get all students for a teacher, marking those with messages

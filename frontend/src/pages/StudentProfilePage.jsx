@@ -15,13 +15,13 @@ import TeacherSidebar from "../components/student-chat/TeacherSidebar";
 import ChatWindow from "../components/student-chat/ChatWindow";
 
 export default function StudentProfilePage() {
-  /* ================= PROFILE STATES ================= */
+  // ---------------- PROFILE STATES ----------------
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  /* ================= CHAT STATES ================= */
+  // ---------------- CHAT STATES ----------------
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [teachersList, setTeachersList] = useState([]);
   const [filteredTeachers, setFilteredTeachers] = useState([]);
@@ -32,18 +32,18 @@ export default function StudentProfilePage() {
   const studentId =
     typeof window !== "undefined" ? localStorage.getItem("userId") : null;
 
-  /* ================= FETCH STUDENT PROFILE ================= */
+  // ---------------- FETCH STUDENT PROFILE ----------------
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token || !studentId) throw new Error("Login required");
 
-        const res = await axios.get(`http://localhost:5000/api/student/id/${studentId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const { data } = await axios.get(
+          `http://localhost:5000/api/student/id/${studentId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-        const data = res.data;
         setProfileData({
           _id: data._id,
           name: data.name,
@@ -60,15 +60,16 @@ export default function StudentProfilePage() {
         setLoading(false);
       }
     };
+
     loadProfile();
   }, [studentId]);
 
-  /* ================= FETCH TEACHERS ================= */
+  // ---------------- FETCH TEACHERS ----------------
   useEffect(() => {
     const fetchTeachers = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/admin/users");
-        const teachers = (res.data || []).filter((u) => u.userType === "teacher");
+        const { data } = await axios.get("http://localhost:5000/api/admin/users");
+        const teachers = (data || []).filter((u) => u.userType === "teacher");
         setTeachersList(teachers);
         setFilteredTeachers(teachers);
         if (teachers.length > 0) setSelectedTeacher(teachers[0]);
@@ -77,31 +78,29 @@ export default function StudentProfilePage() {
         toast.error("Failed to fetch teachers");
       }
     };
+
     fetchTeachers();
   }, []);
 
-  /* ================= HANDLE TEACHER SELECTION + SOCKET ================= */
+  // ---------------- HANDLE TEACHER SELECTION & SOCKET ----------------
   useEffect(() => {
     if (!selectedTeacher || !studentId || !socket) return;
 
     const teacherId = selectedTeacher._id || selectedTeacher.id;
     const roomId = `${teacherId}_${studentId}`;
+    console.log("Joining room:", roomId);
 
-    console.log("Trying to join room:", roomId, "TeacherID:", teacherId, "StudentID:", studentId);
-
-    // Clear messages when switching
-    setMessages([]);
-
-    // Join room
+    setMessages([]); // clear previous messages
     socket.emit("join_room", { teacherId, studentId });
 
-    // Load conversation from backend
+    // Load conversation
     const fetchConversation = async () => {
       try {
-        const res = await axios.get(
+        const { data } = await axios.get(
           `http://localhost:5000/api/chat/conversation/${teacherId}/${studentId}`
         );
-        const msgs = (res.data || []).map((m) => ({
+
+        const msgs = (data || []).map((m) => ({
           id: m._id,
           sender: m.sender,
           content: m.content,
@@ -110,12 +109,14 @@ export default function StudentProfilePage() {
             minute: "2-digit",
           }),
         }));
+
         setMessages(msgs);
       } catch (err) {
         console.error(err);
         toast.error("Failed to load messages");
       }
     };
+
     fetchConversation();
 
     // Real-time listener
@@ -123,19 +124,25 @@ export default function StudentProfilePage() {
       const msgTeacherId = msg.teacher || msg.teacherId;
       const msgStudentId = msg.student || msg.studentId;
 
+      // Skip messages sent by this client (optimistic UI)
+      if (msg.sender === "student" && msgStudentId === studentId) return;
+
       if (msgTeacherId === teacherId && msgStudentId === studentId) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: msg._id ?? `${msg.timestamp}-${Math.random()}`,
-            sender: msg.sender,
-            content: msg.content,
-            timestamp: new Date(msg.createdAt || msg.timestamp).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          },
-        ]);
+        setMessages((prev) => {
+          if (prev.some(m => m.id === msg._id)) return prev; // prevent duplicates
+          return [
+            ...prev,
+            {
+              id: msg._id ?? `${msg.timestamp}-${Math.random()}`,
+              sender: msg.sender,
+              content: msg.content,
+              timestamp: new Date(msg.createdAt || msg.timestamp).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            },
+          ];
+        });
       }
     };
 
@@ -148,54 +155,32 @@ export default function StudentProfilePage() {
     };
   }, [selectedTeacher, studentId]);
 
-  /* ================= SEND MESSAGE ================= */
-const handleSendMessage = async (text) => {
-  if (!text.trim() || !selectedTeacher || !studentId || !socket) return;
+  // ---------------- SEND MESSAGE ----------------
+  const handleSendMessage = (text) => {
+    if (!text.trim() || !socket || !selectedTeacher) return;
 
-  const teacherId = selectedTeacher._id || selectedTeacher.id;
-  const roomId = `${teacherId}_${studentId}`;
+    const teacherId = selectedTeacher._id || selectedTeacher.id;
+    const studentId = localStorage.getItem("userId");
 
-  const messagePayload = {
-    content: text,
-    sender: "student",
-    teacherId: teacherId,
-    studentId: studentId,
+    // Optimistic UI: add message instantly
+    const tempMessage = {
+      id: `temp-${Date.now()}`,
+      sender: "student",
+      content: text,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+    setMessages((prev) => [...prev, tempMessage]);
+
+    // Emit to socket
+    socket.emit("send_message", {
+      content: text,
+      sender: "student",
+      teacherId,
+      studentId,
+    });
   };
 
-  // Transform to backend expected keys
-const backendPayload = {
-  content: messagePayload.content,
-  sender: messagePayload.sender,
-  teacher: messagePayload.teacherId,
-  student: messagePayload.studentId,
-};
-  try {
-    const token = localStorage.getItem("token");
-
-    await axios.post("http://localhost:5000/api/chat/send", backendPayload, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-  } catch (err) {
-    console.error(err);
-    toast.error("Failed to send message");
-  }
-  
-  socket.emit("send_message", messagePayload);
-
-
-  // setMessages((prev) => [
-  //   ...prev,
-  //   {
-  //     id: `${Date.now()}-${Math.random()}`,
-  //     sender: messagePayload.sender,
-  //     content: messagePayload.content,
-  //     timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-  //   },
-  // ]);
-};
-
-
-  /* ================= SEARCH TEACHERS ================= */
+  // ---------------- SEARCH TEACHERS ----------------
   const handleSearchTeachers = (value) => {
     setTeacherSearch(value);
     const filtered = teachersList.filter((t) =>
@@ -205,7 +190,7 @@ const backendPayload = {
     if (filtered.length > 0) setSelectedTeacher(filtered[0]);
   };
 
-  /* ================= LOGOUT ================= */
+  // ---------------- LOGOUT ----------------
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
@@ -213,7 +198,7 @@ const backendPayload = {
     window.location.href = "/login";
   };
 
-  /* ================= PROFILE UPDATE ================= */
+  // ---------------- PROFILE UPDATE ----------------
   const handleProfileUpdate = (updated) => {
     setProfileData({
       _id: updated._id,
@@ -226,11 +211,12 @@ const backendPayload = {
     setIsEditModalOpen(false);
   };
 
-  /* ================= RENDER ================= */
+  // ---------------- LOADING & ERROR STATES ----------------
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
   if (!profileData) return <div className="min-h-screen flex items-center justify-center text-gray-500">No student found</div>;
 
+  // ---------------- MOCKED ENROLLED COURSES ----------------
   const enrolledCourses = [
     { id: 1, title: "Intro to Web Development", thumbnail: "/web-development-course.png", progress: 75 },
     { id: 2, title: "Advanced JS", thumbnail: "/javascript-course.png", progress: 45 },
@@ -295,6 +281,7 @@ const backendPayload = {
           </div>
         )}
 
+        {/* EDIT PROFILE MODAL */}
         {isEditModalOpen && (
           <EditProfileModal
             profileData={profileData}
