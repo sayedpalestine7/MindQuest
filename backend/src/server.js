@@ -26,14 +26,16 @@ import chatRoutes from "./routes/chatRoutes.js";
 dotenv.config();
 connectMongoDB();
 
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+
 const app = express();
 app.use(express.json());
 
-// --- CORS ---
+// --- CORS FOR REST API ---
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "*",
-    credentials: true,
+    origin: CLIENT_URL, // must match frontend
+    credentials: true,  // allow cookies/auth headers
   })
 );
 
@@ -42,22 +44,10 @@ const server = http.createServer(app);
 
 export const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "*",
+    origin: CLIENT_URL, // must match frontend exactly
     methods: ["GET", "POST"],
     credentials: true,
   },
-});
-
-// -------------------- SOCKET MIDDLEWARE (optional auth) --------------------
-io.use((socket, next) => {
-  // Optional: token validation
-  const token = socket.handshake.auth?.token;
-
-  // If you want authentication:
-  // if (!token) return next(new Error("Not authenticated"));
-  // verify token here...
-
-  next();
 });
 
 // -------------------- SOCKET CONNECTION --------------------
@@ -71,9 +61,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // FIXED: consistent room format
     const roomId = `${teacherId}_${studentId}`;
-
     socket.join(roomId);
     console.log(`📌 ${socket.id} joined room: ${roomId}`);
   });
@@ -102,7 +90,7 @@ io.on("connection", (socket) => {
 
       console.log("💬 Message saved:", newMessage._id);
 
-      // Send message to both teacher & student in room
+      // Emit message to the room
       io.to(roomId).emit("new_message", newMessage);
     } catch (err) {
       console.error("❌ Error saving message:", err);
@@ -138,5 +126,5 @@ app.use("/uploads", express.static("uploads"));
 // -------------------- START SERVER --------------------
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
+  console.log(`🚀 Server running on port ${PORT}, CORS allowed for ${CLIENT_URL}`)
 );

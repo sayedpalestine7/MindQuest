@@ -93,7 +93,7 @@ export default function StudentProfilePage() {
     setMessages([]);
 
     // Join room
-    socket.emit("join_room", { roomId, teacherId, studentId });
+    socket.emit("join_room", { teacherId, studentId });
 
     // Load conversation from backend
     const fetchConversation = async () => {
@@ -158,32 +158,40 @@ const handleSendMessage = async (text) => {
   const messagePayload = {
     content: text,
     sender: "student",
-    teacher: teacherId,
-    student: studentId,
+    teacherId: teacherId,
+    studentId: studentId,
   };
 
+  // Transform to backend expected keys
+const backendPayload = {
+  content: messagePayload.content,
+  sender: messagePayload.sender,
+  teacher: messagePayload.teacherId,
+  student: messagePayload.studentId,
+};
   try {
     const token = localStorage.getItem("token");
 
-    await axios.post("http://localhost:5000/api/chat/send", messagePayload, {
+    await axios.post("http://localhost:5000/api/chat/send", backendPayload, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
   } catch (err) {
     console.error(err);
     toast.error("Failed to send message");
   }
+  
+  socket.emit("send_message", messagePayload);
 
-  socket.emit("send_message", { ...messagePayload, roomId });
 
-  setMessages((prev) => [
-    ...prev,
-    {
-      id: `${Date.now()}-${Math.random()}`,
-      sender: messagePayload.sender,
-      content: messagePayload.content,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    },
-  ]);
+  // setMessages((prev) => [
+  //   ...prev,
+  //   {
+  //     id: `${Date.now()}-${Math.random()}`,
+  //     sender: messagePayload.sender,
+  //     content: messagePayload.content,
+  //     timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  //   },
+  // ]);
 };
 
 
