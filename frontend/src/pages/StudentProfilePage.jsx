@@ -60,11 +60,10 @@ export default function StudentProfilePage() {
         setLoading(false);
       }
     };
-
     loadProfile();
   }, [studentId]);
 
-  /* ================= FETCH ALL TEACHERS ================= */
+  /* ================= FETCH TEACHERS ================= */
   useEffect(() => {
     const fetchTeachers = async () => {
       try {
@@ -72,54 +71,54 @@ export default function StudentProfilePage() {
         const teachers = (res.data || []).filter((u) => u.userType === "teacher");
         setTeachersList(teachers);
         setFilteredTeachers(teachers);
-
         if (teachers.length > 0) setSelectedTeacher(teachers[0]);
       } catch (err) {
         console.error(err);
         toast.error("Failed to fetch teachers");
       }
     };
-
     fetchTeachers();
   }, []);
 
-  /* ================= HANDLE TEACHER SELECTION & SOCKET ================= */
+  /* ================= HANDLE TEACHER SELECTION + SOCKET ================= */
   useEffect(() => {
-    if (!selectedTeacher || !studentId) return;
+    if (!selectedTeacher || !studentId || !socket) return;
 
     const teacherId = selectedTeacher._id || selectedTeacher.id;
     const roomId = `${teacherId}_${studentId}`;
 
-    // Clear previous messages when switching teacher
+    console.log("Trying to join room:", roomId, "TeacherID:", teacherId, "StudentID:", studentId);
+
+    // Clear messages when switching
     setMessages([]);
 
-    // Join socket room
-    socket.emit("join_room", { roomId });
+    // Join room
+    socket.emit("join_room", { roomId, teacherId, studentId });
 
-    // Load conversation history
+    // Load conversation from backend
     const fetchConversation = async () => {
       try {
         const res = await axios.get(
           `http://localhost:5000/api/chat/conversation/${teacherId}/${studentId}`
         );
-
         const msgs = (res.data || []).map((m) => ({
-          id: m._id || `${m.timestamp}-${Math.random()}`,
+          id: m._id,
           sender: m.sender,
           content: m.content,
-          timestamp: new Date(m.createdAt || m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          timestamp: new Date(m.createdAt || m.timestamp).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
         }));
-
         setMessages(msgs);
       } catch (err) {
         console.error(err);
         toast.error("Failed to load messages");
       }
     };
-
     fetchConversation();
 
-    // Listen for real-time messages
+    // Real-time listener
     const handleNewMessage = (msg) => {
       const msgTeacherId = msg.teacher || msg.teacherId;
       const msgStudentId = msg.student || msg.studentId;
@@ -128,71 +127,72 @@ export default function StudentProfilePage() {
         setMessages((prev) => [
           ...prev,
           {
-            id: msg._id || `${msg.timestamp}-${Math.random()}`,
+            id: msg._id ?? `${msg.timestamp}-${Math.random()}`,
             sender: msg.sender,
             content: msg.content,
-            timestamp: new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            timestamp: new Date(msg.createdAt || msg.timestamp).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
           },
         ]);
       }
     };
 
+    socket.off("new_message", handleNewMessage);
     socket.on("new_message", handleNewMessage);
 
     return () => {
-      socket.emit("leave_room", { roomId });
+      socket.emit("leave_room", { roomId, teacherId, studentId });
       socket.off("new_message", handleNewMessage);
     };
   }, [selectedTeacher, studentId]);
 
   /* ================= SEND MESSAGE ================= */
-  const handleSendMessage = async (text) => {
-    if (!text.trim() || !selectedTeacher || !studentId) return;
+const handleSendMessage = async (text) => {
+  if (!text.trim() || !selectedTeacher || !studentId || !socket) return;
 
-    const teacherId = selectedTeacher._id || selectedTeacher.id;
-    const roomId = `${teacherId}_${studentId}`;
+  const teacherId = selectedTeacher._id || selectedTeacher.id;
+  const roomId = `${teacherId}_${studentId}`;
 
-    const newMsg = {
-      content: text,
-      sender: "student",
-      student: studentId,
-      teacher: teacherId,
-      timestamp: new Date().toISOString(),
-    };
-
-    try {
-      const token = localStorage.getItem("token");
-
-      // Send to backend
-      await fetch("http://localhost:5000/api/chat/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify(newMsg),
-      });
-
-      // Emit via socket for real-time update
-      socket.emit("send_message", { ...newMsg, roomId });
-
-      // Update local UI immediately
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `${newMsg.timestamp}-${Math.random()}`,
-          sender: newMsg.sender,
-          content: newMsg.content,
-          timestamp: new Date(newMsg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to send message");
-    }
+  const messagePayload = {
+    content: text,
+    sender: "student",
+    teacher: teacherId,
+    student: studentId,
   };
+
+  try {
+    const token = localStorage.getItem("token");
+
+    await axios.post("http://localhost:5000/api/chat/send", messagePayload, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to send message");
+  }
+
+  socket.emit("send_message", { ...messagePayload, roomId });
+
+  setMessages((prev) => [
+    ...prev,
+    {
+      id: `${Date.now()}-${Math.random()}`,
+      sender: messagePayload.sender,
+      content: messagePayload.content,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    },
+  ]);
+};
+
 
   /* ================= SEARCH TEACHERS ================= */
   const handleSearchTeachers = (value) => {
     setTeacherSearch(value);
-    const filtered = teachersList.filter((t) => t.name?.toLowerCase().includes(value.toLowerCase()));
+    const filtered = teachersList.filter((t) =>
+      t.name?.toLowerCase().includes(value.toLowerCase())
+    );
     setFilteredTeachers(filtered);
     if (filtered.length > 0) setSelectedTeacher(filtered[0]);
   };
@@ -218,7 +218,11 @@ export default function StudentProfilePage() {
     setIsEditModalOpen(false);
   };
 
-  /* ================= ENROLLED COURSES ================= */
+  /* ================= RENDER ================= */
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
+  if (!profileData) return <div className="min-h-screen flex items-center justify-center text-gray-500">No student found</div>;
+
   const enrolledCourses = [
     { id: 1, title: "Intro to Web Development", thumbnail: "/web-development-course.png", progress: 75 },
     { id: 2, title: "Advanced JS", thumbnail: "/javascript-course.png", progress: 45 },
@@ -226,26 +230,17 @@ export default function StudentProfilePage() {
     { id: 4, title: "Python Data Science", thumbnail: "/python-data-science.png", progress: 30 },
   ];
 
-  const stats = profileData
-    ? {
-        totalCourses: enrolledCourses.length,
-        completedCourses: enrolledCourses.filter((c) => c.progress === 100).length,
-        totalPoints: profileData.score,
-        overallProgress: Math.round(enrolledCourses.reduce((a, c) => a + c.progress, 0) / enrolledCourses.length),
-      }
-    : {};
-
-  /* ================= RENDER ================= */
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
-  if (!profileData) return <div className="min-h-screen flex items-center justify-center text-gray-500">No student found</div>;
+  const stats = {
+    totalCourses: enrolledCourses.length,
+    completedCourses: enrolledCourses.filter((c) => c.progress === 100).length,
+    totalPoints: profileData.score,
+    overallProgress: Math.round(enrolledCourses.reduce((a, c) => a + c.progress, 0) / enrolledCourses.length),
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}>
         <Header onLogout={handleLogout} />
-
-        {/* PROFILE */}
         <div className="container mx-auto p-6 space-y-8 max-w-7xl">
           <ProfileHeader profileData={profileData} stats={stats} onEdit={() => setIsEditModalOpen(true)} />
           <ProgressOverview stats={stats} />
@@ -270,7 +265,6 @@ export default function StudentProfilePage() {
                 <h3 className="font-semibold text-lg">Student Messaging Center</h3>
                 <button className="btn btn-sm btn-error" onClick={() => setIsChatOpen(false)}>Close</button>
               </div>
-
               <div className="flex flex-1 overflow-hidden">
                 <TeacherSidebar
                   users={filteredTeachers}
@@ -280,7 +274,6 @@ export default function StudentProfilePage() {
                   onSearch={handleSearchTeachers}
                   currentUserId={studentId}
                 />
-
                 <div className="flex-1 border-l">
                   <ChatWindow
                     messages={messages}
@@ -295,7 +288,11 @@ export default function StudentProfilePage() {
         )}
 
         {isEditModalOpen && (
-          <EditProfileModal profileData={profileData} onClose={() => setIsEditModalOpen(false)} onUpdate={handleProfileUpdate} />
+          <EditProfileModal
+            profileData={profileData}
+            onClose={() => setIsEditModalOpen(false)}
+            onUpdate={handleProfileUpdate}
+          />
         )}
       </motion.div>
     </div>
