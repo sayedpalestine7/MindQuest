@@ -124,9 +124,21 @@ export default function TeacherSidebar({
                     ? "!bg-blue-100 !text-black cursor-default"
                     : "hover:!bg-gray-200 cursor-pointer"
                 }`}
-              >
-                <div className="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold">
-                  {u.name?.charAt(0) ?? "?"}
+              > 
+                
+                {/* here lets see the the image part */}
+                <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                  {u.avatar ? (
+                    <img
+                      src={u.avatar}
+                      alt={u.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-blue-100 text-gray-600 font-semibold">
+                      {u.name?.charAt(0) ?? "?"}
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`font-semibold truncate ${isSelected ? "text-blue-700" : ""}`}>

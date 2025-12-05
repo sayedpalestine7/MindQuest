@@ -135,9 +135,21 @@ export default function StudentSidebar({
                     : "hover:!bg-blue-100 cursor-pointer"
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold">
-                  {s.name?.charAt(0) ?? "?"}
+                {/* here lets see the the image part */}
+                <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                  {s.avatar ? (
+                    <img
+                      src={s.avatar}
+                      alt={s.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-blue-100 text-gray-600 font-semibold">
+                      {s.name?.charAt(0) ?? "?"}
+                    </div>
+                  )}
                 </div>
+                
                 <div className="flex-1 min-w-0">
                   <p className={`font-semibold truncate ${isSelected ? "text-blue-700" : ""}`}>
                     {s.name}

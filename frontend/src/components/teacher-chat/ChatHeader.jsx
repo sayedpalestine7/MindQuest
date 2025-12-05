@@ -1,28 +1,36 @@
+import { useState } from "react";
+
 export default function ChatHeader({ student }) {
   if (!student) return null;
 
-  const name = student.name || "Unknown"; // fallback if name is undefined
+  const [imgError, setImgError] = useState(false);
+  const name = student.name || "Unknown";
   const subject = student.subject || "";
+  const hasImage = student.avatar && !imgError;
 
   return (
     <div className="flex items-center justify-between p-4 border-b bg-gray-100">
       <div className="flex items-center gap-3">
-        {/* Avatar with fallback */}
         <div className="relative w-10 h-10">
+          {/* Avatar container */}
           <div className="w-full h-full rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-            {student.avatar ? (
+
+            {/* Show image only if available AND not broken */}
+            {hasImage && (
               <img
                 src={student.avatar}
                 alt={name}
                 className="w-full h-full object-cover"
-                onError={(e) => { e.target.style.display = 'none'; }}
+                onError={() => setImgError(true)}
               />
-            ) : null}
+            )}
 
-            {/* Fallback initials */}
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-              {name.charAt(0)}
-            </div>
+            {/* Fallback initials only if no image */}
+            {!hasImage && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold">
+                {name.charAt(0)}
+              </div>
+            )}
           </div>
         </div>
 
