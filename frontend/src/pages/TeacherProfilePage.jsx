@@ -244,7 +244,11 @@ export default function TeacherProfilePage() {
         )}
 
         {isEditOpen && (
-          <EditProfileDialog profileData={profileData} onClose={() => setIsEditOpen(false)} setProfileData={setProfileData} />
+        <EditProfileDialog 
+          open={isEditOpen}
+          profileData={profileData} 
+          onClose={() => setIsEditOpen(false)} 
+          setProfileData={setProfileData} />
         )}
       </motion.div>
     </div>
