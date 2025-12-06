@@ -31,6 +31,7 @@ export default function TeacherProfilePage() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [messages, setMessages] = useState([]);
   const [studentSearch, setStudentSearch] = useState("");
+  const [unreadCount, setUnreadCount] = useState({}); // { studentId: count }
 
   /* ====== Fetch Profile ====== */
   useEffect(() => {
@@ -140,6 +141,21 @@ export default function TeacherProfilePage() {
       socket.off("new_message", handleNewMessage);
     };
   }, [selectedStudent, teacherId]);
+  // ------------- Fetch unread counts once and update live -------------
+  useEffect(() => {
+    if (!teacherId) return;
+
+    const fetchUnread = async () => {
+      const res = await axios.get(`http://localhost:5000/api/chat/unread/${teacherId}`);
+
+      const map = {};
+      res.data.forEach((item) => (map[item._id] = item.count));
+
+      setUnreadCount(map);
+    };
+
+    fetchUnread();
+  }, [teacherId]);
 
   /* ====== Send Message ====== */
   const handleSendMessage = (text) => {
@@ -233,6 +249,10 @@ export default function TeacherProfilePage() {
                   onSelectStudent={setSelectedStudent}
                   searchValue={studentSearch}
                   onSearch={handleSearchStudents}
+                  socket={socket}         // ⬅ ADD THIS
+                  teacherId={teacherId}   // ⬅ ADD THIS
+                  unreadCount={unreadCount}          // 🟢 fix #1
+                  setUnreadCount={setUnreadCount}    // 🟢 fix #2
                 />
                 <div className="flex-1 border-l">
                   <ChatWindow messages={messages} onSend={handleSendMessage} selectedStudent={selectedStudent} />
@@ -244,11 +264,11 @@ export default function TeacherProfilePage() {
         )}
 
         {isEditOpen && (
-        <EditProfileDialog 
-          open={isEditOpen}
-          profileData={profileData} 
-          onClose={() => setIsEditOpen(false)} 
-          setProfileData={setProfileData} />
+          <EditProfileDialog
+            open={isEditOpen}
+            profileData={profileData}
+            onClose={() => setIsEditOpen(false)}
+            setProfileData={setProfileData} />
         )}
       </motion.div>
     </div>

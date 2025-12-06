@@ -91,7 +91,11 @@ io.on("connection", (socket) => {
       console.log("💬 Message saved:", newMessage._id);
 
       // Emit message to the room
-      io.to(roomId).emit("new_message", newMessage);
+      io.to(roomId).emit("new_message", {
+        ...newMessage.toObject(),
+        teacherId,
+        studentId
+      });
     } catch (err) {
       console.error("❌ Error saving message:", err);
       socket.emit("error_message", { error: "Message save failed" });

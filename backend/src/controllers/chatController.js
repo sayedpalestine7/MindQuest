@@ -133,18 +133,77 @@ export const getStudentChats = async (req, res) => {
 export const markAsRead = async (req, res) => {
   try {
     const { teacherId, studentId } = req.params;
+    const { reader } = req.body;
+
+    if (!["teacher", "student"].includes(reader)) {
+      return res.status(400).json({ error: "Invalid reader role" });
+    }
+
+    const senderToMark = reader === "teacher" ? "student" : "teacher";
 
     await Message.updateMany(
       {
         teacher: teacherId,
         student: studentId,
-        sender: "student",
+        sender: senderToMark,
         read: false
       },
       { $set: { read: true } }
     );
 
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getTeacherUnread = async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+
+    const unread = await Message.aggregate([
+      {
+        $match: {
+          teacher: new mongoose.Types.ObjectId(teacherId),
+          sender: "student",
+          read: false
+        }
+      },
+      {
+        $group: {
+          _id: "$student",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    res.json(unread);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getStudentUnread = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const unread = await Message.aggregate([
+      {
+        $match: {
+          student: new mongoose.Types.ObjectId(studentId),
+          sender: "teacher",
+          read: false
+        }
+      },
+      {
+        $group: {
+          _id: "$teacher",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    res.json(unread);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -23,7 +23,7 @@ export default function StudentSidebar({
 
     const handleNewMessage = (msg) => {
       // Only increment unread if the message is from this student to this teacher
-      if (msg.sender === "student" && msg.studentId && msg.teacherId === teacherId) {
+      if (msg.sender === "student" && msg.studentId && msg.teacherId === teacherId){
         setStudentsList((prev) =>
           prev.map((s) =>
             getStudentId(s) === msg.studentId
