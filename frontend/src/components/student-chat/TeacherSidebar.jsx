@@ -25,24 +25,26 @@ export default function TeacherSidebar({
       const msgTeacherId = msg.teacher || msg.teacherId;
       const msgStudentId = msg.student || msg.studentId;
 
-      // Only increment unread for this student
+      // Only count unread for messages sent BY TEACHER
+      if (msg.sender !== "teacher") return;
+
+      // Only unread for THIS student
       if (msgStudentId !== currentUserId) return;
 
+      // FIX: use setUsersList instead of setTeachersList
       setUsersList((prev) =>
-        prev.map((u) =>
-          getUserId(u) === msgTeacherId
-            ? { ...u, unread: (u.unread || 0) + 1 }
-            : u
+        prev.map((t) =>
+          getUserId(t) === msgTeacherId
+            ? { ...t, unread: (t.unread || 0) + 1 }
+            : t
         )
       );
     };
 
     socket.on("new_message", handleNewMessage);
-
-    return () => {
-      socket.off("new_message", handleNewMessage);
-    };
+    return () => socket.off("new_message", handleNewMessage);
   }, [socket, currentUserId]);
+
 
   const courses = [...new Set(usersList.map((u) => u.subject).filter(Boolean))];
 
@@ -112,7 +114,8 @@ export default function TeacherSidebar({
                 key={getUserId(u)}
                 onClick={() => {
                   onSelectUser(u);
-                  // reset unread count when selecting this teacher
+
+                  // FIX: reset unread count correctly
                   setUsersList((prev) =>
                     prev.map((uu) =>
                       getUserId(uu) === getUserId(u) ? { ...uu, unread: 0 } : uu
@@ -124,9 +127,7 @@ export default function TeacherSidebar({
                     ? "!bg-blue-100 !text-black cursor-default"
                     : "hover:!bg-gray-200 cursor-pointer"
                 }`}
-              > 
-                
-                {/* here lets see the the image part */}
+              >
                 <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
                   {u.avatar ? (
                     <img
@@ -140,12 +141,14 @@ export default function TeacherSidebar({
                     </div>
                   )}
                 </div>
+
                 <div className="flex-1 min-w-0">
                   <p className={`font-semibold truncate ${isSelected ? "text-blue-700" : ""}`}>
                     {u.name}
                   </p>
                   <p className="text-xs text-gray-500 truncate">{u.subject || ""}</p>
                 </div>
+
                 {u.unread > 0 && (
                   <div className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
                     {u.unread}

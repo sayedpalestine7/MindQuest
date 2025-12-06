@@ -28,6 +28,8 @@ export default function StudentProfilePage() {
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [messages, setMessages] = useState([]);
   const [teacherSearch, setTeacherSearch] = useState("");
+  const [unreadCount, setUnreadCount] = useState({});  // { teacherId: count }
+
 
   const studentId =
     typeof window !== "undefined" ? localStorage.getItem("userId") : null;
@@ -179,6 +181,25 @@ export default function StudentProfilePage() {
       studentId,
     });
   };
+  //------------- Fetch unread counts once and updte livae -------------
+  useEffect(() => {
+  if (!studentId) return;
+
+  const fetchUnread = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/chat/unread/student/${studentId}`);
+
+      const map = {};
+      res.data.forEach((item) => (map[item._id] = item.count));  
+
+      setUnreadCount(map);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchUnread();
+}, [studentId]);
 
   // ---------------- SEARCH TEACHERS ----------------
   const handleSearchTeachers = (value) => {
@@ -267,6 +288,10 @@ export default function StudentProfilePage() {
                   searchValue={teacherSearch}
                   onSearch={handleSearchTeachers}
                   currentUserId={studentId}
+                  socket={socket}         // ⬅ ADD THIS
+                  studentId={studentId}   // ⬅ ADD THIS
+                  unreadCount={unreadCount}          // 🟢 fix #1
+                  setUnreadCount={setUnreadCount}    // 🟢 fix #2
                 />
                 <div className="flex-1 border-l">
                   <ChatWindow
