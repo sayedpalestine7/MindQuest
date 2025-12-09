@@ -30,6 +30,7 @@ export const getAllUsers = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
 export const approveTeacher = async (req, res) => {
   try {
     const teacherId = req.params.id;
@@ -52,6 +53,26 @@ export const approveTeacher = async (req, res) => {
   }
 };
 
+export const rejectTeacher = async (req, res) => {
+  try {
+    const teacherId = req.params.id;
+
+    const user = await User.findByIdAndUpdate(
+      teacherId,
+      { status: "rejected" },
+      { new: true }
+    );
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({
+      message: "Teacher rejected successfully",
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 export const getPendingTeachers = async (req, res) => {
   try {

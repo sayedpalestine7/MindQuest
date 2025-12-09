@@ -30,6 +30,14 @@ export const registerUser = async (req, res) => {
       profileImageDataUrl = `data:${f.mimetype};base64,${base64}`;
     }
 
+    // Normalize uploaded teacher certification into base64 data URL (for teacher signup)
+    let certificationDataUrl;
+    if (req.files?.certification && req.files.certification[0]) {
+      const c = req.files.certification[0];
+      const base64 = c.buffer.toString("base64");
+      certificationDataUrl = `data:${c.mimetype};base64,${base64}`;
+    }
+
     // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: "User already exists" });
@@ -37,14 +45,25 @@ export const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create User + pending status for teachers
-    const user = await User.create({
+    const userPayload = {
       name,
       email,
       password: hashedPassword,
       profileImage: profileImageDataUrl,
       role,
       status: role === "teacher" ? "pending" : "active",
-    });
+    };
+
+    // For teachers, also populate teacherData on the User
+    if (role === "teacher") {
+      userPayload.teacherData = {
+        specialization,
+        institution,
+        certification: certificationDataUrl,
+      };
+    }
+
+    const user = await User.create(userPayload);
 
     // Create teacher profile if needed
     let teacher = null;
@@ -54,6 +73,7 @@ export const registerUser = async (req, res) => {
         name,
         email,
         specialization,
+        avatar: profileImageDataUrl,
       });
     }
 
