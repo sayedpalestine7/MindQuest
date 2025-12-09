@@ -6,7 +6,7 @@ import Quiz from "../models/mongo/quizModel.js";
 // 🧠 CREATE a new course
 export const createCourse = async (req, res) => {
   try {
-    const { title, description, difficulty, thumbnail, teacherId, scoreOnFinish } = req.body;
+    const { title, description, difficulty, thumbnail, teacherId, scoreOnFinish, lessons, quiz } = req.body;
 
     // Validate teacher
     const teacher = await User.findById(teacherId);
@@ -14,6 +14,7 @@ export const createCourse = async (req, res) => {
       return res.status(400).json({ message: "Invalid teacher ID or user is not a teacher" });
     }
 
+    // Create the course first (without lessons/quiz)
     const course = await Course.create({
       title,
       description,
@@ -23,7 +24,40 @@ export const createCourse = async (req, res) => {
       scoreOnFinish: scoreOnFinish || 0,
     });
 
-    res.status(201).json({ message: "✅ Course created successfully", course });
+    // Create lessons if provided
+    let lessonIds = [];
+    if (lessons && Array.isArray(lessons) && lessons.length > 0) {
+      const createdLessons = await Lesson.insertMany(
+        lessons.map((lesson) => ({
+          ...lesson,
+          courseId: course._id, // Now we have the course ID
+        }))
+      );
+      lessonIds = createdLessons.map((l) => l._id);
+    }
+
+    // Create quiz if provided
+    let quizId = null;
+    if (quiz) {
+      const createdQuiz = await Quiz.create({
+        ...quiz,
+        courseId: course._id, // Now we have the course ID
+      });
+      quizId = createdQuiz._id;
+    }
+
+    // Update the course with lesson and quiz IDs
+    const updatedCourse = await Course.findByIdAndUpdate(
+      course._id,
+      {
+        lessonIds,
+        quizId,
+        lessonsCount: lessonIds.length,
+      },
+      { new: true }
+    );
+
+    res.status(201).json({ message: "✅ Course created successfully", course: updatedCourse });
   } catch (err) {
     res.status(500).json({ message: "❌ Error creating course", error: err.message });
   }
@@ -70,15 +104,63 @@ export const getCourseById = async (req, res) => {
 // 🧱 UPDATE course
 export const updateCourse = async (req, res) => {
   try {
-    const { title, description, difficulty, thumbnail, scoreOnFinish, quizId } = req.body;
+    const { title, description, difficulty, thumbnail, scoreOnFinish, quizId, lessons, quiz } = req.body;
 
+    // Find the current course
+    const currentCourse = await Course.findById(req.params.id);
+    if (!currentCourse) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    // Update lessons if provided
+    let lessonIds = currentCourse.lessonIds;
+    if (lessons && Array.isArray(lessons)) {
+      // Delete old lessons
+      await Lesson.deleteMany({ _id: { $in: currentCourse.lessonIds } });
+
+      // Create new lessons
+      if (lessons.length > 0) {
+        const createdLessons = await Lesson.insertMany(
+          lessons.map((lesson) => ({
+            ...lesson,
+            courseId: req.params.id,
+          }))
+        );
+        lessonIds = createdLessons.map((l) => l._id);
+      } else {
+        lessonIds = [];
+      }
+    }
+
+    // Update quiz if provided
+    let newQuizId = quizId || currentCourse.quizId;
+    if (quiz) {
+      // Delete old quiz if exists
+      if (currentCourse.quizId) {
+        await Quiz.findByIdAndDelete(currentCourse.quizId);
+      }
+      const createdQuiz = await Quiz.create({
+        ...quiz,
+        courseId: req.params.id,
+      });
+      newQuizId = createdQuiz._id;
+    }
+
+    // Update the course
     const updatedCourse = await Course.findByIdAndUpdate(
       req.params.id,
-      { title, description, difficulty, thumbnail, scoreOnFinish, quizId },
+      {
+        title,
+        description,
+        difficulty,
+        thumbnail,
+        scoreOnFinish,
+        quizId: newQuizId,
+        lessonIds,
+        lessonsCount: lessonIds.length,
+      },
       { new: true }
     );
-
-    if (!updatedCourse) return res.status(404).json({ message: "Course not found" });
 
     res.status(200).json({ message: "✅ Course updated successfully", course: updatedCourse });
   } catch (err) {

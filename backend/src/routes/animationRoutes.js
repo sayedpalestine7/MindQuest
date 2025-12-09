@@ -32,21 +32,49 @@ const router = express.Router();
 // 📥 Save animation
 router.post("/", async (req, res) => {
   try {
-    const { title, description, authorId, animationData, htmlExport } = req.body;
+    const { title, description, authorId, duration, objects, isPublished, tags } = req.body;
 
     const newAnimation = new Animation({
       title,
       description,
       authorId,
-      animationData,
-      htmlExport,
+      duration,
+      objects,
+      isPublished: isPublished || false,
+      tags: tags || []
     });
 
     const saved = await newAnimation.save();
     res.status(201).json(saved);
   } catch (err) {
     console.error("Error saving animation:", err);
-    res.status(500).json({ message: "Failed to save animation" });
+    res.status(500).json({ message: "Failed to save animation", error: err.message });
+  }
+});
+
+// 📝 Update animation
+router.put("/:id", async (req, res) => {
+  try {
+    const { title, description, duration, objects, isPublished, tags } = req.body;
+
+    const updated = await Animation.findByIdAndUpdate(
+      req.params.id,
+      {
+        title,
+        description,
+        duration,
+        objects,
+        isPublished,
+        tags
+      },
+      { new: true }
+    );
+
+    if (!updated) return res.status(404).json({ message: "Animation not found" });
+    res.json(updated);
+  } catch (err) {
+    console.error("Error updating animation:", err);
+    res.status(500).json({ message: "Failed to update animation", error: err.message });
   }
 });
 

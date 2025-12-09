@@ -1,317 +1,264 @@
 // /src/pages/TeacherCourseBuilder.jsx
-import React, { useState, useEffect } from "react"
+import React, { useEffect } from "react"
+import { useParams } from "react-router"
 import Header from "../components/courseBuilder/Header"
 import Sidebar from "../components/courseBuilder/Sidebar"
 import CourseInfo from "../components/courseBuilder/CourseInfo"
 import LessonEditor from "../components/courseBuilder/LessonEditor"
 import QuizSection from "../components/courseBuilder/QuizSection"
 import PreviewModal from "../components/courseBuilder/PreviewModal"
+import courseService from "../services/courseService"
+import { useAuth } from "../context/AuthContext"
+import useCourseBuilder from "../hooks/useCourseBuilder"
+import {
+  validateCourse,
+  sanitizeCourseForAPI,
+  sanitizeLessonForAPI,
+  sanitizeQuizForAPI,
+} from "../utils/courseBuilderUtils"
+import toast from "react-hot-toast"
 
 export default function TeacherCourseBuilder() {
-  /* ---------- STATE ---------- */
-  const [saveStatus, setSaveStatus] = useState("saved")
-  const [isQuizSectionOpen, setIsQuizSectionOpen] = useState(false)
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
-  const [draggedLessonId, setDraggedLessonId] = useState(null)
-  const [draggedFieldId, setDraggedFieldId] = useState(null)
-
-  const [course, setCourse] = useState({
-    title: "",
-    description: "",
-    difficulty: "beginner",
-    thumbnail: "",
-    finalQuiz: { questions: [], passingScore: 70, points: 100 },
-  })
-
-  const [lessons, setLessons] = useState([
-    { id: "1", title: "Lesson 1", fields: [] },
-  ])
-  const [selectedLessonId, setSelectedLessonId] = useState("1")
-
-  const selectedLesson = lessons.find((l) => l.id === selectedLessonId)
-
+  const { courseId } = useParams()
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const courseBuilder = useCourseBuilder(courseId)
   /* ---------- EFFECTS ---------- */
-  // Auto-save to localStorage after 2s
+  // Check auth and load course
   useEffect(() => {
-    setSaveStatus("unsaved")
+    // Wait for auth to finish loading from localStorage
+    if (isLoading) return
+
+    // If not authenticated or not a teacher, show error
+    if (!isAuthenticated || user?.role !== "teacher") {
+      toast.error("Please login as a teacher to create courses")
+      // Redirect would go here
+      return
+    }
+
+    if (courseId) {
+      courseBuilder.loadCourse(courseId)
+    }
+  }, [isLoading, isAuthenticated, user, courseId, courseBuilder])
+
+  // Auto-save to localStorage after 2s (as backup)
+  useEffect(() => {
+    courseBuilder.setSaveStatus("unsaved")
     const timeoutId = setTimeout(() => {
-      setSaveStatus("saving")
-      localStorage.setItem("course-data", JSON.stringify({ course, lessons }))
-      console.log("[Auto-save] course data saved")
-      setTimeout(() => setSaveStatus("saved"), 500)
+      localStorage.setItem("course-backup", JSON.stringify({
+        course: courseBuilder.course,
+        lessons: courseBuilder.lessons,
+      }))
+      courseBuilder.setSaveStatus("saved")
     }, 2000)
     return () => clearTimeout(timeoutId)
-  }, [course, lessons])
-
-  // Load saved data on mount
-  useEffect(() => {
-    const saved = localStorage.getItem("course-data")
-    if (saved) {
-      try {
-        const { course: c, lessons: l } = JSON.parse(saved)
-        setCourse(c)
-        setLessons(l)
-        console.log("[Load] course data loaded")
-      } catch (err) {
-        console.error("Error loading saved data:", err)
-      }
-    }
-  }, [])
-
-  /* ---------- LESSON HANDLERS ---------- */
-  const addLesson = () => {
-    const newId = String(lessons.length + 1)
-    setLessons([...lessons, { id: newId, title: `Lesson ${newId}`, fields: [] }])
-    setSelectedLessonId(newId)
-  }
-
-  const deleteLesson = (id) => {
-    if (lessons.length === 1) return
-    const filtered = lessons.filter((l) => l.id !== id)
-    setLessons(filtered)
-    if (selectedLessonId === id) setSelectedLessonId(filtered[0].id)
-  }
-
-  const updateLessonTitle = (id, title) =>
-    setLessons(lessons.map((l) => (l.id === id ? { ...l, title } : l)))
-
-  /* ---------- FIELD HANDLERS ---------- */
-  const addField = (type) => {
-    if (!selectedLesson) return
-    const newField = { id: `${selectedLesson.id}-${Date.now()}`, type, content: "" }
-    setLessons(
-      lessons.map((l) =>
-        l.id === selectedLessonId ? { ...l, fields: [...l.fields, newField] } : l
-      )
-    )
-  }
-
-  const deleteField = (fieldId) => {
-    if (!selectedLesson) return
-    const updated = selectedLesson.fields.filter((f) => f.id !== fieldId)
-    setLessons(
-      lessons.map((l) =>
-        l.id === selectedLessonId ? { ...l, fields: updated } : l
-      )
-    )
-  }
-
-  const updateField = (fieldId, content, htmlContent, language, answer, explanation) => {
-    setLessons(
-      lessons.map((l) =>
-        l.id === selectedLessonId
-          ? {
-              ...l,
-              fields: l.fields.map((f) =>
-                f.id === fieldId
-                  ? { ...f, content, htmlContent, language, answer, explanation }
-                  : f
-              ),
-            }
-          : l
-      )
-    )
-  }
-
-  const handleHtmlFileUpload = (fieldId, file) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const htmlContent = e.target?.result
-      updateField(fieldId, file.name, htmlContent)
-    }
-    reader.readAsText(file)
-  }
-
-  const handleImageUpload = (file, fieldId) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const url = e.target?.result
-      if (fieldId) {
-        updateField(fieldId, url)
-      } else {
-        setCourse({ ...course, thumbnail: url })
-      }
-    }
-    reader.readAsDataURL(file)
-  }
-
-  /* ---------- DRAG HANDLERS (LESSONS) ---------- */
-  const handleDragStart = (e, lessonId) => {
-    setDraggedLessonId(lessonId)
-    e.dataTransfer.effectAllowed = "move"
-  }
-  const handleDragOver = (e) => e.preventDefault()
-  const handleDrop = (e, targetLessonId) => {
-    e.preventDefault()
-    if (!draggedLessonId || draggedLessonId === targetLessonId) return
-
-    const draggedIndex = lessons.findIndex((l) => l.id === draggedLessonId)
-    const targetIndex = lessons.findIndex((l) => l.id === targetLessonId)
-    const reordered = [...lessons]
-    const [draggedLesson] = reordered.splice(draggedIndex, 1)
-    reordered.splice(targetIndex, 0, draggedLesson)
-    setLessons(reordered)
-    setDraggedLessonId(null)
-  }
-  const handleDragEnd = () => setDraggedLessonId(null)
-
-  /* ---------- DRAG HANDLERS (FIELDS) ---------- */
-  const handleFieldDragStart = (e, fieldId) => {
-    setDraggedFieldId(fieldId)
-    e.dataTransfer.effectAllowed = "move"
-  }
-  const handleFieldDragOver = (e) => e.preventDefault()
-  const handleFieldDrop = (e, targetFieldId) => {
-    e.preventDefault()
-    if (!draggedFieldId || draggedFieldId === targetFieldId || !selectedLesson) return
-
-    const draggedIndex = selectedLesson.fields.findIndex((f) => f.id === draggedFieldId)
-    const targetIndex = selectedLesson.fields.findIndex((f) => f.id === targetFieldId)
-    const reordered = [...selectedLesson.fields]
-    const [draggedField] = reordered.splice(draggedIndex, 1)
-    reordered.splice(targetIndex, 0, draggedField)
-
-    setLessons(
-      lessons.map((l) =>
-        l.id === selectedLessonId ? { ...l, fields: reordered } : l
-      )
-    )
-    setDraggedFieldId(null)
-  }
-  const handleFieldDragEnd = () => setDraggedFieldId(null)
-
-  /* ---------- QUIZ HANDLERS ---------- */
-  const addQuizQuestion = () => {
-    const newQ = {
-      id: `quiz-${Date.now()}`,
-      question: "",
-      options: ["", "", "", ""],
-      correctAnswerIndex: 0,
-    }
-    setCourse({
-      ...course,
-      finalQuiz: {
-        ...course.finalQuiz,
-        questions: [...course.finalQuiz.questions, newQ],
-      },
-    })
-  }
-
-  const updateQuizQuestion = (id, field, value) =>
-    setCourse({
-      ...course,
-      finalQuiz: {
-        ...course.finalQuiz,
-        questions: course.finalQuiz.questions.map((q) =>
-          q.id === id ? { ...q, [field]: value } : q
-        ),
-      },
-    })
-
-  const updateQuizOption = (id, optIndex, value) =>
-    setCourse({
-      ...course,
-      finalQuiz: {
-        ...course.finalQuiz,
-        questions: course.finalQuiz.questions.map((q) =>
-          q.id === id
-            ? { ...q, options: q.options.map((opt, i) => (i === optIndex ? value : opt)) }
-            : q
-        ),
-      },
-    })
-
-  const deleteQuizQuestion = (id) =>
-    setCourse({
-      ...course,
-      finalQuiz: {
-        ...course.finalQuiz,
-        questions: course.finalQuiz.questions.filter((q) => q.id !== id),
-      },
-    })
-
-  const updateQuizSettings = (field, value) =>
-    setCourse({
-      ...course,
-      finalQuiz: { ...course.finalQuiz, [field]: value },
-    })
+  }, [courseBuilder.course, courseBuilder.lessons])
 
   /* ---------- SAVE / PREVIEW ---------- */
-  const handleSave = () => {
-    console.log("Saving course:", { course, lessons })
-    alert("Course saved successfully! (Check console for data)")
+  const handleSave = async () => {
+    courseBuilder.setErrors([])
+    courseBuilder.setIsSaving(true)
+
+    // Check auth
+    if (!isAuthenticated || !user?._id) {
+      courseBuilder.setErrors(["Please login to save courses"])
+      courseBuilder.setIsSaving(false)
+      toast.error("Please login to save courses")
+      return
+    }
+
+    // Validate course data
+    const courseValidation = validateCourse(courseBuilder.course)
+    if (!courseValidation.isValid) {
+      courseBuilder.setErrors(courseValidation.errors)
+      courseBuilder.setIsSaving(false)
+      courseValidation.errors.forEach((err) => toast.error(err))
+      return
+    }
+
+    // Validate lessons exist
+    if (courseBuilder.lessons.length === 0) {
+      courseBuilder.setErrors(["Must have at least one lesson"])
+      courseBuilder.setIsSaving(false)
+      toast.error("Must have at least one lesson")
+      return
+    }
+
+    try {
+      // Sanitize course, lessons, and quiz data
+      const courseData = sanitizeCourseForAPI(courseBuilder.course)
+      const lessonsData = courseBuilder.lessons.map(sanitizeLessonForAPI)
+      const quizData = courseBuilder.course.quiz
+        ? sanitizeQuizForAPI(courseBuilder.course.quiz)
+        : null
+
+      let result
+
+      if (courseId) {
+        // Update existing course
+        result = await courseService.updateCourse(courseId, {
+          ...courseData,
+          lessons: lessonsData,
+          quiz: quizData,
+        })
+      } else {
+        // Create new course
+        result = await courseService.createCourse(
+          {
+            ...courseData,
+            lessons: lessonsData,
+            quiz: quizData,
+          },
+          user._id
+        )
+      }
+
+      if (result.success) {
+        toast.success(courseId ? "Course updated successfully!" : "Course created successfully!")
+        courseBuilder.setSaveStatus("saved")
+        // Optionally redirect after save
+        // navigate(`/teacher/courseBuilder/${result.id}`)
+      } else {
+        courseBuilder.setErrors([result.error])
+        toast.error(`Save failed: ${result.error}`)
+      }
+    } catch (error) {
+      const errorMsg = error.message || "Failed to save course"
+      courseBuilder.setErrors([errorMsg])
+      toast.error(errorMsg)
+      console.error("Save error:", error)
+    } finally {
+      courseBuilder.setIsSaving(false)
+    }
   }
 
   /* ---------- RENDER ---------- */
+  // Show loading while auth is initializing
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block">
+            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          </div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error if not authenticated or not a teacher
+  if (!isAuthenticated || user?.role !== "teacher") {
+    return (
+      <div className="min-h-screen bg-black-20 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-6">
+            {!isAuthenticated
+              ? "Please login to access the course builder."
+              : "Only teachers can access the course builder. Please login with a teacher account."}
+          </p>
+          <a
+            href="/login"
+            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            Go to Login
+          </a>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-black-20">
       {/* Header */}
       <Header
-        saveStatus={saveStatus}
-        onPreview={() => setIsPreviewOpen(true)}
+        saveStatus={courseBuilder.isSaving ? "saving" : courseBuilder.saveStatus}
+        onPreview={() => courseBuilder.setIsPreviewOpen(true)}
         onSave={handleSave}
+        isSaving={courseBuilder.isSaving}
+        isLoading={courseBuilder.isLoading}
       />
 
-      {/* Main Layout */}
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex gap-6">
-          <Sidebar
-            lessons={lessons}
-            selectedLessonId={selectedLessonId}
-            setSelectedLessonId={setSelectedLessonId}
-            addLesson={addLesson}
-            deleteLesson={deleteLesson}
-            updateLessonTitle={updateLessonTitle}
-            handleDragStart={handleDragStart}
-            handleDragOver={handleDragOver}
-            handleDrop={handleDrop}
-            handleDragEnd={handleDragEnd}
-            draggedLessonId={draggedLessonId}
-          />
-
-          {/* Editor */}
-          <main className="flex-1 space-y-6">
-            <CourseInfo
-              course={course}
-              setCourse={setCourse}
-              handleImageUpload={handleImageUpload}
-            />
-
-            <LessonEditor
-              selectedLesson={selectedLesson}
-              draggedFieldId={draggedFieldId}
-              handleFieldDragStart={handleFieldDragStart}
-              handleFieldDragOver={handleFieldDragOver}
-              handleFieldDrop={handleFieldDrop}
-              handleFieldDragEnd={handleFieldDragEnd}
-              addField={addField}
-              deleteField={deleteField}
-              updateField={updateField}
-              handleHtmlFileUpload={handleHtmlFileUpload}
-              handleImageUpload={handleImageUpload}
-            />
-
-            <QuizSection
-              course={course}
-              setCourse={setCourse}
-              isQuizSectionOpen={isQuizSectionOpen}
-              setIsQuizSectionOpen={setIsQuizSectionOpen}
-              addQuizQuestion={addQuizQuestion}
-              updateQuizQuestion={updateQuizQuestion}
-              updateQuizOption={updateQuizOption}
-              deleteQuizQuestion={deleteQuizQuestion}
-              updateQuizSettings={updateQuizSettings}
-            />
-          </main>
+      {/* Error Messages */}
+      {courseBuilder.errors.length > 0 && (
+        <div className="container mx-auto px-6 py-4">
+          <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded">
+            <p className="font-semibold text-red-800 mb-2">Errors:</p>
+            <ul className="text-red-700 text-sm space-y-1">
+              {courseBuilder.errors.map((error, idx) => (
+                <li key={idx}>• {error}</li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Main Layout */}
+      {!courseBuilder.isLoading ? (
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex gap-6">
+            <Sidebar
+              lessons={courseBuilder.lessons}
+              selectedLessonId={courseBuilder.selectedLessonId}
+              setSelectedLessonId={courseBuilder.setSelectedLessonId}
+              addLesson={courseBuilder.addLesson}
+              deleteLesson={courseBuilder.deleteLesson}
+              updateLessonTitle={courseBuilder.updateLessonTitle}
+              handleDragStart={courseBuilder.handleDragStart}
+              handleDragOver={courseBuilder.handleDragOver}
+              handleDrop={courseBuilder.handleDrop}
+              handleDragEnd={courseBuilder.handleDragEnd}
+              draggedLessonId={courseBuilder.draggedLessonId}
+            />
+
+            {/* Editor */}
+            <main className="flex-1 space-y-6">
+              <CourseInfo
+                course={courseBuilder.course}
+                setCourse={courseBuilder.setCourse}
+                handleImageUpload={courseBuilder.handleImageUpload}
+              />
+
+              <LessonEditor
+                selectedLesson={courseBuilder.selectedLesson}
+                draggedFieldId={courseBuilder.draggedFieldId}
+                handleFieldDragStart={courseBuilder.handleFieldDragStart}
+                handleFieldDragOver={courseBuilder.handleFieldDragOver}
+                handleFieldDrop={courseBuilder.handleFieldDrop}
+                handleFieldDragEnd={courseBuilder.handleFieldDragEnd}
+                addField={courseBuilder.addField}
+                deleteField={courseBuilder.deleteField}
+                updateField={courseBuilder.updateField}
+                handleHtmlFileUpload={courseBuilder.handleHtmlFileUpload}
+                handleImageUpload={courseBuilder.handleImageUpload}
+              />
+
+              <QuizSection
+                course={courseBuilder.course}
+                setCourse={courseBuilder.setCourse}
+                isQuizSectionOpen={courseBuilder.isQuizSectionOpen}
+                setIsQuizSectionOpen={courseBuilder.setIsQuizSectionOpen}
+                addQuizQuestion={courseBuilder.addQuizQuestion}
+                updateQuizQuestion={courseBuilder.updateQuizQuestion}
+                updateQuizOption={courseBuilder.updateQuizOption}
+                deleteQuizQuestion={courseBuilder.deleteQuizQuestion}
+                updateQuizSettings={courseBuilder.updateQuizSettings}
+              />
+            </main>
+          </div>
+        </div>
+      ) : (
+        <div className="container mx-auto px-6 py-8 text-center">
+          <p className="text-gray-500">Loading course...</p>
+        </div>
+      )}
 
       {/* Preview Modal */}
-      {isPreviewOpen && (
+      {courseBuilder.isPreviewOpen && (
         <PreviewModal
-          course={course}
-          lessons={lessons}
-          onClose={() => setIsPreviewOpen(false)}
+          course={courseBuilder.course}
+          lessons={courseBuilder.lessons}
+          onClose={() => courseBuilder.setIsPreviewOpen(false)}
         />
       )}
     </div>

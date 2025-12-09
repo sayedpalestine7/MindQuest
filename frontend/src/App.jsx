@@ -14,48 +14,43 @@ import StudentProfilePage from './pages/StudentProfilePage.jsx'
 import BrowseCoursesPage from './pages/BrowseCoursesPage.jsx';
 import TeacherProfilePage from "./pages/TeacherProfilePage.jsx";
 import UserNavigates from "./pages/UserNavigates.jsx"
-
-
-// import AnimationStudioPage from "./pages/AnimationStudioPage.jsx";
-// import AnimationStudioPage from "./pages/StudioPage.jsx";
-
-// import AnimationStudioPage from "./pages/AnimationStudioPage.jsx";
+import AnimationStudio from "./pages/AnimationStudio.jsx"
+import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary.jsx"
 import TeacherPage from "./pages/TeacherPage.jsx";
+import { AuthProvider } from "./context/AuthContext.jsx"
 
 function App() {
 
   return (
-    <>
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/navigates" element={<UserNavigates />} />
+    <ErrorBoundary>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/navigates" element={<UserNavigates />} />
 
-      <Route path="/admin" element={<AdminForm />} />
-      <Route path="/admin/courses" element={<ManageCourses />} />
-      <Route path="/admin/users" element={<ManageUsers />} />
-      <Route path="/admin/verification" element={<ManageVerification />} />
-      <Route path="/admin/Settings" element={<Settings />}/>
-       
-      <Route path="/student/:id" element={<StudentProfilePage />}/>
-      <Route path="/courses" element={<BrowseCoursesPage />} />
-      <Route path="/teacher/:id" element={<TeacherProfilePage />} />
+          <Route path="/admin" element={<AdminForm />} />
+          <Route path="/admin/courses" element={<ManageCourses />} />
+          <Route path="/admin/users" element={<ManageUsers />} />
+          <Route path="/admin/verification" element={<ManageVerification />} />
+          <Route path="/admin/Settings" element={<Settings />}/>
 
-      <Route path="/teacher/:instructor" element={<TeacherPage />} />
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/signup" element={<SignUpForm />} />
+          
+          <Route path="/teacher/signup" element={<TeacherSignUp />} />
+          <Route path="/teacher/courseBuilder/:id?" element={<TeacherCourseBuilder />} />
+          <Route path="/teacher/studio/:id" element={<AnimationStudio />} />
+          <Route path="/teacher/:id" element={<TeacherProfilePage />} />
+          <Route path="/teacher/:instructor" element={<TeacherPage />} />
 
-      <Route path="/login" element={<LoginForm />} />
-      <Route path="/signup" element={<SignUpForm />} />
-      <Route path="/teacher/signup" element={<TeacherSignUp />} />
-
-
-
-      <Route path="/teacher/courseBuilder" element={<TeacherCourseBuilder />} />
-      <Route path="/student/coursePage" element={<StudentCoursePage />} />
-
-      {/* <Route path="//studio" element={<AnimationStudioPage />} />
-      <Route path="/teacher/studio/:id" element={<AnimationStudioPage />} /> */}
-
-    </Routes>
-    </>
+          <Route path="/student/:id" element={<StudentProfilePage />}/>
+          <Route path="/student/coursePage" element={<StudentCoursePage />} />
+          
+          <Route path="/courses" element={<BrowseCoursesPage />} />
+          <Route path="/studio" element={<AnimationStudio />} />
+        </Routes>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 

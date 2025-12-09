@@ -1,6 +1,7 @@
 import { Brain } from "lucide-react"
 import { motion } from "framer-motion"
-export default function Header({ onLogout }) {
+import { Link } from "react-router"
+export default function Header({ onLogout, teacherId }) {
   
   return (
     <motion.div
@@ -21,7 +22,9 @@ export default function Header({ onLogout }) {
           </div>
 
           <div className="flex gap-3">
-            <button className="border px-4 py-2 rounded-md hover:bg-gray-100">Create Courses</button>
+            <button className="border px-4 py-2 rounded-md hover:bg-gray-100">
+              <Link to={`/teacher/courseBuilder/${teacherId}`}>Create a Course</Link>
+              </button>
             <button onClick={onLogout} className="border px-4 py-2 rounded-md hover:bg-gray-100">Logout</button>
           </div>
         </div>

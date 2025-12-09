@@ -146,7 +146,7 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
       return (
         <Textarea
           value={field.content}
-          onChange={(e) => updateField(field.id, e.target.value)}
+          onChange={(e) => updateField(field.id, { content: e.target.value })}
           placeholder="Enter your text content..."
           rows={4}
           className="border-2 border-gray-300 resize-none"
@@ -159,7 +159,7 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
           <div className="flex gap-2 items-center">
             <Input
               value={field.content}
-              onChange={(e) => updateField(field.id, e.target.value)}
+              onChange={(e) => updateField(field.id, { content: e.target.value })}
               placeholder="Enter image URL or upload..."
               className="border-2 flex-1 border-gray-300"
             />
@@ -194,7 +194,7 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
       return (
         <Input
           value={field.content}
-          onChange={(e) => updateField(field.id, e.target.value)}
+          onChange={(e) => updateField(field.id, { content: e.target.value })}
           placeholder="Enter YouTube video URL..."
           className="border-2 border-gray-300"
         />
@@ -206,7 +206,7 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
           <Select
             value={field.language || "javascript"}
             onChange={(e) =>
-              updateField(field.id, field.content, undefined, e.target.value, field.answer, field.explanation)
+              updateField(field.id, { language: e.target.value })
             }
             className="rounded-md border-gray-300 w-48"
           >
@@ -221,7 +221,7 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
           <Textarea
             value={field.content}
             onChange={(e) =>
-              updateField(field.id, e.target.value, undefined, field.language, field.answer, field.explanation)
+              updateField(field.id, { content: e.target.value })
             }
             placeholder="Enter your code here..."
             rows={8}
@@ -239,7 +239,7 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
             </label>
             <Textarea
               value={field.content}
-              onChange={(e) => updateField(field.id, e.target.value, undefined, field.language, field.answer, field.explanation)}
+              onChange={(e) => updateField(field.id, { content: e.target.value })}
               placeholder="Enter the question..."
               rows={2}
               className="border-2 border-gray-300 resize-none"
@@ -251,7 +251,7 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
             </label>
             <Input
               value={field.answer || ""}
-              onChange={(e) => updateField(field.id, field.content, undefined, field.language, e.target.value, field.explanation)}
+              onChange={(e) => updateField(field.id, { answer: e.target.value })}
               placeholder="Enter the correct answer..."
               className="border-2 border-gray-300"
             />
@@ -262,7 +262,7 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
             </label>
             <Textarea
               value={field.explanation || ""}
-              onChange={(e) => updateField(field.id, field.content, undefined, field.language, field.answer, e.target.value)}
+              onChange={(e) => updateField(field.id, { explanation: e.target.value })}
               placeholder="Explain the answer..."
               rows={3}
               className="border-2 border-gray-300 resize-none"

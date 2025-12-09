@@ -216,7 +216,7 @@ export default function TeacherProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}>
-        <Header onLogout={handleLogout} />
+        <Header onLogout={handleLogout} teacherId={teacherId} />
         <div className="container mx-auto p-6 space-y-8 max-w-7xl">
           <ProfileHeader profileData={profileData} stats={stats} onEdit={() => setIsEditOpen(true)} />
           <PerformanceSection stats={stats} />
