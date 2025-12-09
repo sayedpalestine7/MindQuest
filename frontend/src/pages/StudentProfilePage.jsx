@@ -183,23 +183,26 @@ export default function StudentProfilePage() {
   };
   //------------- Fetch unread counts once and updte livae -------------
   useEffect(() => {
-  if (!studentId) return;
+    if (!studentId) return;
 
-  const fetchUnread = async () => {
-    try {
-      const res = await axios.get(`http://localhost:5000/api/chat/unread/student/${studentId}`);
+    const fetchUnread = async () => {
+      try {
+        // Backend route: GET /api/chat/student/unread/:studentId
+        const res = await axios.get(
+          `http://localhost:5000/api/chat/student/unread/${studentId}`
+        );
 
-      const map = {};
-      res.data.forEach((item) => (map[item._id] = item.count));  
+        const map = {};
+        res.data.forEach((item) => (map[item._id] = item.count));
 
-      setUnreadCount(map);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+        setUnreadCount(map);
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-  fetchUnread();
-}, [studentId]);
+    fetchUnread();
+  }, [studentId]);
 
   // ---------------- SEARCH TEACHERS ----------------
   const handleSearchTeachers = (value) => {

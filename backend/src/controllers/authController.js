@@ -15,6 +15,21 @@ export const registerUser = async (req, res) => {
       institution
     } = req.body;
 
+    // TEMP: inspect uploaded files from Multer
+    console.log("[registerUser] req.file:", req.file);
+    console.log("[registerUser] req.files:", req.files);
+
+    // Normalize any uploaded image into a base64 data URL string
+    let profileImageDataUrl;
+    if (req.file) {
+      const base64 = req.file.buffer.toString("base64");
+      profileImageDataUrl = `data:${req.file.mimetype};base64,${base64}`;
+    } else if (req.files?.profileImage && req.files.profileImage[0]) {
+      const f = req.files.profileImage[0];
+      const base64 = f.buffer.toString("base64");
+      profileImageDataUrl = `data:${f.mimetype};base64,${base64}`;
+    }
+
     // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: "User already exists" });
@@ -26,6 +41,7 @@ export const registerUser = async (req, res) => {
       name,
       email,
       password: hashedPassword,
+      profileImage: profileImageDataUrl,
       role,
       status: role === "teacher" ? "pending" : "active",
     });
