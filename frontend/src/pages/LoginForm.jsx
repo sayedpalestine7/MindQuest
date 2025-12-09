@@ -123,7 +123,7 @@ function LoginForm() {
               <AuthLink
                 question="Don't have an account?"
                 linkText="Sign up"
-                href="/signup"
+                href="/navigates"
                 className="mt-4"
               />
             </form>

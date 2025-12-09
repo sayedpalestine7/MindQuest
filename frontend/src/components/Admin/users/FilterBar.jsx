@@ -41,6 +41,18 @@ export function FilterBar({ userTypeFilter, setUserTypeFilter, statusFilter, set
             <CheckCircle className="h-2.5 w-3" />Active
           </span>
         </button>
+        <button onClick={() => setStatusFilter("pending")} className={`${btn} ${statusFilter === "pending" ? active : ""}`}
+          style={{ color: statusFilter === "pending" ? 'white' : 'gray', marginRight: '3px' }}>
+          <span className='flex justify-center items-center'>
+            <AlignEndHorizontal className="h-2.5 w-3" />Pending
+          </span>
+        </button>
+        <button onClick={() => setStatusFilter("rejected")} className={`${btn} ${statusFilter === "rejected" ? active : ""}`}
+          style={{ color: statusFilter === "rejected" ? 'white' : 'gray', marginRight: '3px' }}>
+          <span className='flex justify-center items-center'>
+            <XCircle className="h-2.5 w-3" />Rejected
+          </span>
+        </button>
         <button onClick={() => setStatusFilter("banned")} className={`${btn} ${statusFilter === "banned" ? active : ""}`}
           style={{ color: statusFilter === "banned" ? 'white' : 'gray' }}>
           <span className='flex justify-center items-center'>
