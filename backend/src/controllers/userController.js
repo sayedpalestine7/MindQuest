@@ -83,6 +83,7 @@ export const getPendingTeachers = async (req, res) => {
       id: t._id,
       name: t.name,
       email: t.email,
+      avatar: t.profileImage,
       specialization: t.teacherData?.specialization || "",
       institution: t.teacherData?.institution || "",
       certificates: [t.teacherData?.certification], // or array

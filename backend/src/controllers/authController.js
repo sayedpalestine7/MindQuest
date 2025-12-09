@@ -106,15 +106,22 @@ export const loginUser = async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ message: "Invalid email or password" });
 
-    // ❌ Block pending teacher
+    // ❌ Block non-active accounts
     if (user.role === "teacher" && user.status === "pending") {
       return res.status(403).json({
         message: "Your account is pending approval from the admin.",
       });
     }
+
+    if (user.role === "teacher" && user.status === "rejected") {
+      return res.status(403).json({
+        message: "Your application was rejected by the admin.",
+      });
+    }
+
     if (user.status === "banned") {
       return res.status(403).json({
-        message: "Your account is banned approval from the admin.",
+        message: "Your account is banned by the admin.",
       });
     }
 

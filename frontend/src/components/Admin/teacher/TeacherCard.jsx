@@ -4,9 +4,10 @@ import { motion } from "framer-motion"
 
 export default function TeacherCard({ teacher, onView }) {
   const profileImage =
-    teacher.certificates && teacher.certificates.length > 0
-      ? teacher.certificates[0] // first image in array
-      : "/default-avatar.png"   // fallback image
+    teacher.avatar ||
+    (teacher.certificates && teacher.certificates.length > 0
+      ? teacher.certificates[0]
+      : "/default-avatar.png");
 
   return (
     <motion.div
