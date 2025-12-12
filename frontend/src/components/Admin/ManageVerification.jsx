@@ -59,7 +59,7 @@ function ManageQuizzes() {
 };
 
 
-const handleAction = async (teacherId, action) => {
+const handleAction = async (teacherId, action, reason) => {
   try {
     let url = "";
     if (action === "approve") {
@@ -75,6 +75,7 @@ const handleAction = async (teacherId, action) => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
+      body: action === "reject" ? JSON.stringify({ reason }) : undefined,
     });
 
     const data = await res.json();
@@ -171,7 +172,7 @@ const handleAction = async (teacherId, action) => {
             onCancel={() =>
               setActionDialog({ open: false, teacher: null, action: null })
             }
-            onConfirm={() => handleAction(actionDialog.teacher.id, actionDialog.action)}
+            onConfirm={(reason) => handleAction(actionDialog.teacher.id, actionDialog.action, reason)}
           />
         )}
       </main>
