@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { useParams } from "react-router";
 
 import { socket } from "../utils/socket.js";
 import Header from "../components/profiles/teacher/Header";
@@ -16,7 +17,8 @@ import StudentSidebar from "../components/teacher-chat/StudentSidebar";
 import ChatWindow from "../components/teacher-chat/ChatWindow.jsx";
 
 export default function TeacherProfilePage() {
-  const teacherId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  const { id: routeTeacherId } = useParams();
+  const teacherId = routeTeacherId || (typeof window !== "undefined" ? localStorage.getItem("userId") : null);
 
   /* ====== Profile States ====== */
   const [profileData, setProfileData] = useState(null);

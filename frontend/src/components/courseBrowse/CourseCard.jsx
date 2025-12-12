@@ -56,7 +56,7 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
         <div className="mb-3">
           <div className="mb-3">
             <Link
-              to={`/teacher/${encodeURIComponent(course.instructor)}`}
+              to={course.teacherId ? `/instructor/${course.teacherId}` : "#"}
               className="text-sm text-indigo-600 hover:underline font-medium mb-1 inline-block"
             >
               By {course.instructor}

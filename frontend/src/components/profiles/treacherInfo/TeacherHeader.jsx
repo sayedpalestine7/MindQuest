@@ -27,13 +27,32 @@ export default function TeacherHeader({ teacher }) {
                 <div>{teacher.email}</div>
               </div>
             </div>
-
-            <button className="px-4 py-2 bg-blue-500 text-white rounded flex items-center gap-2">
-              Contact
-            </button>
           </div>
 
-          <p className="mb-6">{teacher.bio}</p>
+          <p className="mb-2">{teacher.bio}</p>
+
+          {teacher.link && (() => {
+            const links = String(teacher.link)
+              .split(/[,\s]+/)
+              .map((l) => l.trim())
+              .filter(Boolean);
+
+            return (
+              <div className="mb-4 space-x-3 space-y-1">
+                {links.map((url) => (
+                  <a
+                    key={url}
+                    href={url.startsWith("http") ? url : `https://${url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-blue-600 hover:underline text-sm mr-3"
+                  >
+                    {url}
+                  </a>
+                ))}
+              </div>
+            );
+          })()}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 bg-gray-100 rounded text-center">
