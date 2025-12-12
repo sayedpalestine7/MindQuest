@@ -10,7 +10,9 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react"
+import axios from "axios"
 import { Card, Button, Textarea, Input, Select } from "../courseBuilder/UI"
+import AnimationRenderer from "./AnimationRenderer"
 
 export default function LessonContent({
   lesson,
@@ -168,7 +170,6 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit }) {
       )
 
     case "minigame":
-    case "animation":
       return (
         <div className="rounded-lg border-2 border-gray-300 overflow-hidden">
           <iframe
@@ -179,6 +180,9 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit }) {
           />
         </div>
       )
+
+    case "animation":
+      return <AnimationRenderer animationId={field.animationId} />
 
     default:
       return null

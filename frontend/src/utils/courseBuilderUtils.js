@@ -138,10 +138,21 @@ export const validateQuiz = (quiz) => {
  */
 export const sanitizeCourseForAPI = (course) => {
   const { title, description, difficulty, thumbnail, scoreOnFinish } = course;
+  // Map frontend difficulty values to backend enum values (capitalize)
+  const mapDifficulty = (d) => {
+    if (!d) return "Beginner";
+    const normalized = String(d).toLowerCase();
+    if (normalized === "beginner") return "Beginner";
+    if (normalized === "intermediate") return "Intermediate";
+    if (normalized === "advanced") return "Advanced";
+    // Fallback to capitalized first letter
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  };
+
   return {
     title,
     description,
-    difficulty,
+    difficulty: mapDifficulty(difficulty),
     thumbnail,
     scoreOnFinish: scoreOnFinish || 0,
   };
@@ -186,7 +197,7 @@ export const sanitizeFieldForAPI = (field) => {
     case "minigame":
       return { ...base, content: field.content };
     case "animation":
-      return { ...base, content: field.content };
+      return { ...base, content: field.content, animationId: field.animationId };
     default:
       return base;
   }

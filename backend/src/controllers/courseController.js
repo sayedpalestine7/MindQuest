@@ -2,6 +2,7 @@ import Course from "../models/mongo/courseModel.js";
 import User from "../models/mongo/userModel.js";
 import Lesson from "../models/mongo/lessonModel.js";
 import Quiz from "../models/mongo/quizModel.js";
+import Field from "../models/mongo/fieldModel.js";
 
 // 🧠 CREATE a new course
 export const createCourse = async (req, res) => {
@@ -27,13 +28,37 @@ export const createCourse = async (req, res) => {
     // Create lessons if provided
     let lessonIds = [];
     if (lessons && Array.isArray(lessons) && lessons.length > 0) {
-      const createdLessons = await Lesson.insertMany(
-        lessons.map((lesson) => ({
-          ...lesson,
-          courseId: course._id, // Now we have the course ID
-        }))
-      );
-      lessonIds = createdLessons.map((l) => l._id);
+      // Create lessons and their fields properly (Fields are separate documents)
+      const createdLessonIds = [];
+      for (const lesson of lessons) {
+        const createdLesson = await Lesson.create({ title: lesson.title, courseId: course._id });
+
+        // If the lesson contains fields, create Field documents and attach their ids
+        let fieldIds = [];
+        if (lesson.fields && Array.isArray(lesson.fields) && lesson.fields.length > 0) {
+          const createdFields = await Field.insertMany(
+            lesson.fields.map((f, idx) => ({
+              lessonId: createdLesson._id,
+              type: f.type,
+              content: f.content,
+              questionId: f.questionId || null,
+              animationId: f.animationId || null,
+              order: idx,
+            }))
+          );
+          fieldIds = createdFields.map((cf) => cf._id);
+        }
+
+        // Update lesson with fieldIds
+        if (fieldIds.length > 0) {
+          createdLesson.fieldIds = fieldIds;
+          await createdLesson.save();
+        }
+
+        createdLessonIds.push(createdLesson._id);
+      }
+
+      lessonIds = createdLessonIds;
     }
 
     // Create quiz if provided
@@ -84,6 +109,10 @@ export const getCourseById = async (req, res) => {
         path: "lessonIds",
         model: "Lesson",
         select: "title fieldIds",
+        populate: {
+          path: "fieldIds",
+          model: "Field",
+        },
       })
       .populate({
         path: "quizId",
@@ -116,17 +145,40 @@ export const updateCourse = async (req, res) => {
     let lessonIds = currentCourse.lessonIds;
     if (lessons && Array.isArray(lessons)) {
       // Delete old lessons
+      // Delete old lessons and their fields
+      await Field.deleteMany({ lessonId: { $in: currentCourse.lessonIds } });
       await Lesson.deleteMany({ _id: { $in: currentCourse.lessonIds } });
 
       // Create new lessons
       if (lessons.length > 0) {
-        const createdLessons = await Lesson.insertMany(
-          lessons.map((lesson) => ({
-            ...lesson,
-            courseId: req.params.id,
-          }))
-        );
-        lessonIds = createdLessons.map((l) => l._id);
+        const createdLessonIds = [];
+        for (const lesson of lessons) {
+          const createdLesson = await Lesson.create({ title: lesson.title, courseId: req.params.id });
+
+          let fieldIds = [];
+          if (lesson.fields && Array.isArray(lesson.fields) && lesson.fields.length > 0) {
+            const createdFields = await Field.insertMany(
+              lesson.fields.map((f, idx) => ({
+                lessonId: createdLesson._id,
+                type: f.type,
+                content: f.content,
+                questionId: f.questionId || null,
+                animationId: f.animationId || null,
+                order: idx,
+              }))
+            );
+            fieldIds = createdFields.map((cf) => cf._id);
+          }
+
+          if (fieldIds.length > 0) {
+            createdLesson.fieldIds = fieldIds;
+            await createdLesson.save();
+          }
+
+          createdLessonIds.push(createdLesson._id);
+        }
+
+        lessonIds = createdLessonIds;
       } else {
         lessonIds = [];
       }
@@ -175,6 +227,7 @@ export const deleteCourse = async (req, res) => {
     if (!course) return res.status(404).json({ message: "Course not found" });
 
     // Delete related lessons
+    await Field.deleteMany({ lessonId: { $in: course.lessonIds } });
     await Lesson.deleteMany({ _id: { $in: course.lessonIds } });
 
     // Delete related quiz

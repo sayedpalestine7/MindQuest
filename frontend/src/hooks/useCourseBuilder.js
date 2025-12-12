@@ -46,11 +46,23 @@ export const useCourseBuilder = (courseId) => {
 
   // Load existing course
   const loadCourse = async (id) => {
+    if (!id || id === "undefined" || id === "null") {
+      console.warn('⚠️ loadCourse: Invalid or missing ID provided', id);
+      return;
+    }
+
     setIsLoading(true);
+    setErrors([]); // Clear previous errors
+    
     const result = await courseService.getCourseById(id);
     setIsLoading(false);
 
     if (result.success) {
+      // Verify we got the right course
+      if (result.data._id !== id) {
+        console.warn('⚠️ WARNING: Course ID mismatch! Expected:', id, 'Got:', result.data._id);
+      }
+      
       setCourse({
         title: result.data.title,
         description: result.data.description,
@@ -60,15 +72,26 @@ export const useCourseBuilder = (courseId) => {
       });
 
       if (result.data.lessonIds && Array.isArray(result.data.lessonIds)) {
-        setLessons(
-          result.data.lessonIds.map((lesson) => ({
-            id: lesson._id,
-            title: lesson.title,
-            fields: lesson.fieldIds || [],
-          }))
-        );
+        const newLessons = result.data.lessonIds.map((lesson) => ({
+          id: lesson._id,
+          title: lesson.title,
+          fields: (lesson.fieldIds || []).map((f) => ({
+            id: f._id || f.id,
+            type: f.type,
+            content: f.content,
+            questionId: f.questionId || null,
+            order: f.order ?? 0,
+          })),
+        }));
+        setLessons(newLessons);
+        // Reset selected lesson to first lesson of loaded course
+        setSelectedLessonId(newLessons.length > 0 ? newLessons[0].id : null);
+      } else {
+        setLessons([{ id: generateId(), title: "Lesson 1", fields: [] }]);
+        setSelectedLessonId(null);
       }
     } else {
+      console.error('📚 Failed to load course:', result.error);
       setErrors([result.error]);
       toast.error(`Failed to load course: ${result.error}`);
     }
@@ -98,13 +121,7 @@ export const useCourseBuilder = (courseId) => {
   };
 
   const updateLessonTitle = (id, title) => {
-    if (!title.trim()) {
-      setErrors(["Lesson title cannot be empty"]);
-      toast.error("Lesson title cannot be empty");
-      return;
-    }
     setLessons(lessons.map((l) => (l.id === id ? { ...l, title } : l)));
-    toast.success("Lesson updated");
   };
 
   // FIELD HANDLERS

@@ -1,0 +1,121 @@
+### Seed full course (use REST client)
+# Usage: open this file in VS Code and run requests in order with a REST client extension.
+# It will: login -> create course (with lessons+fields) -> create questions -> create quiz -> fetch course
+
+### 🔑 Login (use teacher account)
+# @name login
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "mmm@gmail.com",
+  "password": "123123"
+}
+
+### Save token and userId from login response
+@token = {{login.response.body.token}}
+@userId = {{login.response.body.user._id}}
+
+### 📘 Create a new course (with lessons and fields)
+# @name createCourse
+POST http://localhost:5000/api/courses
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Full Sample Course: Introduction to MindQuest (REST) 1",
+  "description": "A comprehensive sample course created via REST for testing. Contains multiple lesson types and a quiz.",
+  "thumbnail": "https://picsum.photos/seed/mindquest/800/450",
+  "teacherId": "{{userId}}",
+  "difficulty": "Beginner",
+  "scoreOnFinish": 100,
+  "lessons": [
+    {
+      "title": "Lesson 1: Welcome & Overview",
+      "fields": [
+        { "type": "paragraph", "content": "Welcome to the course! This lesson covers the overview and goals." },
+        { "type": "image", "content": "https://placekitten.com/800/400" },
+        { "type": "youtube", "content": "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }
+      ]
+    },
+    {
+      "title": "Lesson 2: Basics",
+      "fields": [
+        { "type": "paragraph", "content": "Basic concepts explained in plain language." },
+        { "type": "code", "content": "console.log('Hello World')" },
+        { "type": "question", "content": "What is 2 + 2?" }
+      ]
+    },
+    {
+      "title": "Lesson 3: Deep Dive",
+      "fields": [
+        { "type": "paragraph", "content": "A deeper explanation with examples and links." },
+        { "type": "html", "content": "<h3>Embedded HTML example</h3><p>This is a test.</p>" },
+        { "type": "question", "content": "Which option is correct?" }
+      ]
+    }
+  ]
+}
+
+### Save courseId
+@courseId = {{createCourse.response.body.course._id}}
+
+### ➕ Create questions to be used in the quiz (run both)
+### @name createQuestion1
+POST http://localhost:5000/api/questions
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "text": "What does LIFO stand for?",
+  "type": "mcq",
+  "options": ["Last In First Out", "First In First Out", "Least Important First Out"],
+  "correctAnswer": "Last In First Out",
+  "points": 2,
+  "explanation": "LIFO means Last In First Out."
+}
+
+### @name createQuestion2
+POST http://localhost:5000/api/questions
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "text": "What is the result of 2 + 2?",
+  "type": "short",
+  "options": [],
+  "correctAnswer": "4",
+  "points": 1,
+  "explanation": "Simple arithmetic"
+}
+
+### Save question IDs directly from responses
+@q1 = {{createQuestion1.response.body.question._id}}
+@q2 = {{createQuestion2.response.body.question._id}}
+
+### 🧩 Create a quiz referencing the created questions and attach to course
+### @name createQuiz
+POST http://localhost:5000/api/quizzes
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Introductory Quiz (REST)",
+  "courseId": "{{courseId}}",
+  "questionIds": [
+    "{{createQuestion1.response.body.question._id}}",
+    "{{createQuestion2.response.body.question._id}}"
+  ]
+}
+
+### Save quizId
+@quizId = {{createQuiz.response.body.quiz._id}}
+
+### ✅ Fetch the fully populated course (lessons + fields + quiz)
+GET http://localhost:5000/api/courses/{{courseId}}
+
+
+# Notes:
+# - Run the requests in order (login -> createCourse -> createQuestion1/2 -> createQuiz -> GET course).
+# - If the teacher account does not exist, first register it via the /api/auth/register request (example in mindquest.rest). 
+# - You can run these requests with VS Code REST Client extension or Postman (convert variables accordingly).

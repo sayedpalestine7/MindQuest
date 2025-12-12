@@ -19,9 +19,10 @@ import {
 import toast from "react-hot-toast"
 
 export default function TeacherCourseBuilder() {
-  const { courseId } = useParams()
+  const { id: courseId } = useParams()
   const { user, isAuthenticated, isLoading } = useAuth()
   const courseBuilder = useCourseBuilder(courseId)
+  
   /* ---------- EFFECTS ---------- */
   // Check auth and load course
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function TeacherCourseBuilder() {
     if (courseId) {
       courseBuilder.loadCourse(courseId)
     }
-  }, [isLoading, isAuthenticated, user, courseId, courseBuilder])
+  }, [courseId, isLoading, isAuthenticated, user?.role])
 
   // Auto-save to localStorage after 2s (as backup)
   useEffect(() => {
@@ -195,30 +196,56 @@ export default function TeacherCourseBuilder() {
 
       {/* Main Layout */}
       {!courseBuilder.isLoading ? (
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex gap-6">
-            <Sidebar
-              lessons={courseBuilder.lessons}
-              selectedLessonId={courseBuilder.selectedLessonId}
-              setSelectedLessonId={courseBuilder.setSelectedLessonId}
-              addLesson={courseBuilder.addLesson}
-              deleteLesson={courseBuilder.deleteLesson}
-              updateLessonTitle={courseBuilder.updateLessonTitle}
-              handleDragStart={courseBuilder.handleDragStart}
-              handleDragOver={courseBuilder.handleDragOver}
-              handleDrop={courseBuilder.handleDrop}
-              handleDragEnd={courseBuilder.handleDragEnd}
-              draggedLessonId={courseBuilder.draggedLessonId}
-            />
+        <div className="container mx-auto px-6 py-8 space-y-8">
+          {/* Top: Course Info */}
+          <CourseInfo
+            course={courseBuilder.course}
+            setCourse={courseBuilder.setCourse}
+            handleImageUpload={courseBuilder.handleImageUpload}
+          />
 
-            {/* Editor */}
-            <main className="flex-1 space-y-6">
-              <CourseInfo
+          {/* Middle: Lessons & Quiz (Left) + Lesson Editor (Right) */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left Panel: Lessons + Quiz */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Lessons Panel */}
+              <div className="bg-white rounded-xl shadow-lg p-6 border-2">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Lessons ({courseBuilder.lessons.length})</h3>
+                <Sidebar
+                  lessons={courseBuilder.lessons}
+                  selectedLessonId={courseBuilder.selectedLessonId}
+                  setSelectedLessonId={courseBuilder.setSelectedLessonId}
+                  addLesson={courseBuilder.addLesson}
+                  deleteLesson={courseBuilder.deleteLesson}
+                  updateLessonTitle={courseBuilder.updateLessonTitle}
+                  handleDragStart={courseBuilder.handleDragStart}
+                  handleDragOver={courseBuilder.handleDragOver}
+                  handleDrop={courseBuilder.handleDrop}
+                  handleDragEnd={courseBuilder.handleDragEnd}
+                  draggedLessonId={courseBuilder.draggedLessonId}
+                />
+              </div>
+
+              {/* Quiz Panel */}
+              <QuizSection
                 course={courseBuilder.course}
                 setCourse={courseBuilder.setCourse}
-                handleImageUpload={courseBuilder.handleImageUpload}
+                isQuizSectionOpen={courseBuilder.isQuizSectionOpen}
+                setIsQuizSectionOpen={courseBuilder.setIsQuizSectionOpen}
+                addQuizQuestion={courseBuilder.addQuizQuestion}
+                updateQuizQuestion={courseBuilder.updateQuizQuestion}
+                updateQuizOption={courseBuilder.updateQuizOption}
+                deleteQuizQuestion={courseBuilder.deleteQuizQuestion}
+                updateQuizSettings={courseBuilder.updateQuizSettings}
               />
+              <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+                <p className="text-sm text-blue-700 font-semibold">💡 AI Quiz Generation</p>
+                <p className="text-xs text-blue-600 mt-2">Use the "Generate from AI" button to auto-create quiz questions from your course content.</p>
+              </div>
+            </div>
 
+            {/* Right Panel: Lesson Editor */}
+            <div className="lg:col-span-3">
               <LessonEditor
                 selectedLesson={courseBuilder.selectedLesson}
                 draggedFieldId={courseBuilder.draggedFieldId}
@@ -232,19 +259,7 @@ export default function TeacherCourseBuilder() {
                 handleHtmlFileUpload={courseBuilder.handleHtmlFileUpload}
                 handleImageUpload={courseBuilder.handleImageUpload}
               />
-
-              <QuizSection
-                course={courseBuilder.course}
-                setCourse={courseBuilder.setCourse}
-                isQuizSectionOpen={courseBuilder.isQuizSectionOpen}
-                setIsQuizSectionOpen={courseBuilder.setIsQuizSectionOpen}
-                addQuizQuestion={courseBuilder.addQuizQuestion}
-                updateQuizQuestion={courseBuilder.updateQuizQuestion}
-                updateQuizOption={courseBuilder.updateQuizOption}
-                deleteQuizQuestion={courseBuilder.deleteQuizQuestion}
-                updateQuizSettings={courseBuilder.updateQuizSettings}
-              />
-            </main>
+            </div>
           </div>
         </div>
       ) : (

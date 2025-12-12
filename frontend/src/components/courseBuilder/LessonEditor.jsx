@@ -14,6 +14,7 @@ import {
   GripVertical,
 } from "lucide-react"
 import { Button, Input, Textarea, Select, Card } from "./UI"
+import AnimationSelector from "./AnimationSelector"
 
 export default function LessonEditor({
   selectedLesson,
@@ -69,18 +70,20 @@ export default function LessonEditor({
           selectedLesson.fields.map((field) => (
             <div
               key={field.id}
-              draggable
-              onDragStart={(e) => handleFieldDragStart(e, field.id)}
-              onDragOver={handleFieldDragOver}
-              onDrop={(e) => handleFieldDrop(e, field.id)}
-              onDragEnd={handleFieldDragEnd}
-              className={`p-4 bg-white rounded-xl border-2 border-gray-300 hover:border-black/50 transition-colors cursor-move ${draggedFieldId === field.id ? "opacity-50" : ""
+              className={`p-4 bg-white rounded-xl border-2 border-gray-300 hover:border-black/50 transition-colors ${draggedFieldId === field.id ? "opacity-50" : ""
                 }`}
             >
-              {/* Field Header */}
-              <div className="flex items-center justify-between mb-3">
+              {/* Field Header with Draggable Grip */}
+              <div 
+                draggable
+                onDragStart={(e) => handleFieldDragStart(e, field.id)}
+                onDragOver={handleFieldDragOver}
+                onDrop={(e) => handleFieldDrop(e, field.id)}
+                onDragEnd={handleFieldDragEnd}
+                className="flex items-center justify-between mb-3 cursor-move select-none"
+              >
                 <div className="flex items-center gap-2">
-                  <GripVertical className="w-5 h-5 text-gray-400 cursor-grab active:cursor-grabbing" />
+                  <GripVertical className="w-5 h-5 text-gray-400 cursor-grab active:cursor-grabbing flex-shrink-0" />
                   {getFieldIcon(field.type)}
                   <span className="text-sm font-semibold text-gray-900 capitalize">
                     {field.type}
@@ -96,7 +99,7 @@ export default function LessonEditor({
                 </Button>
               </div>
 
-              {/* Field Content Inputs */}
+              {/* Field Content Inputs - NO DRAG */}
               <FieldContent
                 field={field}
                 updateField={updateField}
@@ -272,7 +275,6 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
       )
 
     case "minigame":
-    case "animation":
       return (
         <div className="space-y-2">
           <Input
@@ -300,6 +302,14 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
             </div>
           )}
         </div>
+      )
+
+    case "animation":
+      return (
+        <AnimationSelector
+          selectedAnimationId={field.animationId}
+          onSelect={(animationId) => updateField(field.id, { animationId })}
+        />
       )
 
     default:

@@ -23,6 +23,7 @@ export default function TeacherProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   /* ====== Chat States ====== */
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -39,19 +40,33 @@ export default function TeacherProfilePage() {
       try {
         if (!teacherId) throw new Error("Login required");
         const token = localStorage.getItem("token");
+        
+        // Fetch teacher profile
         const res = await axios.get(`http://localhost:5000/api/teacher/id/${teacherId}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        setProfileData(res.data);
+        
+        const teacher = res.data;
+        
+        // Enrich with calculated stats if not in backend response
+        const enrichedData = {
+          ...teacher,
+          totalCourses: teacher.courses?.length || teacher.totalCourses || 0,
+          totalStudents: teacher.totalStudents || 0,
+          rating: teacher.rating || 0,
+          totalPoints: teacher.totalPoints || 0,
+        };
+        
+        setProfileData(enrichedData);
+        setLoading(false);
       } catch (err) {
         console.error(err);
         setError(err.response?.data?.message || err.message);
-      } finally {
         setLoading(false);
       }
     };
     fetchProfile();
-  }, [teacherId]);
+  }, [teacherId, refreshTrigger]);
 
   /* ====== Fetch Students ====== */
   useEffect(() => {
@@ -141,17 +156,31 @@ export default function TeacherProfilePage() {
       socket.off("new_message", handleNewMessage);
     };
   }, [selectedStudent, teacherId]);
+  // ------------- Refresh profile when page becomes visible (user returns) -------------
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        setRefreshTrigger(prev => prev + 1);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
   // ------------- Fetch unread counts once and update live -------------
   useEffect(() => {
     if (!teacherId) return;
 
     const fetchUnread = async () => {
-      const res = await axios.get(`http://localhost:5000/api/chat/unread/${teacherId}`);
-
-      const map = {};
-      res.data.forEach((item) => (map[item._id] = item.count));
-
-      setUnreadCount(map);
+      try {
+        const res = await axios.get(`http://localhost:5000/api/chat/teacher/unread/${teacherId}`);
+        const map = {};
+        res.data.forEach((item) => (map[item._id] = item.count));
+        setUnreadCount(map);
+      } catch (err) {
+        console.error("Failed to fetch unread counts:", err);
+      }
     };
 
     fetchUnread();
@@ -209,38 +238,71 @@ export default function TeacherProfilePage() {
   const stats = {
     totalCourses: profileData.totalCourses ?? 0,
     totalStudents: profileData.totalStudents ?? 0,
-    rating: profileData.rating?.toFixed(1) ?? "0.0",
+    rating: Number(profileData.rating) || 0,
     totalPoints: profileData.totalPoints ?? 0,
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}>
         <Header onLogout={handleLogout} teacherId={teacherId} />
-        <div className="container mx-auto p-6 space-y-8 max-w-7xl">
-          <ProfileHeader profileData={profileData} stats={stats} onEdit={() => setIsEditOpen(true)} />
-          <PerformanceSection stats={stats} />
-          <StatsSection stats={stats} />
-          <CoursesSection courses={profileData.courses ?? []} />
+        
+        <div className="container mx-auto p-4 sm:p-6 space-y-8 max-w-7xl">
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <ProfileHeader profileData={profileData} stats={stats} onEdit={() => setIsEditOpen(true)} />
+          </motion.div>
+
+          {/* Performance and Stats in a Grid */}
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <PerformanceSection stats={stats} />
+            </div>
+            <div>
+              <StatsSection stats={stats} />
+            </div>
+          </div>
+
+          {/* Courses Section */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <CoursesSection courses={profileData.courses ?? []} />
+          </motion.div>
         </div>
 
         {/* Chat Button */}
         <motion.button
           onClick={() => setIsChatOpen(true)}
-          whileHover={{ scale: 1.05 }}
+          whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
-          className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2"
+          className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-4 rounded-full shadow-2xl flex items-center gap-2 font-semibold transition-all duration-200"
         >
-          💬 Messages
+          <span className="text-xl">💬</span> Messages
+          {Object.values(unreadCount).reduce((a, b) => a + b, 0) > 0 && (
+            <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ml-2">
+              {Object.values(unreadCount).reduce((a, b) => a + b, 0)}
+            </span>
+          )}
         </motion.button>
 
         {/* Chat Modal */}
         {isChatOpen && (
           <div className="modal modal-open">
-            <div className="modal-box p-0 w-[90vw] max-w-3xl h-[80vh] flex flex-col">
-              <div className="p-4 border-b bg-gray-100 flex justify-between items-center">
-                <h3 className="font-semibold text-lg">Teacher Messaging Center</h3>
-                <button className="btn btn-sm btn-error" onClick={() => setIsChatOpen(false)}>Close</button>
+            <div className="modal-box p-0 w-[90vw] max-w-4xl h-[85vh] flex flex-col rounded-2xl shadow-2xl">
+              <div className="p-4 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white flex justify-between items-center rounded-t-2xl">
+                <h3 className="font-bold text-lg">Teacher Messaging Center</h3>
+                <button 
+                  className="btn btn-sm btn-ghost text-white hover:bg-blue-500" 
+                  onClick={() => setIsChatOpen(false)}
+                >
+                  ✕
+                </button>
               </div>
               <div className="flex flex-1 overflow-hidden">
                 <StudentSidebar
@@ -249,17 +311,20 @@ export default function TeacherProfilePage() {
                   onSelectStudent={setSelectedStudent}
                   searchValue={studentSearch}
                   onSearch={handleSearchStudents}
-                  socket={socket}         // ⬅ ADD THIS
-                  teacherId={teacherId}   // ⬅ ADD THIS
-                  unreadCount={unreadCount}          // 🟢 fix #1
-                  setUnreadCount={setUnreadCount}    // 🟢 fix #2
+                  socket={socket}
+                  teacherId={teacherId}
+                  unreadCount={unreadCount}
+                  setUnreadCount={setUnreadCount}
                 />
-                <div className="flex-1 border-l">
+                <div className="flex-1 border-l flex flex-col bg-white">
                   <ChatWindow messages={messages} onSend={handleSendMessage} selectedStudent={selectedStudent} />
                 </div>
               </div>
             </div>
-            <div className="modal-backdrop" onClick={() => setIsChatOpen(false)}></div>
+            <div 
+              className="modal-backdrop bg-black/50" 
+              onClick={() => setIsChatOpen(false)}
+            ></div>
           </div>
         )}
 
@@ -268,7 +333,8 @@ export default function TeacherProfilePage() {
             open={isEditOpen}
             profileData={profileData}
             onClose={() => setIsEditOpen(false)}
-            setProfileData={setProfileData} />
+            setProfileData={setProfileData}
+          />
         )}
       </motion.div>
     </div>

@@ -1,5 +1,6 @@
 import { Teacher } from "../models/mongo/teacherSchema.js"
 import User from "../models/mongo/userModel.js";
+import Course from "../models/mongo/courseModel.js";
 
 import bcrypt from "bcryptjs"
 
@@ -15,7 +16,14 @@ export const getTeacherByID = async (req, res) => {
 
     if (!teacher) return res.status(404).json({ message: "Teacher Not Found" });
 
-    res.json(teacher);
+    // Fetch courses for this teacher
+    const courses = await Course.find({ teacherId: teacher.userId || teacher._id }).lean();
+
+    // Return teacher with courses
+    res.json({
+      ...teacher,
+      courses: courses || [],
+    });
   } catch (err) {
     console.error("Error getting teacher:", err);
     res.status(500).json({ message: "Server error" });

@@ -4,12 +4,12 @@ import Lesson from "../models/mongo/lessonModel.js";
 // ➕ Create a new content block (Field)
 export const createField = async (req, res) => {
   try {
-    const { lessonId, type, content, order, questionId } = req.body;
+    const { lessonId, type, content, order, questionId, animationId } = req.body;
 
     const lesson = await Lesson.findById(lessonId);
     if (!lesson) return res.status(404).json({ message: "Lesson not found" });
 
-    const field = await Field.create({ lessonId, type, content, order, questionId });
+    const field = await Field.create({ lessonId, type, content, order, questionId, animationId });
 
     // link field to lesson
     lesson.fieldIds.push(field._id);
