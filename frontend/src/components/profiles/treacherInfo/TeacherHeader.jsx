@@ -25,6 +25,9 @@ export default function TeacherHeader({ teacher }) {
                 <div>{teacher.location}</div>
                 <div>Member since {teacher.memberSince}</div>
                 <div>{teacher.email}</div>
+                {teacher.experience !== undefined && teacher.experience !== null && (
+                  <div>{teacher.experience} yrs experience</div>
+                )}
               </div>
             </div>
           </div>
