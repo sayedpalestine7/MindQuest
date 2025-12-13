@@ -9,6 +9,12 @@ export const createCourse = async (req, res) => {
   try {
     const { title, description, difficulty, thumbnail, teacherId, scoreOnFinish, lessons, quiz } = req.body;
 
+    try {
+      console.log('createCourse payload lessons (full):', JSON.stringify(lessons, null, 2))
+    } catch (e) {
+      console.log('createCourse payload lessons preview:', Array.isArray(lessons) ? lessons.map(l => ({ title: l.title, fieldsCount: l.fields?.length || 0, fieldsPreview: (l.fields||[]).slice(0,5) })) : lessons)
+    }
+
     // Validate teacher
     const teacher = await User.findById(teacherId);
     if (!teacher || teacher.role !== "teacher") {
@@ -134,6 +140,12 @@ export const getCourseById = async (req, res) => {
 export const updateCourse = async (req, res) => {
   try {
     const { title, description, difficulty, thumbnail, scoreOnFinish, quizId, lessons, quiz } = req.body;
+
+    try {
+      console.log('updateCourse payload lessons (full):', JSON.stringify(lessons, null, 2))
+    } catch (e) {
+      console.log('updateCourse payload lessons preview:', Array.isArray(lessons) ? lessons.map(l => ({ title: l.title, fieldsCount: l.fields?.length || 0, firstFields: (l.fields||[]).slice(0,3) })) : lessons)
+    }
 
     // Find the current course
     const currentCourse = await Course.findById(req.params.id);

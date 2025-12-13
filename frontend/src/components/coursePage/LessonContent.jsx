@@ -182,7 +182,13 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit }) {
       )
 
     case "animation":
-      return <AnimationRenderer animationId={field.animationId} />
+      console.log('Rendering animation field:', { field })
+      return (
+        <div className="space-y-2">
+          <div className="text-xs text-gray-500">Animation ID: <span className="font-mono text-sm text-gray-700">{field.animationId || '—'}</span></div>
+          <AnimationRenderer animationId={field.animationId} />
+        </div>
+      )
 
     default:
       return null

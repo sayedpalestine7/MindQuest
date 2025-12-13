@@ -1,5 +1,5 @@
 import express from "express";
-import { getStudentByID, putStudentByID } from "../controllers/studentController.js";
+import { getStudentByID, putStudentByID, enrollCourse, getEnrolledCourses } from "../controllers/studentController.js";
 
 const router = express.Router();
 
@@ -9,8 +9,10 @@ router.get("/id/:id", getStudentByID);
 // Update student by _id
 router.put("/id/:id", putStudentByID);
 
-// for enrolled course later
-// router.post("/id/:id/enroll", enrollCourse);
-// router.get("/id/:id/courses", getEnrolledCourses);
+// Enroll in a course
+router.post("/:studentId/enroll/:courseId", enrollCourse);
+
+// Get enrolled courses
+router.get("/:studentId/courses", getEnrolledCourses);
 
 export default router;

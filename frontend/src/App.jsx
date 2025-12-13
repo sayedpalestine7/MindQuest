@@ -44,7 +44,7 @@ function App() {
           <Route path="/teacher/:instructor" element={<TeacherPage />} />
 
           <Route path="/student/:id" element={<StudentProfilePage />}/>
-          <Route path="/student/coursePage" element={<StudentCoursePage />} />
+          <Route path="/student/coursePage/:courseId?" element={<StudentCoursePage />} />
           
           <Route path="/courses" element={<BrowseCoursesPage />} />
           <Route path="/studio" element={<AnimationStudio />} />

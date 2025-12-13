@@ -10,6 +10,7 @@ const teacherDataSchema = new mongoose.Schema({
 const studentDataSchema = new mongoose.Schema({
     score: { type: Number, default: 0 },
     finishedCourses: { type: Number, default: 0 },
+    enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }],
 });
 
 const userSchema = new mongoose.Schema(

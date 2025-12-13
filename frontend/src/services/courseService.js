@@ -108,6 +108,32 @@ export const courseService = {
       };
     }
   },
+
+  // Enroll student in a course
+  enrollCourse: async (studentId, courseId) => {
+    try {
+      const response = await apiClient.post(`/students/${studentId}/enroll/${courseId}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  // Get enrolled courses for a student
+  getEnrolledCourses: async (studentId) => {
+    try {
+      const response = await apiClient.get(`/students/${studentId}/courses`);
+      return { success: true, data: response.data.enrolledCourses };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+      };
+    }
+  },
 };
 
 export default courseService;

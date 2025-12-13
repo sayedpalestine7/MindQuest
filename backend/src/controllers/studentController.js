@@ -77,3 +77,76 @@ export const putStudentByID = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+// 📚 Enroll student in a course
+export const enrollCourse = async (req, res) => {
+  try {
+    const { studentId, courseId } = req.params;
+
+    // Find the student
+    const student = await User.findById(studentId);
+    if (!student || student.role !== "student") {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Check if already enrolled
+    if (student.studentData.enrolledCourses.includes(courseId)) {
+      return res.status(400).json({ message: "Already enrolled in this course" });
+    }
+
+    // Add course to enrolled courses
+    student.studentData.enrolledCourses.push(courseId);
+    await student.save();
+
+    res.status(200).json({
+      message: "Successfully enrolled in course",
+      student,
+    });
+  } catch (err) {
+    console.error("Error enrolling in course:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// 📚 Get enrolled courses for student
+export const getEnrolledCourses = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const student = await User.findById(studentId)
+      .populate({
+        path: "studentData.enrolledCourses",
+        model: "Course",
+        populate: [
+          {
+            path: "teacherId",
+            select: "name email profileImage",
+          },
+          {
+            path: "lessonIds",
+            select: "title fieldIds",
+            populate: {
+              path: "fieldIds",
+            },
+          },
+          {
+            path: "quizId",
+            populate: {
+              path: "questionIds",
+            },
+          },
+        ],
+      });
+
+    if (!student || student.role !== "student") {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    res.status(200).json({
+      enrolledCourses: student.studentData.enrolledCourses || [],
+    });
+  } catch (err) {
+    console.error("Error fetching enrolled courses:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};

@@ -92,6 +92,19 @@ export default function TeacherCourseBuilder() {
         ? sanitizeQuizForAPI(courseBuilder.course.quiz)
         : null
 
+      // DEBUG: log payload being sent to backend (stringified for full view)
+      try {
+        console.log('Saving course payload (stringified):', JSON.stringify({
+          courseData,
+          lessonsData,
+          quizData,
+          courseId,
+          userId: user?._id,
+        }, null, 2))
+      } catch (e) {
+        console.log('Saving course payload (object):', { courseData, lessonsData, quizData, courseId, userId: user?._id })
+      }
+
       let result
 
       if (courseId) {

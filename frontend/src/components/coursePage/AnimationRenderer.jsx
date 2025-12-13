@@ -3,6 +3,9 @@ import axios from "axios"
 import { Play, Pause } from "lucide-react"
 
 export default function AnimationRenderer({ animationId }) {
+  useEffect(() => {
+    console.log('AnimationRenderer mounted; animationId=', animationId)
+  }, [animationId])
   const [animation, setAnimation] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -29,7 +32,28 @@ export default function AnimationRenderer({ animationId }) {
         `http://localhost:5000/api/animations/${animationId}`
       )
       console.log('Loaded animation:', response.data)
-      setAnimation(response.data)
+      // Normalize animation data: ensure numeric fields on transitions
+      const normalized = JSON.parse(JSON.stringify(response.data))
+      if (Array.isArray(normalized.objects)) {
+        normalized.objects = normalized.objects.map((obj) => ({
+          ...obj,
+          transitions: (obj.transitions || []).map((t) => ({
+            startTime: t.startTime !== undefined ? Number(t.startTime) : 0,
+            duration: t.duration !== undefined ? Number(t.duration) : 0,
+            x: t.x !== undefined ? Number(t.x) : 0,
+            y: t.y !== undefined ? Number(t.y) : 0,
+            width: t.width !== undefined ? Number(t.width) : t.width,
+            height: t.height !== undefined ? Number(t.height) : t.height,
+            scale: t.scale !== undefined ? Number(t.scale) : (t.scale ?? 1),
+            rotation: t.rotation !== undefined ? Number(t.rotation) : (t.rotation ?? 0),
+            opacity: t.opacity !== undefined ? Number(t.opacity) : (t.opacity ?? 1),
+            color: t.color,
+            text: t.text || "",
+            easing: t.easing || 'linear'
+          }))
+        }))
+      }
+      setAnimation(normalized)
       setCurrentTime(0)
     } catch (err) {
       console.error("Error loading animation:", err)
@@ -47,16 +71,25 @@ export default function AnimationRenderer({ animationId }) {
       return
     }
 
-    const animate = () => {
+    // Use high-resolution timestamps to compute accurate delta time
+    let lastTimestamp = null
+    const duration = animation?.duration || 15
+
+    const animate = (timestamp) => {
+      if (lastTimestamp === null) lastTimestamp = timestamp
+      const deltaSec = (timestamp - lastTimestamp) / 1000
+      lastTimestamp = timestamp
+
       setCurrentTime((prev) => {
-        const next = prev + 0.016 // ~60fps
-        const duration = animation?.duration || 15
+        const next = prev + deltaSec
         if (next >= duration) {
+          // stop playback at exact duration
           setIsPlaying(false)
           return duration
         }
         return next
       })
+
       animationFrameRef.current = requestAnimationFrame(animate)
     }
 

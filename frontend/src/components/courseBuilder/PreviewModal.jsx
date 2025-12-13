@@ -7,6 +7,7 @@ import {
   Youtube,
   HelpCircle,
 } from "lucide-react"
+import AnimationRenderer from "../coursePage/AnimationRenderer"
 import { Card, Button } from "./UI"
 
 export default function PreviewModal({ course, lessons, onClose }) {
@@ -165,15 +166,22 @@ function FieldPreview({ field }) {
       )
 
     case "minigame":
-    case "animation":
       return (
         <div className="rounded-lg border-2 border-gray-300 overflow-hidden">
           <iframe
             srcDoc={field.htmlContent}
             className="w-full min-h-[600px] bg-white"
-            title={field.type === "minigame" ? "Mini-game" : "Animation"}
+            title="Mini-game"
             sandbox="allow-scripts"
           />
+        </div>
+      )
+
+    case "animation":
+      return (
+        <div className="rounded-lg border-2 border-gray-300 overflow-hidden p-4 bg-white">
+          <div className="text-xs text-gray-500 mb-2">Animation ID: <span className="font-mono text-sm text-gray-700">{field.animationId || '—'}</span></div>
+          <AnimationRenderer animationId={field.animationId} />
         </div>
       )
 

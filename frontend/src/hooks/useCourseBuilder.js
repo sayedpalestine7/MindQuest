@@ -80,6 +80,7 @@ export const useCourseBuilder = (courseId) => {
             type: f.type,
             content: f.content,
             questionId: f.questionId || null,
+            animationId: f.animationId || null,
             order: f.order ?? 0,
           })),
         }));

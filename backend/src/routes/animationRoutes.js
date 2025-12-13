@@ -94,8 +94,10 @@ router.get("/", async (req, res) => {
 // 📄 Get one animation
 router.get("/:id", async (req, res) => {
   try {
+    console.log('GET /api/animations/:id requested for', req.params.id)
     const animation = await Animation.findById(req.params.id);
     if (!animation) return res.status(404).json({ message: "Animation not found" });
+    console.log('Found animation:', animation._id)
     res.json(animation);
   } catch (err) {
     console.error("Error fetching animation:", err);
