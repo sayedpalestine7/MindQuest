@@ -89,6 +89,16 @@ export const enrollCourse = async (req, res) => {
       return res.status(404).json({ message: "Student not found" });
     }
 
+    // Ensure studentData exists
+    if (!student.studentData) {
+      student.studentData = {};
+    }
+
+    // Ensure enrolledCourses is an array
+    if (!Array.isArray(student.studentData.enrolledCourses)) {
+      student.studentData.enrolledCourses = [];
+    }
+
     // Check if already enrolled
     if (student.studentData.enrolledCourses.includes(courseId)) {
       return res.status(400).json({ message: "Already enrolled in this course" });
@@ -104,7 +114,7 @@ export const enrollCourse = async (req, res) => {
     });
   } catch (err) {
     console.error("Error enrolling in course:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 

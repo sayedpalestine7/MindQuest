@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router"
 import { motion } from "framer-motion"
 import axios from "axios"
 import Header from "../components/courseBrowse/Header.jsx"
 import SearchFilters from "../components/courseBrowse/SearchFilters.jsx"
 import CourseCard from "../components/courseBrowse/CourseCard.jsx"
+import courseService from "../services/courseService"
 
 const difficultyMap = {
   "All Levels": "all",
@@ -15,12 +17,22 @@ const difficultyMap = {
 }
 
 export default function BrowseCoursesPage() {
+  const navigate = useNavigate()
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedDifficulty, setSelectedDifficulty] = useState("All Levels")
   const [enrolledCourses, setEnrolledCourses] = useState([])
+  const [studentId, setStudentId] = useState(null)
+
+  // ✅ Get student ID from auth on mount
+  useEffect(() => {
+    const userId = localStorage.getItem("userId")
+    if (userId) {
+      setStudentId(userId)
+    }
+  }, [])
 
   // ✅ Fetch courses from backend
   useEffect(() => {
@@ -62,13 +74,34 @@ export default function BrowseCoursesPage() {
     return matchesSearch && matchesCategory && matchesDifficulty
   })
 
-  const handleEnroll = (id) => {
-    if (enrolledCourses.includes(id)) {
+  // ✅ Handle enroll - now calls backend API
+  const handleEnroll = async (courseId) => {
+    if (!studentId) {
+      alert("Please log in first")
+      return
+    }
+
+    if (enrolledCourses.includes(courseId)) {
       alert("You are already enrolled in this course!")
       return
     }
-    setEnrolledCourses([...enrolledCourses, id])
-    alert("Successfully enrolled!")
+
+    try {
+      // Call backend API to enroll student
+      const result = await courseService.enrollCourse(studentId, courseId)
+      if (result.success) {
+        // Update local enrolled courses state
+        setEnrolledCourses([...enrolledCourses, courseId])
+        alert("Successfully enrolled! Navigating to course...")
+        // Navigate to the course page
+        navigate(`/student/coursePage/${courseId}`)
+      } else {
+        alert(result.error || "Failed to enroll in course")
+      }
+    } catch (err) {
+      console.error("Enrollment error:", err)
+      alert("Error enrolling in course")
+    }
   }
 
   return (

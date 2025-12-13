@@ -20,12 +20,12 @@ export default function StudentCoursePage() {
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
   const [studentId, setStudentId] = useState(null)
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState([])
 
   /* -------------------- GET STUDENT ID FROM AUTH -------------------- */
   useEffect(() => {
-    const auth = localStorage.getItem("auth")
-    if (auth) {
-      const { userId } = JSON.parse(auth)
+    const userId = localStorage.getItem("userId")
+    if (userId) {
       setStudentId(userId)
     }
   }, [])
@@ -84,13 +84,22 @@ export default function StudentCoursePage() {
         } else {
           console.error("Failed to load courses:", res.error)
         }
+
+        // Fetch enrolled courses
+        if (studentId) {
+          const enrollRes = await courseService.getEnrolledCourses(studentId)
+          if (enrollRes.success && enrollRes.data) {
+            const enrolledIds = enrollRes.data.map(c => c._id)
+            setEnrolledCourseIds(enrolledIds)
+          }
+        }
       }
 
       setLoading(false)
     }
 
     loadCourseData()
-  }, [courseId])
+  }, [courseId, studentId])
 
   /* -------------------- AUTO-SAVE PROGRESS -------------------- */
   useEffect(() => {
@@ -139,12 +148,19 @@ export default function StudentCoursePage() {
       return
     }
 
-    const enrolled = await courseService.enrollCourse(studentId, courseId)
-    if (enrolled.success) {
-      alert("Successfully enrolled! Loading course...")
-      navigate(`/student/coursePage/${courseId}`)
-    } else {
-      alert(enrolled.error || "Failed to enroll")
+    try {
+      const enrolled = await courseService.enrollCourse(studentId, courseId)
+      if (enrolled.success) {
+        alert("Successfully enrolled! Loading course...")
+        // Reload the page to fetch the enrolled course
+        navigate(`/student/coursePage/${courseId}`)
+        window.location.reload()
+      } else {
+        alert(enrolled.error || "Failed to enroll")
+      }
+    } catch (err) {
+      console.error("Enrollment error:", err)
+      alert("Error enrolling in course")
     }
   }
 
@@ -167,21 +183,33 @@ export default function StudentCoursePage() {
             <p className="text-gray-500">No courses available.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {courses.map((c) => (
-                <div key={c._id} className="p-4 border-2 rounded-lg bg-white">
-                  <h3 className="font-semibold">{c.title}</h3>
-                  <p className="text-sm text-gray-600">{c.description}</p>
-                  <p className="text-xs text-gray-500 mt-2">Difficulty: {c.difficulty}</p>
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                      onClick={() => handleEnrollCourse(c._id)}
-                    >
-                      Enroll
-                    </button>
+              {courses.map((c) => {
+                const isEnrolled = enrolledCourseIds.includes(c._id)
+                return (
+                  <div key={c._id} className="p-4 border-2 rounded-lg bg-white">
+                    <h3 className="font-semibold">{c.title}</h3>
+                    <p className="text-sm text-gray-600">{c.description}</p>
+                    <p className="text-xs text-gray-500 mt-2">Difficulty: {c.difficulty}</p>
+                    <div className="mt-3 flex gap-2">
+                      {isEnrolled ? (
+                        <button
+                          disabled
+                          className="px-3 py-1 bg-green-600 text-white rounded cursor-default opacity-75"
+                        >
+                          ✓ Enrolled
+                        </button>
+                      ) : (
+                        <button
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                          onClick={() => handleEnrollCourse(c._id)}
+                        >
+                          Enroll
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

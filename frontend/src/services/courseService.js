@@ -112,7 +112,7 @@ export const courseService = {
   // Enroll student in a course
   enrollCourse: async (studentId, courseId) => {
     try {
-      const response = await apiClient.post(`/students/${studentId}/enroll/${courseId}`);
+      const response = await apiClient.post(`/student/${studentId}/enroll/${courseId}`);
       return { success: true, data: response.data };
     } catch (error) {
       return {
@@ -125,7 +125,7 @@ export const courseService = {
   // Get enrolled courses for a student
   getEnrolledCourses: async (studentId) => {
     try {
-      const response = await apiClient.get(`/students/${studentId}/courses`);
+      const response = await apiClient.get(`/student/${studentId}/courses`);
       return { success: true, data: response.data.enrolledCourses };
     } catch (error) {
       return {
