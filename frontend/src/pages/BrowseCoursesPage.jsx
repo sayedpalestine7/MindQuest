@@ -49,6 +49,23 @@ export default function BrowseCoursesPage() {
     fetchCourses()
   }, [])
 
+  // ✅ Fetch enrolled courses
+  useEffect(() => {
+    const fetchEnrolledCourses = async () => {
+      if (!studentId) return
+      try {
+        const result = await courseService.getEnrolledCourses(studentId)
+        if (result.success && result.data) {
+          const enrolledIds = result.data.map(c => c._id)
+          setEnrolledCourses(enrolledIds)
+        }
+      } catch (err) {
+        console.error("Error fetching enrolled courses:", err)
+      }
+    }
+    fetchEnrolledCourses()
+  }, [studentId])
+
   const categories = [
     "all",
     "Web Development",

@@ -20,6 +20,7 @@ export default function StudentProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [enrolledCourses, setEnrolledCourses] = useState([])
 
   // ---------------- CHAT STATES ----------------
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -54,6 +55,19 @@ export default function StudentProfilePage() {
           score: data.studentData?.score ?? 0,
           finishedCourses: data.studentData?.finishedCourses ?? 0,
         });
+
+        // Fetch enrolled courses
+        try {
+          const enrollRes = await axios.get(
+            `http://localhost:5000/api/student/${studentId}/courses`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (enrollRes.data && enrollRes.data.enrolledCourses) {
+            setEnrolledCourses(enrollRes.data.enrolledCourses);
+          }
+        } catch (enrollErr) {
+          console.error("Failed to load enrolled courses:", enrollErr);
+        }
       } catch (err) {
         console.error(err);
         setError(err.response?.data?.message || err.message);
@@ -240,19 +254,14 @@ export default function StudentProfilePage() {
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
   if (!profileData) return <div className="min-h-screen flex items-center justify-center text-gray-500">No student found</div>;
 
-  // ---------------- MOCKED ENROLLED COURSES ----------------
-  const enrolledCourses = [
-    { id: 1, title: "Intro to Web Development", thumbnail: "/web-development-course.png", progress: 75 },
-    { id: 2, title: "Advanced JS", thumbnail: "/javascript-course.png", progress: 45 },
-    { id: 3, title: "React Fundamentals", thumbnail: "/react-course.png", progress: 90 },
-    { id: 4, title: "Python Data Science", thumbnail: "/python-data-science.png", progress: 30 },
-  ];
-
+  // Calculate stats from real enrolled courses
   const stats = {
     totalCourses: enrolledCourses.length,
     completedCourses: enrolledCourses.filter((c) => c.progress === 100).length,
     totalPoints: profileData.score,
-    overallProgress: Math.round(enrolledCourses.reduce((a, c) => a + c.progress, 0) / enrolledCourses.length),
+    overallProgress: enrolledCourses.length > 0 
+      ? Math.round(enrolledCourses.reduce((a, c) => a + (c.progress || 0), 0) / enrolledCourses.length)
+      : 0,
   };
 
   return (
