@@ -39,8 +39,61 @@ export const registerUser = async (req, res) => {
     }
 
     // Check if user exists
-    const userExists = await User.findOne({ email });
-    if (userExists) return res.status(400).json({ message: "User already exists" });
+    const existingUser = await User.findOne({ email });
+
+    // If a teacher with this email was previously rejected, allow re-signup by updating
+    if (existingUser && existingUser.role === "teacher" && existingUser.status === "rejected") {
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      existingUser.name = name;
+      existingUser.password = hashedPassword;
+      existingUser.profileImage = profileImageDataUrl || existingUser.profileImage;
+      existingUser.status = "pending";
+
+      if (!existingUser.teacherData) {
+        existingUser.teacherData = {};
+      }
+
+      existingUser.teacherData.specialization = specialization;
+      existingUser.teacherData.institution = institution;
+      existingUser.teacherData.certification = certificationDataUrl || existingUser.teacherData.certification;
+      // Clear old rejection reason on new application
+      existingUser.teacherData.rejectionReason = undefined;
+
+      const user = await existingUser.save();
+
+      // Also update Teacher profile if it exists
+      let teacher = await Teacher.findOne({ userId: user._id });
+      if (teacher) {
+        teacher.name = name;
+        teacher.email = email;
+        teacher.specialization = specialization;
+        teacher.avatar = profileImageDataUrl || teacher.avatar;
+        await teacher.save();
+      } else if (role === "teacher") {
+        teacher = await Teacher.create({
+          userId: user._id,
+          name,
+          email,
+          specialization,
+          avatar: profileImageDataUrl,
+        });
+      }
+
+      const userResponse = user.toObject();
+      delete userResponse.password;
+
+      return res.status(200).json({
+        message: "Application resubmitted. Awaiting admin approval.",
+        user: userResponse,
+        teacher,
+      });
+    }
+
+    // If any other user with this email exists, block registration
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -114,8 +167,11 @@ export const loginUser = async (req, res) => {
     }
 
     if (user.role === "teacher" && user.status === "rejected") {
+      const reason = user.teacherData?.rejectionReason;
       return res.status(403).json({
-        message: "Your application was rejected by the admin.",
+        message: reason
+          ? `Your application was rejected by the admin. Reason: ${reason}`
+          : "Your application was rejected by the admin.",
       });
     }
 

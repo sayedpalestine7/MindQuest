@@ -56,14 +56,20 @@ export const approveTeacher = async (req, res) => {
 export const rejectTeacher = async (req, res) => {
   try {
     const teacherId = req.params.id;
+    const { reason } = req.body;
 
-    const user = await User.findByIdAndUpdate(
-      teacherId,
-      { status: "rejected" },
-      { new: true }
-    );
+    const user = await User.findById(teacherId);
 
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.status = "rejected";
+
+    if (user.role === "teacher") {
+      if (!user.teacherData) user.teacherData = {};
+      user.teacherData.rejectionReason = reason || "";
+    }
+
+    await user.save();
 
     res.json({
       message: "Teacher rejected successfully",

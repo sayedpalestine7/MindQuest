@@ -1,96 +1,58 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 import TeacherHeader from "../components/profiles/treacherInfo/TeacherHeader";
 import ExpertiseTags from "../components/profiles/treacherInfo/ExpertiseTags";
 import CoursesList from "../components/profiles/treacherInfo/CoursesList";
 import ReviewsList from "../components/profiles/treacherInfo/ReviewsList";
 import Header from "../components/profiles/treacherInfo/Header";
 
-const teachersData = {
-  "Sarah Mitchell": {
-    name: "Sayed Qutob",
-    totalStudents: 12450,
-    expertise: ["HTML", "CSS", "JavaScript"],
-    courses: [
-      {
-        id: 1,
-        title: "Introduction to Web Development",
-        category: "Web Development",
-        duration: "6h 30m",
-        lessons: 24,
-        difficulty: "beginner",
-        thumbnail: "/images/webdev.jpg",
-      },
-      {
-        id: 3,
-        title: "React Fundamentals",
-        category: "Frontend",
-        duration: "5h 15m",
-        lessons: 18,
-        difficulty: "intermediate",
-        thumbnail: "/images/react.jpg",
-      },
-    ],
-    reviews: [
-      {
-        id: 1,
-        student: "Student A",
-        date: "Jan 12, 2025",
-        rating: 5,
-        comment: "Amazing teacher, very clear explanations!",
-        course: "React Fundamentals",
-      },
-      {
-        id: 2,
-        student: "Student B",
-        date: "Feb 8, 2025",
-        rating: 4,
-        comment: "Helped me understand JS deeply.",
-        course: "Introduction to Web Development",
-      },
-    ],
-  },
-  "Michael Chen": {
-    name: "Michael Chen",
-    totalStudents: 8920,
-    expertise: ["JavaScript", "ES6", "Async"],
-    courses: [
-      {
-        id: 2,
-        title: "Advanced JavaScript Concepts",
-        category: "Programming",
-        duration: "4h 50m",
-        lessons: 20,
-        difficulty: "advanced",
-        thumbnail: "/images/js-advanced.jpg",
-      },
-    ],
-    reviews: [
-      {
-        id: 1,
-        student: "Student C",
-        date: "Mar 3, 2025",
-        rating: 5,
-        comment: "Loved this class!",
-        course: "Advanced JavaScript Concepts",
-      },
-    ],
-  },
-};
-
 export default function TeacherPage() {
-  const { instructor } = useParams();
-  const teacherName = decodeURIComponent(instructor);
-  const teacher = teachersData[teacherName];
-  const [enrolledCourses, setEnrolledCourses] = useState([1, 2, 3, 4]);
+  const { id } = useParams();
+  const [teacher, setTeacher] = useState(null);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [activeTab, setActiveTab] = useState("courses");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  if (!teacher) return <div>Teacher Not Found</div>;
+  useEffect(() => {
+    const fetchTeacher = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  const handleEnroll = (id) => {
-    if (!enrolledCourses.includes(id)) {
-      setEnrolledCourses([...enrolledCourses, id]);
+        const res = await axios.get(`http://localhost:5000/api/teacher/id/${id}`);
+        const data = res.data || {};
+
+        const mappedTeacher = {
+          ...data,
+          // ensure arrays for components
+          courses: data.courses || [],
+          reviews: data.reviews || [],
+          expertise: data.expertise || (data.specialization ? [data.specialization] : []),
+          totalStudents: data.totalStudents || 0,
+          rating: data.rating || 0,
+        };
+
+        setTeacher(mappedTeacher);
+      } catch (err) {
+        console.error("Error fetching teacher:", err);
+        setError(err.response?.data?.message || "Failed to load teacher");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) fetchTeacher();
+  }, [id]);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (error || !teacher) return <div className="min-h-screen flex items-center justify-center text-red-500">{error || "Teacher Not Found"}</div>;
+
+  const handleEnroll = (courseId) => {
+    if (!enrolledCourses.includes(courseId)) {
+      setEnrolledCourses([...enrolledCourses, courseId]);
       alert("Enrolled successfully!");
     }
   };

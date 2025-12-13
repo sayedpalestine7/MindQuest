@@ -49,9 +49,11 @@ export function UserRow({ user, onView, onBan }) {
       {/* Actions */}
       <td className="p-2 text-right space-x-2 flex justify-center items-center">
         {/* <button onClick={onView} className="bg-blue-500 px-2 text-white rounded hover:bg-blue-700 flex justify-center items-center"><Eye className="h-4 w-4" />View</button> */}
-        <button onClick={onBan} className="bg-red-500 px-2 text-white rounded hover:bg-red-700 flex justify-center items-center">
-          <Ban className="h-4 w-4" />{user.status === "banned" ? "Unban" : "Ban"}
-        </button>
+        {user.status !== "pending" && user.status !== "rejected" && (
+          <button onClick={onBan} className="bg-red-500 px-2 text-white rounded hover:bg-red-700 flex justify-center items-center">
+            <Ban className="h-4 w-4" />{user.status === "banned" ? "Unban" : "Ban"}
+          </button>
+        )}
       </td>
     </>
   )

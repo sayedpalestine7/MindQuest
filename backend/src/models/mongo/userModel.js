@@ -3,8 +3,9 @@ import mongoose from "mongoose";
 const teacherDataSchema = new mongoose.Schema({
     specialization: String,
     institution: String,
-    certification: String, // URL
+    certification: String, // URL or base64
     score: { type: Number, default: 0 },
+    rejectionReason: String,
 });
 
 const studentDataSchema = new mongoose.Schema({
