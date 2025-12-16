@@ -63,7 +63,30 @@ export default function StudentProfilePage() {
             { headers: { Authorization: `Bearer ${token}` } }
           );
           if (enrollRes.data && enrollRes.data.enrolledCourses) {
-            setEnrolledCourses(enrollRes.data.enrolledCourses);
+            console.log('Raw enrolled courses data:', enrollRes.data.enrolledCourses);
+            
+            const formattedCourses = enrollRes.data.enrolledCourses.map(course => {
+              const totalLessons = course.lessonIds?.length || 0;
+              const completedLessons = course.completedLessons || 0;
+              
+              console.log('Course details:', {
+                id: course._id,
+                title: course.title,
+                lessonIds: course.lessonIds,
+                completedLessons,
+                totalLessons
+              });
+              
+              return {
+                ...course,
+                completedLessons,
+                totalLessons,
+                progress: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+              };
+            });
+            
+            console.log('Formatted courses:', formattedCourses);
+            setEnrolledCourses(formattedCourses);
           }
         } catch (enrollErr) {
           console.error("Failed to load enrolled courses:", enrollErr);
