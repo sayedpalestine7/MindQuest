@@ -88,7 +88,7 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
 
         <div className="mt-auto pt-4 border-t flex items-center justify-between">
           <span className="text-lg font-bold text-indigo-600">{course.price}</span>
-          {enrolledCourses.includes(course._id) ? (
+          {enrolledCourses.includes(course.id) ? (
             <button
               disabled
               className="flex items-center gap-1 border border-gray-300 px-3 py-1 rounded text-gray-500 bg-gray-50"
@@ -98,7 +98,7 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
             </button>
           ) : (
             <button
-              onClick={() => handleEnroll(course._id)}
+              onClick={() => handleEnroll(course.id)}
               className="flex items-center gap-1 bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
             >
               <Plus className="w-4 h-4" />
