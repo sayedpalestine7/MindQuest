@@ -1,5 +1,11 @@
 import express from "express";
-import { getStudentByID, putStudentByID, enrollCourse, getEnrolledCourses } from "../controllers/studentController.js";
+import { 
+  getStudentByID, 
+  putStudentByID, 
+  enrollCourse, 
+  getEnrolledCourses, 
+  updateCourseProgress 
+} from "../controllers/studentController.js";
 
 const router = express.Router();
 
@@ -14,5 +20,8 @@ router.post("/:studentId/enroll/:courseId", enrollCourse);
 
 // Get enrolled courses
 router.get("/:studentId/courses", getEnrolledCourses);
+
+// Update course progress
+router.put("/:studentId/progress/:courseId", updateCourseProgress);
 
 export default router;

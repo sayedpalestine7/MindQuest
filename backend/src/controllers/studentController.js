@@ -118,7 +118,7 @@ export const enrollCourse = async (req, res) => {
   }
 };
 
-// 📚 Get enrolled courses for student
+// Get enrolled courses for student
 export const getEnrolledCourses = async (req, res) => {
   try {
     const { studentId } = req.params;
@@ -158,5 +158,70 @@ export const getEnrolledCourses = async (req, res) => {
   } catch (err) {
     console.error("Error fetching enrolled courses:", err);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Update student's progress in a course
+export const updateCourseProgress = async (req, res) => {
+  try {
+    const { studentId, courseId } = req.params;
+    const { completedLessons, currentLessonId } = req.body;
+
+    // Find the student
+    const student = await User.findById(studentId);
+    if (!student || student.role !== "student") {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Ensure studentData exists
+    if (!student.studentData) {
+      student.studentData = {};
+    }
+
+    // Initialize progress tracking if it doesn't exist
+    if (!student.studentData.courseProgress) {
+      student.studentData.courseProgress = {};
+    }
+
+    // Initialize progress for this course if it doesn't exist
+    if (!student.studentData.courseProgress[courseId]) {
+      student.studentData.courseProgress[courseId] = {
+        completedLessons: [],
+        currentLessonId: null,
+        lastAccessed: new Date()
+      };
+    }
+
+    // Update completed lessons if provided
+    if (completedLessons && Array.isArray(completedLessons)) {
+      // Merge and deduplicate completed lessons
+      const uniqueLessons = new Set([
+        ...(student.studentData.courseProgress[courseId].completedLessons || []),
+        ...completedLessons
+      ]);
+      student.studentData.courseProgress[courseId].completedLessons = Array.from(uniqueLessons);
+    }
+
+    // Update current lesson if provided
+    if (currentLessonId) {
+      student.studentData.courseProgress[courseId].currentLessonId = currentLessonId;
+      student.studentData.courseProgress[courseId].lastAccessed = new Date();
+    }
+
+    // Save the updated student document
+    await student.save();
+
+    res.status(200).json({
+      success: true,
+      data: student.studentData.courseProgress[courseId]
+    });
+
+  } catch (err) {
+    console.error("Error updating course progress:", err);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error",
+      error: err.message 
+    });
   }
 };

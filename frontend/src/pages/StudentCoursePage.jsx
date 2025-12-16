@@ -117,21 +117,41 @@ export default function StudentCoursePage() {
     ? Math.round((completedLessons.length / lessons.length) * 100)
     : 0
 
-  const handleLessonComplete = () => {
-    if (!currentLessonId) return
-    if (!completedLessons.includes(currentLessonId)) {
-      const updated = [...completedLessons, currentLessonId]
-      setCompletedLessons(updated)
+  const handleLessonComplete = async () => {
+    if (!currentLessonId || !studentId || !courseId) return;
+    
+    try {
+      // Update UI immediately for better UX
+      const updated = [...new Set([...completedLessons, currentLessonId])];
+      setCompletedLessons(updated);
+
+      // Save to backend
+      const response = await courseService.updateStudentProgress(studentId, courseId, {
+        completedLessons: updated,
+        currentLessonId
+      });
+
+      if (!response.success) {
+        console.error("Failed to update progress:", response.error);
+        // Revert UI if backend update fails
+        setCompletedLessons(completedLessons);
+        return;
+      }
 
       // If last lesson, open final quiz automatically
       if (updated.length === lessons.length) {
-        setTimeout(() => setIsQuizOpen(true), 500)
+        setTimeout(() => setIsQuizOpen(true), 500);
       } else {
         // Go to next lesson
-        const currentIdx = lessons.findIndex((l) => l.id === currentLessonId)
-        const next = lessons[currentIdx + 1]
-        if (next) setCurrentLessonId(next.id)
+        const currentIdx = lessons.findIndex((l) => l.id === currentLessonId);
+        const next = lessons[currentIdx + 1];
+        if (next) setCurrentLessonId(next.id);
       }
+
+    } catch (error) {
+      console.error("Error updating progress:", error);
+      // Revert UI on error
+      setCompletedLessons(completedLessons);
     }
   }
 

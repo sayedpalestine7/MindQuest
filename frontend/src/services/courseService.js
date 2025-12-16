@@ -121,12 +121,25 @@ export const courseService = {
       };
     }
   },
-
+  
   // Get enrolled courses for a student
   getEnrolledCourses: async (studentId) => {
     try {
       const response = await apiClient.get(`/student/${studentId}/courses`);
       return { success: true, data: response.data.enrolledCourses };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  // Update student progress in a course
+  updateStudentProgress: async (studentId, courseId, progressData) => {
+    try {
+      const response = await apiClient.put(`/student/${studentId}/progress/${courseId}`, progressData);
+      return { success: true, data: response.data };
     } catch (error) {
       return {
         success: false,
