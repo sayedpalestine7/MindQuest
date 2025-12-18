@@ -11,6 +11,7 @@ import WelcomeMsg from '../components/login/WelcomeMsg.jsx'
 import toast from 'react-hot-toast'
 import axios from "axios";
 import { useNavigate } from 'react-router'
+import { getGoogleIdToken } from "../utils/googleAuth";
 
 
 function LoginForm() {
@@ -99,7 +100,49 @@ function LoginForm() {
   };
 
 
-  const handleGoogleSignIn = () => { }
+const handleGoogleSignIn = async () => {
+  try {
+    setIsLoading(true);
+
+    // 1️⃣ Get Google ID token
+    const googleToken = await getGoogleIdToken();
+
+    // 2️⃣ Send to backend
+    const { data } = await axios.post(
+      "http://localhost:5000/api/auth/google",
+      {
+        token: googleToken,
+        mode: "signin",
+      }
+    );
+
+    // 3️⃣ Store auth
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    localStorage.setItem("userId", data.user._id);
+
+    toast.success(`Welcome back, ${data.user.name}! 👋`);
+
+    // 4️⃣ Redirect
+    if (data.user.role === "teacher") {
+      navigate(`/teacher/${data.user._id}`);
+    } else {
+      navigate(`/student/${data.user._id}`);
+    }
+
+  } catch (err) {
+    console.error(err);
+    const msg =
+      err.response?.data?.message ||
+      err.message ||
+      "Google sign in failed";
+    toast.error(msg);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
 
   return (
     <div className="flex items-center justify-center min-h-screen">

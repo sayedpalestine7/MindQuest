@@ -2,7 +2,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/mongo/userModel.js";
 import { Teacher } from "../models/mongo/teacherSchema.js";
-
+import { OAuth2Client } from "google-auth-library";
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // 🔹 Register
 export const registerUser = async (req, res) => {
   try {
@@ -209,3 +210,94 @@ export const getProfile = async (req, res) => {
     res.status(500).json({ message: "Error fetching profile", error: error.message });
   }
 };            
+
+
+export const googleAuth = async (req, res) => {
+  try {
+    const { token, mode } = req.body;
+
+    if (!token || !mode) {
+      return res.status(400).json({
+        message: "Missing Google token or mode",
+      });
+    }
+
+    // Verify Google token
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const {
+      email,
+      name,
+      picture,
+      email_verified,
+    } = payload;
+
+    if (!email_verified) {
+      return res.status(401).json({
+        message: "Google email not verified",
+      });
+    }
+
+    // Check if user exists
+    let user = await User.findOne({ email });
+
+    // SIGN IN
+    if (mode === "signin") {
+      if (!user) {
+        return res.status(404).json({
+          message: "User not registered. Please sign up first.",
+        });
+      }
+      // Optional: ensure user registered via Google
+      // if (!user.googleAuth) { ... }
+    }
+
+    // SIGN UP
+    if (mode === "signup") {
+      if (user) {
+        return res.status(409).json({
+          message: "Account already exists. Please sign in.",
+        });
+      }
+
+      user = await User.create({
+        name,
+        email,
+        role: "student",        // default role
+        googleAuth: true,
+        profileImage: picture,  // store Google avatar URL
+        password: null,         // no password for Google users
+      });
+    }
+
+    // Generate JWT
+    const jwtToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Send response
+    res.status(200).json({
+      token: jwtToken,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage,
+      },
+    });
+
+  } catch (error) {
+    console.error("Google Auth Error:", error);
+    res.status(500).json({
+      message: "Google authentication failed",
+    });
+  }
+};

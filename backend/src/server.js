@@ -49,7 +49,6 @@ export const io = new Server(server, {
     credentials: true,
   },
 });
-
 // -------------------- SOCKET CONNECTION --------------------
 io.on("connection", (socket) => {
   console.log("🟢 Socket connected:", socket.id);

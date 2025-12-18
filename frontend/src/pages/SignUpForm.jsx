@@ -14,6 +14,7 @@ import StepIndicator from '../components/signUp/StepIndicator.jsx'
 import toast from 'react-hot-toast'
 import { tr } from 'motion/react-client'
 import axios from "axios";
+import { getGoogleIdToken } from "../utils/googleAuth";
 
 function SignUp() {
 
@@ -165,14 +166,40 @@ function SignUp() {
 
   // Handle Google Sign Up
   const handleGoogleSignUp = async () => {
-    try {
-      setIsLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      toast.success("Signed up with Google successfully!");
-    } catch (error) {
-      toast.error("Failed to sign up with Google");
-    } finally { setIsLoading(false); }
+  try {
+    setIsLoading(true);
+
+    const googleToken = await getGoogleIdToken();
+
+    const { data } = await axios.post(
+      "http://localhost:5000/api/auth/google",
+      {
+        token: googleToken,
+        mode: "signup",
+      }
+    );
+
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    toast.success("Account created successfully 🎉");
+
+    // Optional redirect
+    // navigate(`/student/${data.user._id}`);
+    console.log("Google token:", googleToken);
+
+  } catch (err) {
+    console.error(err);
+    const msg =
+      err.response?.data?.message ||
+      err.message ||
+      "Google sign up failed";
+    toast.error(msg);
+  } finally {
+    setIsLoading(false);
   }
+};
+
 
 
   return (
