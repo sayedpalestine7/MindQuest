@@ -3,7 +3,10 @@ import jwt from "jsonwebtoken";
 import User from "../models/mongo/userModel.js";
 import { Teacher } from "../models/mongo/teacherSchema.js";
 import { OAuth2Client } from "google-auth-library";
+
+// Initialize Google OAuth2 client
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 // 🔹 Register
 export const registerUser = async (req, res) => {
   try {
@@ -214,90 +217,107 @@ export const getProfile = async (req, res) => {
 
 export const googleAuth = async (req, res) => {
   try {
-    const { token, mode } = req.body;
+    const { token: googleToken, mode } = req.body;
 
-    if (!token || !mode) {
-      return res.status(400).json({
-        message: "Missing Google token or mode",
+    if (!googleToken || !mode) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Missing required fields: token and mode are required' 
       });
     }
 
     // Verify Google token
     const ticket = await client.verifyIdToken({
-      idToken: token,
+      idToken: googleToken,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
 
-    const payload = ticket.getPayload();
-
-    const {
-      email,
-      name,
-      picture,
-      email_verified,
-    } = payload;
+    const { email, name, picture, email_verified } = ticket.getPayload();
 
     if (!email_verified) {
-      return res.status(401).json({
-        message: "Google email not verified",
+      return res.status(400).json({ 
+        success: false,
+        message: 'Email not verified by Google' 
       });
     }
 
     // Check if user exists
     let user = await User.findOne({ email });
 
-    // SIGN IN
-    if (mode === "signin") {
-      if (!user) {
-        return res.status(404).json({
-          message: "User not registered. Please sign up first.",
-        });
-      }
-      // Optional: ensure user registered via Google
-      // if (!user.googleAuth) { ... }
-    }
-
-    // SIGN UP
-    if (mode === "signup") {
+    // Handle signup
+    if (mode === 'signup') {
       if (user) {
-        return res.status(409).json({
-          message: "Account already exists. Please sign in.",
+        return res.status(409).json({ 
+          success: false,
+          message: 'An account with this email already exists' 
         });
       }
 
-      user = await User.create({
+      // Create new user with studentData
+      user = new User({
         name,
         email,
-        role: "student",        // default role
         googleAuth: true,
-        profileImage: picture,  // store Google avatar URL
-        password: null,         // no password for Google users
+        profileImage: picture,
+        role: 'student',
+        status: 'active',
+        studentData: {
+          score: 0,
+          finishedCourses: 0,
+          enrolledCourses: []
+        }
       });
+
+      await user.save();
+      console.log('New user created via Google:', user.email);
+    } 
+    // Handle signin
+    else if (mode === 'signin') {
+      if (!user) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'No account found with this email. Please sign up first.' 
+        });
+      }
+      
+      // Update user's profile image if it's not set
+      if (!user.profileImage && picture) {
+        user.profileImage = picture;
+        await user.save();
+      }
     }
 
-    // Generate JWT
-    const jwtToken = jwt.sign(
-      { id: user._id },
+    // Generate JWT token
+    const authToken = jwt.sign(
+      { 
+        id: user._id, 
+        email: user.email,
+        role: user.role 
+      },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: '7d' }
     );
 
-    // Send response
+    // Return user data and token
     res.status(200).json({
-      token: jwtToken,
+      success: true,
+      token: authToken,
       user: {
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         profileImage: user.profileImage,
-      },
+        googleAuth: user.googleAuth || false
+      }
     });
 
   } catch (error) {
-    console.error("Google Auth Error:", error);
-    res.status(500).json({
-      message: "Google authentication failed",
+    console.error('Google auth error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error authenticating with Google',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

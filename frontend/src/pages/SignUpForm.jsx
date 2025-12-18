@@ -165,43 +165,39 @@ function SignUp() {
   }
 
   // Handle Google Sign Up
+  // frontend/src/pages/SignUpForm.jsx
   const handleGoogleSignUp = async () => {
-  try {
-    setIsLoading(true);
+    try {
+      setIsLoading(true);
+      const googleToken = await getGoogleIdToken();
 
-    const googleToken = await getGoogleIdToken();
+      const { data } = await axios.post(
+        "http://localhost:5000/api/auth/google",
+        { token: googleToken, mode: "signup" },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        }
+      );
 
-    const { data } = await axios.post(
-      "http://localhost:5000/api/auth/google",
-      {
-        token: googleToken,
-        mode: "signup",
-      }
-    );
+      // Handle successful sign-up
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      toast.success("Account created successfully 🎉");
 
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
+      // Redirect to dashboard or home page
+      navigate('/dashboard');
 
-    toast.success("Account created successfully 🎉");
-
-    // Optional redirect
-    // navigate(`/student/${data.user._id}`);
-    console.log("Google token:", googleToken);
-
-  } catch (err) {
-    console.error(err);
-    const msg =
-      err.response?.data?.message ||
-      err.message ||
-      "Google sign up failed";
-    toast.error(msg);
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-
-
+    } catch (error) {
+      console.error('Google Sign-Up error:', error);
+      toast.error(error.response?.data?.message || 'Failed to sign up with Google');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="card card-bordered max-w-md w-full shadow-md">

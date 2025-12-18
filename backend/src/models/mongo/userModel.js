@@ -18,7 +18,16 @@ const userSchema = new mongoose.Schema(
     {
         name: { type: String, required: true },
         email: { type: String, required: true, unique: true },
-        password: { type: String, required: true },
+        password: { 
+            type: String, 
+            required: [
+                function() { 
+                    return !this.googleAuth; 
+                }, 
+                'Password is required for non-Google sign-in' 
+            ] 
+        },
+        googleAuth: { type: Boolean, default: false },
         profileImage: String,
         role: { type: String, enum: ["admin", "teacher", "student"], required: true },
         // NEW FIELD

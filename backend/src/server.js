@@ -1,14 +1,12 @@
 import express from "express";
 import dotenv from "dotenv";
-import cors from "cors";
 import http from "http";
 import { Server } from "socket.io";
 import { connectMongoDB } from "./db/mongoConnect.js";
+import cors from 'cors';
 
 // Models
 import Message from "./models/mongo/message.js";
-
-// Routes
 import authRoutes from "./routes/authRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
 import lessonRoutes from "./routes/lessonRoutes.js";
@@ -27,17 +25,39 @@ dotenv.config();
 connectMongoDB();
 
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
-
 const app = express();
-app.use(express.json());
 
-// --- CORS FOR REST API ---
-app.use(
-  cors({
-    origin: CLIENT_URL, // must match frontend
-    credentials: true,  // allow cookies/auth headers
-  })
-);
+// CORS Configuration
+const allowedOrigins = [
+  CLIENT_URL,
+  'http://localhost:5173',
+  'https://accounts.google.com',
+  'https://www.googleapis.com'
+];
+
+// CORS Middleware
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin) || 
+        allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+      return callback(null, true);
+    }
+    
+    const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    return callback(new Error(msg), false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
+}));
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // -------------------- SOCKET.IO SERVER --------------------
 const server = http.createServer(app);
