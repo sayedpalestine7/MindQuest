@@ -3,6 +3,7 @@ import User from "../models/mongo/userModel.js";
 import Lesson from "../models/mongo/lessonModel.js";
 import Quiz from "../models/mongo/quizModel.js";
 import Field from "../models/mongo/fieldModel.js";
+import { generateQuizFromAI } from "../services/aiService.js";
 
 // 🧠 CREATE a new course
 export const createCourse = async (req, res) => {
@@ -253,5 +254,43 @@ export const deleteCourse = async (req, res) => {
     res.status(200).json({ message: "✅ Course and related data deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: "❌ Error deleting course", error: err.message });
+  }
+};
+
+// 🔮 Generate quiz using AI (calls aiService). Returns structured questions (does not persist by default).
+export const generateQuiz = async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    const { topic, numQuestions, questionTypes } = req.body;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found", data: { questions: [] }, error: "CourseNotFound" });
+    }
+
+    // Basic validation
+    if (!topic || typeof topic !== 'string' || topic.trim() === '' || !Number.isInteger(numQuestions) || numQuestions < 1 || numQuestions > 50 || !Array.isArray(questionTypes) || questionTypes.length === 0) {
+      return res.status(400).json({ success: false, message: "Invalid payload", data: { questions: [] }, error: "ValidationError" });
+    }
+
+    // Try AI service
+    const aiResult = await generateQuizFromAI({ topic: topic.trim(), numQuestions, questionTypes });
+    if (!aiResult.success) {
+      // Fallback to deterministic mock so frontend still gets results
+      const questions = [];
+      for (let i = 1; i <= numQuestions; i++) {
+        const qType = questionTypes[(i - 1) % questionTypes.length];
+        const lower = String(qType).toLowerCase();
+        let options = [];
+        if (lower.includes('multiple')) options = ['Option A', 'Option B', 'Option C', 'Option D'];
+        else if (lower.includes('true')) options = ['True', 'False'];
+        questions.push({ question: `Question ${i}: ${topic}`, type: qType, options, correctAnswerIndex: 0 });
+      }
+      return res.status(200).json({ success: true, message: "AI not available — returning mock questions", data: { questions }, error: null });
+    }
+
+    return res.status(200).json({ success: true, message: "AI generated questions", data: { questions: aiResult.questions }, error: null });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Error generating quiz", data: { questions: [] }, error: err.message });
   }
 };
