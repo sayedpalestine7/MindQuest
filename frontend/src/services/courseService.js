@@ -109,6 +109,20 @@ export const courseService = {
     }
   },
 
+  // Generate quiz via backend (or n8n) using AI
+  generateQuiz: async (courseId, payload) => {
+    try {
+      const url = courseId ? `/courses/${courseId}/generate-quiz` : `/courses/generate-quiz`;
+      const response = await apiClient.post(url, payload);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
   // Enroll student in a course
   enrollCourse: async (studentId, courseId) => {
     try {

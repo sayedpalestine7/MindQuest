@@ -300,6 +300,28 @@ export const useCourseBuilder = (courseId) => {
     toast.success("Question deleted");
   };
 
+  // Insert generated questions (from AI) into builder state
+  const insertGeneratedQuestions = (questions) => {
+    if (!questions || !Array.isArray(questions) || questions.length === 0) return;
+
+    const mapped = questions.map((q, idx) => ({
+      id: `quiz-${Date.now()}-${idx}-${Math.random().toString(36).slice(2,8)}`,
+      question: q.question || q.text || "",
+      options: Array.isArray(q.options) && q.options.length > 0 ? q.options : (q.type === 'true-false' ? ['True','False'] : ["", "", "", ""]),
+      correctAnswerIndex: typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0,
+    }));
+
+    setCourse({
+      ...course,
+      finalQuiz: {
+        ...course.finalQuiz,
+        questions: [...course.finalQuiz.questions, ...mapped],
+      },
+    });
+
+    toast.success(`${mapped.length} AI-generated question(s) added`);
+  };
+
   const updateQuizSettings = (field, value) => {
     setCourse({
       ...course,
@@ -352,6 +374,7 @@ export const useCourseBuilder = (courseId) => {
     updateQuizQuestion,
     updateQuizOption,
     deleteQuizQuestion,
+    insertGeneratedQuestions,
     updateQuizSettings,
   };
 };

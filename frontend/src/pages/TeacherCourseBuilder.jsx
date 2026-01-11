@@ -1,5 +1,5 @@
 // /src/pages/TeacherCourseBuilder.jsx
-import React, { useEffect } from "react"
+import React, { useEffect, useState } from "react"
 import { useParams } from "react-router"
 import Header from "../components/courseBuilder/Header"
 import Sidebar from "../components/courseBuilder/Sidebar"
@@ -7,6 +7,7 @@ import CourseInfo from "../components/courseBuilder/CourseInfo"
 import LessonEditor from "../components/courseBuilder/LessonEditor"
 import QuizSection from "../components/courseBuilder/QuizSection"
 import PreviewModal from "../components/courseBuilder/PreviewModal"
+import AIGenerateModal from "../components/courseBuilder/AIGenerateModal"
 import courseService from "../services/courseService"
 import { useAuth } from "../context/AuthContext"
 import useCourseBuilder from "../hooks/useCourseBuilder"
@@ -22,6 +23,8 @@ export default function TeacherCourseBuilder() {
   const { id: courseId } = useParams()
   const { user, isAuthenticated, isLoading } = useAuth()
   const courseBuilder = useCourseBuilder(courseId)
+  const [isAIGenerateOpen, setIsAIGenerateOpen] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
   
   /* ---------- EFFECTS ---------- */
   // Check auth and load course
@@ -145,6 +148,44 @@ export default function TeacherCourseBuilder() {
     }
   }
 
+  const handleAIGenerateSubmit = async (payload) => {
+    // payload: { topic, numQuestions, questionType }
+    try {
+      setIsGenerating(true)
+      const result = await courseService.generateQuiz(courseId, payload)
+      setIsGenerating(false)
+
+      if (!result.success) {
+        const err = result.error || "AI generation failed"
+        courseBuilder.setErrors([err])
+        toast.error(`Generation failed: ${err}`)
+        return
+      }
+
+      // result.data may be envelope or raw questions
+      const body = result.data || {}
+      const questions = body.data?.questions || body.questions || []
+
+      if (questions.length === 0) {
+        toast.error("No questions returned from AI")
+        return
+      }
+
+      // Insert into builder
+      if (typeof courseBuilder.insertGeneratedQuestions === "function") {
+        courseBuilder.insertGeneratedQuestions(questions)
+      } else {
+        toast.error("Builder cannot accept generated questions")
+      }
+    } catch (err) {
+      setIsGenerating(false)
+      const msg = err?.message || "Failed to generate questions"
+      courseBuilder.setErrors([msg])
+      toast.error(msg)
+      console.error("AI generate error:", err)
+    }
+  }
+
   /* ---------- RENDER ---------- */
   // Show loading while auth is initializing
   if (isLoading) {
@@ -254,6 +295,15 @@ export default function TeacherCourseBuilder() {
               <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
                 <p className="text-sm text-blue-700 font-semibold">💡 AI Quiz Generation</p>
                 <p className="text-xs text-blue-600 mt-2">Use the "Generate from AI" button to auto-create quiz questions from your course content.</p>
+                <div className="mt-3">
+                  <button
+                    onClick={() => setIsAIGenerateOpen(true)}
+                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? 'Generating...' : 'Generate from AI'}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -289,6 +339,11 @@ export default function TeacherCourseBuilder() {
           onClose={() => courseBuilder.setIsPreviewOpen(false)}
         />
       )}
+      <AIGenerateModal
+        isOpen={isAIGenerateOpen}
+        onClose={() => setIsAIGenerateOpen(false)}
+        onSubmit={handleAIGenerateSubmit}
+      />
     </div>
   )
 }
