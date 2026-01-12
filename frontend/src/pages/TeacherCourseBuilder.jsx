@@ -158,6 +158,9 @@ export default function TeacherCourseBuilder() {
         body: JSON.stringify({
           courseId,
           topic: payload?.topic,
+          // n8n expects: num + types (keep the other keys for backward-compat)
+          num: payload?.numQuestions,
+          types: payload?.questionTypes,
           numQuestions: payload?.numQuestions,
           questionTypes: payload?.questionTypes,
         }),
@@ -182,7 +185,9 @@ export default function TeacherCourseBuilder() {
       // n8n may return: {questions:[...]}, {data:{questions:[...]}}, or [...]
       const questions =
         body?.data?.questions ||
+        body?.data?.output ||
         body?.questions ||
+        body?.output ||
         (Array.isArray(body) ? body : [])
 
       if (!Array.isArray(questions) || questions.length === 0) {
@@ -190,9 +195,52 @@ export default function TeacherCourseBuilder() {
         return
       }
 
+      // Client-side enforcement (n8n/LLM may ignore requested num/types)
+      const normalizeType = (t) => {
+        const s = String(t || "").toLowerCase().trim()
+        if (["t/f", "tf", "true_false", "truefalse", "true-false"].includes(s)) return "tf"
+        if (["short", "short_answer", "short-answer", "shortanswer"].includes(s)) return "short"
+        if (["mcq", "multiple", "multiple_choice", "multiple-choice", "multiplechoice"].includes(s)) return "mcq"
+        return "mcq"
+      }
+
+      const requestedCount = Number(payload?.numQuestions)
+      const allowedTypes = Array.isArray(payload?.questionTypes)
+        ? [...new Set(payload.questionTypes.map(normalizeType))]
+        : []
+
+      const filtered = allowedTypes.length > 0
+        ? questions.filter((q) => allowedTypes.includes(normalizeType(q?.type)))
+        : questions
+
+      const finalQuestions = Number.isInteger(requestedCount) && requestedCount > 0
+        ? filtered.slice(0, requestedCount)
+        : filtered
+
+      try {
+        const typesReceived = questions.map((q) => normalizeType(q?.type))
+        const typesFiltered = filtered.map((q) => normalizeType(q?.type))
+        const typesFinal = finalQuestions.map((q) => normalizeType(q?.type))
+        console.debug("n8n generate: requestedCount=", requestedCount, "allowedTypes=", allowedTypes)
+        console.debug("n8n generate: received=", questions.length, "types=", typesReceived)
+        console.debug("n8n generate: filtered=", filtered.length, "types=", typesFiltered)
+        console.debug("n8n generate: final=", finalQuestions.length, "types=", typesFinal)
+      } catch (e) {}
+
+      if (finalQuestions.length === 0) {
+        toast.error("n8n returned questions, but none matched the selected type(s)")
+        return
+      }
+
+      if (Number.isInteger(requestedCount) && finalQuestions.length < requestedCount) {
+        toast.error(`n8n returned only ${finalQuestions.length} question(s) matching your selected type(s)`)
+      }
+
       // Insert into builder
-      if (typeof courseBuilder.insertGeneratedQuestions === "function") {
-        courseBuilder.insertGeneratedQuestions(questions)
+      if (typeof courseBuilder.replaceGeneratedQuestions === "function") {
+        courseBuilder.replaceGeneratedQuestions(finalQuestions)
+      } else if (typeof courseBuilder.insertGeneratedQuestions === "function") {
+        courseBuilder.insertGeneratedQuestions(finalQuestions)
       } else {
         toast.error("Builder cannot accept generated questions")
       }

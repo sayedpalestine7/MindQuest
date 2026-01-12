@@ -308,10 +308,10 @@ export const useCourseBuilder = (courseId) => {
   };
 
   // Insert generated questions (from AI) into builder state
-  const insertGeneratedQuestions = (questions) => {
-    if (!questions || !Array.isArray(questions) || questions.length === 0) return;
+  const mapGeneratedQuestions = (questions) => {
+    if (!questions || !Array.isArray(questions) || questions.length === 0) return [];
 
-    const mapped = questions.map((q, idx) => {
+    return questions.map((q, idx) => {
       const typeRaw = (q.type || '').toString().toLowerCase().trim();
       const type = (typeRaw === 't/f' || typeRaw === 'true_false' || typeRaw === 'truefalse') ? 'tf' : typeRaw;
       const normalizedType = ['mcq', 'tf', 'short'].includes(type) ? type : 'mcq';
@@ -337,13 +337,15 @@ export const useCourseBuilder = (courseId) => {
       }
 
       if (normalizedType === 'tf') {
+        const caLower = correctAnswer.toLowerCase().trim();
+        const tfAnswer = caLower === 'false' ? 'False' : 'True';
         return {
           id: `quiz-${Date.now()}-${idx}-${Math.random().toString(36).slice(2,8)}`,
           type: 'tf',
           question: questionText,
           options: ['True', 'False'],
           correctAnswerIndex: 0,
-          correctAnswer: correctAnswer === 'False' ? 'False' : 'True',
+          correctAnswer: tfAnswer,
         };
       }
 
@@ -356,12 +358,32 @@ export const useCourseBuilder = (courseId) => {
         correctAnswer,
       };
     });
+  };
+
+  const insertGeneratedQuestions = (questions) => {
+    const mapped = mapGeneratedQuestions(questions);
+    if (!mapped || mapped.length === 0) return;
 
     setCourse((prev) => ({
       ...prev,
       finalQuiz: {
         ...prev.finalQuiz,
         questions: [...(prev.finalQuiz?.questions || []), ...mapped],
+      },
+    }));
+
+    toast.success(`${mapped.length} AI-generated question(s) added`);
+  };
+
+  const replaceGeneratedQuestions = (questions) => {
+    const mapped = mapGeneratedQuestions(questions);
+    if (!mapped || mapped.length === 0) return;
+
+    setCourse((prev) => ({
+      ...prev,
+      finalQuiz: {
+        ...prev.finalQuiz,
+        questions: mapped,
       },
     }));
 
@@ -421,6 +443,7 @@ export const useCourseBuilder = (courseId) => {
     updateQuizOption,
     deleteQuizQuestion,
     insertGeneratedQuestions,
+    replaceGeneratedQuestions,
     updateQuizSettings,
   };
 };
