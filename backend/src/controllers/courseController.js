@@ -3,6 +3,7 @@ import User from "../models/mongo/userModel.js";
 import Lesson from "../models/mongo/lessonModel.js";
 import Quiz from "../models/mongo/quizModel.js";
 import Field from "../models/mongo/fieldModel.js";
+import Question from "../models/mongo/questionModel.js";
 import { generateQuizFromAI } from "../services/aiService.js";
 
 // 🧠 CREATE a new course
@@ -275,22 +276,99 @@ export const generateQuiz = async (req, res) => {
 
     // Try AI service
     const aiResult = await generateQuizFromAI({ topic: topic.trim(), numQuestions, questionTypes });
-    if (!aiResult.success) {
-      // Fallback to deterministic mock so frontend still gets results
-      const questions = [];
-      for (let i = 1; i <= numQuestions; i++) {
-        const qType = questionTypes[(i - 1) % questionTypes.length];
-        const lower = String(qType).toLowerCase();
-        let options = [];
-        if (lower.includes('multiple')) options = ['Option A', 'Option B', 'Option C', 'Option D'];
-        else if (lower.includes('true')) options = ['True', 'False'];
-        questions.push({ question: `Question ${i}: ${topic}`, type: qType, options, correctAnswerIndex: 0 });
-      }
-      return res.status(200).json({ success: true, message: "AI not available — returning mock questions", data: { questions }, error: null });
-    }
+    // if (!aiResult.success) {
+    //   // Fallback to deterministic mock so frontend still gets results
+    //   const questions = [];
+    //   for (let i = 1; i <= numQuestions; i++) {
+    //     const qType = questionTypes[(i - 1) % questionTypes.length];
+    //     const lower = String(qType).toLowerCase();
+    //     let options = [];
+    //     if (lower.includes('multiple')) options = ['Option A', 'Option B', 'Option C', 'Option D'];
+    //     else if (lower.includes('true')) options = ['True', 'False'];
+    //     questions.push({ question: `Question ${i}: ${topic}`, type: qType, options, correctAnswerIndex: 0 });
+    //   }
+    //   return res.status(200).json({ success: true, message: "AI not available — returning mock questions", data: { questions }, error: null });
+    // }
 
     return res.status(200).json({ success: true, message: "AI generated questions", data: { questions: aiResult.questions }, error: null });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Error generating quiz", data: { questions: [] }, error: err.message });
+  }
+};
+
+// 📨 Import questions (from n8n or external webhook) and optionally create/attach a Quiz
+export const importQuestions = async (req, res) => {
+  try {
+    const courseId = req.params.id;
+    const { questions, createQuiz = true, quizTitle } = req.body;
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ success: false, message: "Course not found" });
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ success: false, message: "Invalid payload: questions array required" });
+    }
+
+    // Validate & normalize incoming questions
+    const normalized = [];
+    for (const q of questions) {
+      const text = (q.text || q.questionText || q.question || '').toString().trim();
+      let type = (q.type || '').toString().toLowerCase().trim();
+      const options = Array.isArray(q.options) ? q.options.map(o => o.toString()) : [];
+      const correctAnswer = (q.correctAnswer || '').toString();
+      const explanation = (q.explanation || '').toString();
+      const points = Number.isInteger(q.points) ? q.points : (q.points ? parseInt(q.points, 10) : 1);
+
+      if (!text || !correctAnswer) {
+        return res.status(400).json({ success: false, message: "Invalid question: text and correctAnswer required", example: q });
+      }
+
+      // normalize types: allow 'true_false' or 't/f' -> model uses 'tf'
+      if (type === 'true_false' || type === 't/f' || type === 'truefalse') type = 'tf';
+      if (type === 'true' || type === 'false') type = 'tf';
+      if (!['mcq','tf','short'].includes(type)) {
+        // default to mcq if options present, else short
+        type = options.length > 0 ? 'mcq' : 'short';
+      }
+
+      // enforce MCQ options count
+      if (type === 'mcq') {
+        if (!Array.isArray(options) || options.length < 3) {
+          return res.status(400).json({ success: false, message: "MCQ questions must have 3–5 options", question: text });
+        }
+      }
+
+      // for tf and short, force empty options
+      const finalOptions = (type === 'mcq') ? options.slice(0,5) : [];
+
+      normalized.push({ text, type, options: finalOptions, correctAnswer, points: points || 1, explanation });
+    }
+
+    // Insert questions
+    const created = await Question.insertMany(normalized.map(q => ({
+      text: q.text,
+      type: q.type,
+      options: q.options,
+      correctAnswer: q.correctAnswer,
+      points: q.points,
+      explanation: q.explanation
+    })));
+
+    let createdQuiz = null;
+    if (createQuiz) {
+      const quiz = await Quiz.create({
+        title: quizTitle || `Generated: ${course.title}`,
+        courseId: course._id,
+        questionIds: created.map(c => c._id)
+      });
+      // attach to course
+      course.quizId = quiz._id;
+      await course.save();
+      createdQuiz = quiz;
+    }
+
+    return res.status(201).json({ success: true, message: 'Imported questions', data: { questions: created, quiz: createdQuiz } });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Error importing questions', error: err.message });
   }
 };
