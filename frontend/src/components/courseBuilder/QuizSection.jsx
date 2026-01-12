@@ -121,45 +121,127 @@ export default function QuizSection({
                       />
                     </div>
 
-                    {/* Options */}
+                    {/* Question Type */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Answer Options
+                        Type
                       </label>
-                      <div className="space-y-2">
-                        {question.options.map((option, optIndex) => (
-                          <div key={optIndex} className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name={`correct-${question.id}`}
-                              checked={question.correctAnswerIndex === optIndex}
-                              onChange={() =>
-                                updateQuizQuestion(
-                                  question.id,
-                                  "correctAnswerIndex",
-                                  optIndex
-                                )
-                              }
-                              className="w-4 h-4 text-yellow-600 focus:ring-yellow-500"
-                            />
-                            <Input
-                              value={option}
-                              onChange={(e) =>
-                                updateQuizOption(question.id, optIndex, e.target.value)
-                              }
-                              placeholder={`Option ${optIndex + 1}`}
-                              className="border-2 border-gray-300 flex-1"
-                            />
-                            {question.correctAnswerIndex === optIndex && (
-                              <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Select the radio button next to the correct answer
-                      </p>
+                      <select
+                        value={question.type || "mcq"}
+                        onChange={(e) => {
+                          const prevType = question.type || "mcq";
+                          const nextType = e.target.value;
+                          updateQuizQuestion(question.id, "type", nextType);
+
+                          if (nextType === "mcq") {
+                            // If coming from tf/short, don't keep ['True','False'] or []
+                            if (prevType !== "mcq") {
+                              updateQuizQuestion(question.id, "options", ["", "", "", ""]);
+                              updateQuizQuestion(question.id, "correctAnswerIndex", 0);
+                            } else if (!Array.isArray(question.options) || question.options.length < 2) {
+                              updateQuizQuestion(question.id, "options", ["", "", "", ""]);
+                              updateQuizQuestion(question.id, "correctAnswerIndex", 0);
+                            }
+                            updateQuizQuestion(question.id, "correctAnswer", "");
+                          } else if (nextType === "tf") {
+                            updateQuizQuestion(question.id, "options", ["True", "False"]);
+                            updateQuizQuestion(question.id, "correctAnswerIndex", 0);
+                            updateQuizQuestion(question.id, "correctAnswer", "True");
+                          } else if (nextType === "short") {
+                            updateQuizQuestion(question.id, "options", []);
+                            updateQuizQuestion(question.id, "correctAnswerIndex", 0);
+                            // If coming from tf, clear the default 'True' text
+                            if (prevType !== "short") {
+                              updateQuizQuestion(question.id, "correctAnswer", "");
+                            }
+                          }
+                        }}
+                        className="mt-1 block w-full border-gray-200 rounded p-2"
+                      >
+                        <option value="mcq">Multiple Choice (mcq)</option>
+                        <option value="tf">True / False (t/f)</option>
+                        <option value="short">Short Answer (short)</option>
+                      </select>
                     </div>
+
+                    {/* Answer Editor */}
+                    {(question.type || "mcq") === "mcq" && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Answer Options
+                        </label>
+                        <div className="space-y-2">
+                          {(question.options || []).map((option, optIndex) => (
+                            <div key={optIndex} className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name={`correct-${question.id}`}
+                                checked={question.correctAnswerIndex === optIndex}
+                                onChange={() =>
+                                  updateQuizQuestion(
+                                    question.id,
+                                    "correctAnswerIndex",
+                                    optIndex
+                                  )
+                                }
+                                className="w-4 h-4 text-yellow-600 focus:ring-yellow-500"
+                              />
+                              <Input
+                                value={option}
+                                onChange={(e) =>
+                                  updateQuizOption(question.id, optIndex, e.target.value)
+                                }
+                                placeholder={`Option ${optIndex + 1}`}
+                                className="border-2 border-gray-300 flex-1"
+                              />
+                              {question.correctAnswerIndex === optIndex && (
+                                <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Select the radio button next to the correct answer
+                        </p>
+                      </div>
+                    )}
+
+                    {(question.type || "mcq") === "tf" && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Correct Answer
+                        </label>
+                        <div className="space-y-2">
+                          {["True", "False"].map((val) => (
+                            <label key={val} className="inline-flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name={`tf-${question.id}`}
+                                checked={(question.correctAnswer || "True") === val}
+                                onChange={() => updateQuizQuestion(question.id, "correctAnswer", val)}
+                                className="w-4 h-4 text-yellow-600 focus:ring-yellow-500"
+                              />
+                              <span className="text-sm text-gray-700">{val}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {(question.type || "mcq") === "short" && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700">
+                          Correct Answer
+                        </label>
+                        <Textarea
+                          value={question.correctAnswer || ""}
+                          onChange={(e) => updateQuizQuestion(question.id, "correctAnswer", e.target.value)}
+                          placeholder="Enter the expected answer..."
+                          rows={2}
+                          className="border-2 border-gray-300 resize-none"
+                        />
+                      </div>
+                    )}
                   </div>
                 </Card>
               ))

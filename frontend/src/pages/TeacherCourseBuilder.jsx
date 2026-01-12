@@ -91,8 +91,8 @@ export default function TeacherCourseBuilder() {
       // Sanitize course, lessons, and quiz data
       const courseData = sanitizeCourseForAPI(courseBuilder.course)
       const lessonsData = courseBuilder.lessons.map(sanitizeLessonForAPI)
-      const quizData = courseBuilder.course.quiz
-        ? sanitizeQuizForAPI(courseBuilder.course.quiz)
+      const quizData = courseBuilder.course.finalQuiz
+        ? sanitizeQuizForAPI(courseBuilder.course.finalQuiz)
         : null
 
       // DEBUG: log payload being sent to backend (stringified for full view)

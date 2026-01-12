@@ -4,14 +4,14 @@ import toast from "react-hot-toast";
 export default function AIGenerateModal({ isOpen, onClose, onSubmit }) {
   const [topic, setTopic] = useState("");
   const [numQuestions, setNumQuestions] = useState(5);
-  const [questionTypes, setQuestionTypes] = useState(["multiple-choice"]);
+  const [questionTypes, setQuestionTypes] = useState(["mcq"]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setTopic("");
       setNumQuestions(5);
-      setQuestionTypes(["multiple-choice"]);
+      setQuestionTypes(["mcq"]);
       setIsSubmitting(false);
     }
   }, [isOpen]);
@@ -90,12 +90,12 @@ export default function AIGenerateModal({ isOpen, onClose, onSubmit }) {
                   <input
                     type="checkbox"
                     className="mr-2"
-                    checked={questionTypes.includes("multiple-choice")}
+                    checked={questionTypes.includes("mcq")}
                     onChange={(e) => {
                       const checked = e.target.checked;
                       setQuestionTypes((prev) => {
-                        if (checked) return Array.from(new Set([...prev, "multiple-choice"]));
-                        return prev.filter((t) => t !== "multiple-choice");
+                        if (checked) return Array.from(new Set([...prev, "mcq"]));
+                        return prev.filter((t) => t !== "mcq");
                       });
                     }}
                   />
@@ -106,12 +106,12 @@ export default function AIGenerateModal({ isOpen, onClose, onSubmit }) {
                   <input
                     type="checkbox"
                     className="mr-2"
-                    checked={questionTypes.includes("true-false")}
+                    checked={questionTypes.includes("t/f")}
                     onChange={(e) => {
                       const checked = e.target.checked;
                       setQuestionTypes((prev) => {
-                        if (checked) return Array.from(new Set([...prev, "true-false"]));
-                        return prev.filter((t) => t !== "true-false");
+                        if (checked) return Array.from(new Set([...prev, "t/f"]));
+                        return prev.filter((t) => t !== "t/f");
                       });
                     }}
                   />
@@ -122,12 +122,12 @@ export default function AIGenerateModal({ isOpen, onClose, onSubmit }) {
                   <input
                     type="checkbox"
                     className="mr-2"
-                    checked={questionTypes.includes("short-answer")}
+                    checked={questionTypes.includes("short")}
                     onChange={(e) => {
                       const checked = e.target.checked;
                       setQuestionTypes((prev) => {
-                        if (checked) return Array.from(new Set([...prev, "short-answer"]));
-                        return prev.filter((t) => t !== "short-answer");
+                        if (checked) return Array.from(new Set([...prev, "short"]));
+                        return prev.filter((t) => t !== "short");
                       });
                     }}
                   />

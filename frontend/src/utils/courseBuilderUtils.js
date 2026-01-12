@@ -110,16 +110,30 @@ export const validateQuiz = (quiz) => {
     if (!q.question?.trim()) {
       errors.push(`Question ${idx + 1}: Question text is required`);
     }
-    if (!q.options || q.options.length < 2) {
-      errors.push(`Question ${idx + 1}: Must have at least 2 options`);
-    }
-    q.options?.forEach((opt, optIdx) => {
-      if (!opt?.trim()) {
-        errors.push(`Question ${idx + 1}, Option ${optIdx + 1}: Cannot be empty`);
+
+    const type = (q.type || "mcq").toString().toLowerCase().trim();
+
+    if (type === "mcq") {
+      if (!q.options || q.options.length < 2) {
+        errors.push(`Question ${idx + 1}: Must have at least 2 options`);
       }
-    });
-    if (q.correctAnswerIndex === undefined || q.correctAnswerIndex === null) {
-      errors.push(`Question ${idx + 1}: Correct answer is required`);
+      q.options?.forEach((opt, optIdx) => {
+        if (!opt?.trim()) {
+          errors.push(`Question ${idx + 1}, Option ${optIdx + 1}: Cannot be empty`);
+        }
+      });
+      if (q.correctAnswerIndex === undefined || q.correctAnswerIndex === null) {
+        errors.push(`Question ${idx + 1}: Correct answer is required`);
+      }
+    } else if (type === "tf") {
+      const a = (q.correctAnswer || "").toString();
+      if (a !== "True" && a !== "False") {
+        errors.push(`Question ${idx + 1}: Correct answer must be True or False`);
+      }
+    } else if (type === "short") {
+      if (!q.correctAnswer || !q.correctAnswer.toString().trim()) {
+        errors.push(`Question ${idx + 1}: Correct answer is required`);
+      }
     }
   });
 
@@ -209,9 +223,11 @@ export const sanitizeFieldForAPI = (field) => {
 export const sanitizeQuizForAPI = (quiz) => {
   return {
     questions: quiz.questions.map((q) => ({
+      type: q.type,
       question: q.question,
       options: q.options,
       correctAnswerIndex: q.correctAnswerIndex,
+      correctAnswer: q.correctAnswer,
     })),
     passingScore: quiz.passingScore || 70,
     points: quiz.points || 100,

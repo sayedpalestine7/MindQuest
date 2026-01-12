@@ -249,54 +249,61 @@ export const useCourseBuilder = (courseId) => {
   const addQuizQuestion = () => {
     const newQ = {
       id: `quiz-${Date.now()}`,
+      type: "mcq",
       question: "",
       options: ["", "", "", ""],
       correctAnswerIndex: 0,
+      correctAnswer: "",
     };
-    setCourse({
-      ...course,
+    setCourse((prev) => ({
+      ...prev,
       finalQuiz: {
-        ...course.finalQuiz,
-        questions: [...course.finalQuiz.questions, newQ],
+        ...prev.finalQuiz,
+        questions: [...(prev.finalQuiz?.questions || []), newQ],
       },
-    });
+    }));
     toast.success("Question added");
   };
 
   const updateQuizQuestion = (id, field, value) => {
-    setCourse({
-      ...course,
+    setCourse((prev) => ({
+      ...prev,
       finalQuiz: {
-        ...course.finalQuiz,
-        questions: course.finalQuiz.questions.map((q) =>
+        ...prev.finalQuiz,
+        questions: (prev.finalQuiz?.questions || []).map((q) =>
           q.id === id ? { ...q, [field]: value } : q
         ),
       },
-    });
+    }));
   };
 
   const updateQuizOption = (id, optIndex, value) => {
-    setCourse({
-      ...course,
+    setCourse((prev) => ({
+      ...prev,
       finalQuiz: {
-        ...course.finalQuiz,
-        questions: course.finalQuiz.questions.map((q) =>
+        ...prev.finalQuiz,
+        questions: (prev.finalQuiz?.questions || []).map((q) =>
           q.id === id
-            ? { ...q, options: q.options.map((opt, i) => (i === optIndex ? value : opt)) }
+            ? {
+                ...q,
+                options: (Array.isArray(q.options) ? q.options : []).map((opt, i) =>
+                  i === optIndex ? value : opt
+                ),
+              }
             : q
         ),
       },
-    });
+    }));
   };
 
   const deleteQuizQuestion = (id) => {
-    setCourse({
-      ...course,
+    setCourse((prev) => ({
+      ...prev,
       finalQuiz: {
-        ...course.finalQuiz,
-        questions: course.finalQuiz.questions.filter((q) => q.id !== id),
+        ...prev.finalQuiz,
+        questions: (prev.finalQuiz?.questions || []).filter((q) => q.id !== id),
       },
-    });
+    }));
     toast.success("Question deleted");
   };
 
@@ -304,29 +311,68 @@ export const useCourseBuilder = (courseId) => {
   const insertGeneratedQuestions = (questions) => {
     if (!questions || !Array.isArray(questions) || questions.length === 0) return;
 
-    const mapped = questions.map((q, idx) => ({
-      id: `quiz-${Date.now()}-${idx}-${Math.random().toString(36).slice(2,8)}`,
-      question: q.question || q.text || "",
-      options: Array.isArray(q.options) && q.options.length > 0 ? q.options : (q.type === 'true-false' ? ['True','False'] : ["", "", "", ""]),
-      correctAnswerIndex: typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0,
-    }));
+    const mapped = questions.map((q, idx) => {
+      const typeRaw = (q.type || '').toString().toLowerCase().trim();
+      const type = (typeRaw === 't/f' || typeRaw === 'true_false' || typeRaw === 'truefalse') ? 'tf' : typeRaw;
+      const normalizedType = ['mcq', 'tf', 'short'].includes(type) ? type : 'mcq';
 
-    setCourse({
-      ...course,
-      finalQuiz: {
-        ...course.finalQuiz,
-        questions: [...course.finalQuiz.questions, ...mapped],
-      },
+      const questionText = q.question || q.text || "";
+      const options = Array.isArray(q.options) ? q.options : [];
+      const correctAnswer = (q.correctAnswer || '').toString();
+
+      if (normalizedType === 'mcq') {
+        const finalOptions = options.length > 0 ? options : ["", "", "", ""];
+        const idxFromCorrectAnswer = correctAnswer ? finalOptions.indexOf(correctAnswer) : -1;
+        const correctAnswerIndex = typeof q.correctAnswerIndex === 'number'
+          ? q.correctAnswerIndex
+          : (idxFromCorrectAnswer >= 0 ? idxFromCorrectAnswer : 0);
+        return {
+          id: `quiz-${Date.now()}-${idx}-${Math.random().toString(36).slice(2,8)}`,
+          type: 'mcq',
+          question: questionText,
+          options: finalOptions,
+          correctAnswerIndex,
+          correctAnswer: "",
+        };
+      }
+
+      if (normalizedType === 'tf') {
+        return {
+          id: `quiz-${Date.now()}-${idx}-${Math.random().toString(36).slice(2,8)}`,
+          type: 'tf',
+          question: questionText,
+          options: ['True', 'False'],
+          correctAnswerIndex: 0,
+          correctAnswer: correctAnswer === 'False' ? 'False' : 'True',
+        };
+      }
+
+      return {
+        id: `quiz-${Date.now()}-${idx}-${Math.random().toString(36).slice(2,8)}`,
+        type: 'short',
+        question: questionText,
+        options: [],
+        correctAnswerIndex: 0,
+        correctAnswer,
+      };
     });
+
+    setCourse((prev) => ({
+      ...prev,
+      finalQuiz: {
+        ...prev.finalQuiz,
+        questions: [...(prev.finalQuiz?.questions || []), ...mapped],
+      },
+    }));
 
     toast.success(`${mapped.length} AI-generated question(s) added`);
   };
 
   const updateQuizSettings = (field, value) => {
-    setCourse({
-      ...course,
-      finalQuiz: { ...course.finalQuiz, [field]: value },
-    });
+    setCourse((prev) => ({
+      ...prev,
+      finalQuiz: { ...prev.finalQuiz, [field]: value },
+    }));
   };
 
   return {

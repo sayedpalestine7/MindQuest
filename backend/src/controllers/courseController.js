@@ -262,7 +262,22 @@ export const deleteCourse = async (req, res) => {
 export const generateQuiz = async (req, res) => {
   try {
     const courseId = req.params.id;
-    const { topic, numQuestions, questionTypes } = req.body;
+    const { topic, numQuestions } = req.body;
+    let questionTypes = req.body.questionTypes || req.body.types || req.body.typesArray || [];
+
+    // Normalize incoming type tokens to canonical values used by backend and AI: mcq, tf, short
+    if (!Array.isArray(questionTypes)) questionTypes = [questionTypes];
+    questionTypes = questionTypes.map(t => {
+      const s = String(t || '').toLowerCase().trim();
+      if (['t/f','tf','true_false','truefalse','true','false'].includes(s)) return 'tf';
+      if (['short','short_answer','short-answer','shortanswer'].includes(s)) return 'short';
+      if (['mcq','multiple','multiple_choice','multiple-choice','multiplechoice'].includes(s)) return 'mcq';
+      return 'mcq';
+    });
+    // dedupe
+    questionTypes = [...new Set(questionTypes)];
+
+    console.debug('generateQuiz: normalized questionTypes=', questionTypes);
 
     const course = await Course.findById(courseId);
     if (!course) {
