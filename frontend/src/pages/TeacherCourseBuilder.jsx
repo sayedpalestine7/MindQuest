@@ -152,22 +152,41 @@ export default function TeacherCourseBuilder() {
     // payload: { topic, numQuestions, questionType }
     try {
       setIsGenerating(true)
-      const result = await courseService.generateQuiz(courseId, payload)
+      const resp = await fetch("http://localhost:5678/webhook/MindQuest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId,
+          topic: payload?.topic,
+          numQuestions: payload?.numQuestions,
+          questionTypes: payload?.questionTypes,
+        }),
+      })
+
+      let body = null
+      try {
+        body = await resp.json()
+      } catch (e) {
+        body = null
+      }
+
       setIsGenerating(false)
 
-      if (!result.success) {
-        const err = result.error || "AI generation failed"
+      if (!resp.ok) {
+        const err = body?.message || body?.error || "n8n generation failed"
         courseBuilder.setErrors([err])
         toast.error(`Generation failed: ${err}`)
         return
       }
 
-      // result.data may be envelope or raw questions
-      const body = result.data || {}
-      const questions = body.data?.questions || body.questions || []
+      // n8n may return: {questions:[...]}, {data:{questions:[...]}}, or [...]
+      const questions =
+        body?.data?.questions ||
+        body?.questions ||
+        (Array.isArray(body) ? body : [])
 
-      if (questions.length === 0) {
-        toast.error("No questions returned from AI")
+      if (!Array.isArray(questions) || questions.length === 0) {
+        toast.error("No questions returned from n8n")
         return
       }
 
@@ -182,7 +201,7 @@ export default function TeacherCourseBuilder() {
       const msg = err?.message || "Failed to generate questions"
       courseBuilder.setErrors([msg])
       toast.error(msg)
-      console.error("AI generate error:", err)
+      console.error("n8n generate error:", err)
     }
   }
 
