@@ -1,5 +1,5 @@
 // /src/components/LessonEditor.jsx
-import React from "react"
+import React, { useRef } from "react"
 import {
   BookOpen,
   FileText,
@@ -12,9 +12,12 @@ import {
   Upload,
   Trash2,
   GripVertical,
+  ChevronRight,
 } from "lucide-react"
 import { Button, Input, Textarea, Select, Card } from "./UI"
 import AnimationSelector from "./AnimationSelector"
+import { useStickyVisibility } from "../../hooks/useStickyVisibility"
+import { TextAreaInput, FileInput } from "./FieldInputs"
 
 export default function LessonEditor({
   selectedLesson,
@@ -28,11 +31,23 @@ export default function LessonEditor({
   updateField,
   handleHtmlFileUpload,
   handleImageUpload,
+  onNavigateToQuiz,
 }) {
+  const { stickyRef, stickyClassName } = useStickyVisibility()
+
   if (!selectedLesson) {
     return (
-      <Card className="p-8 text-center text-gray-500">
-        <p>No lesson selected.</p>
+      <Card className="p-12 text-center border-2 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-200 mb-4">
+          <BookOpen className="w-8 h-8 text-gray-600" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">No Lesson Selected</h2>
+        <p className="text-gray-600 mb-4">
+          Select a lesson from the left panel to start editing its content.
+        </p>
+        <p className="text-sm text-gray-500">
+          💡 Create your first lesson by clicking "Add Lesson" in the sidebar
+        </p>
       </Card>
     )
   }
@@ -43,14 +58,14 @@ export default function LessonEditor({
         {selectedLesson.title}
       </h2>
 
-      {/* Add Field Buttons */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 rounded-xl border-2 border-gray-300">
+      {/* Add Field Buttons - STICKY */}
+      <div ref={stickyRef} className={`sticky top-11 z-0 mb-6 p-4 rounded-xl  flex flex-col ${stickyClassName}`}>
         <p className="text-sm font-semibold text-gray-800 mb-3">
           Add Content Block:
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 justify-center p-3 rounded-lg w-fit ">
           <FieldButton icon={<FileText className="w-4 h-4 text-blue-600" />} label="Paragraph" onClick={() => addField("paragraph")} type={"paragraphBtn"} />
-          <FieldButton icon={<ImageIcon className="w-4 h-4 text-purple-600" />} label="Image" onClick={() => addField("image")} type={"imageBtn"}/>
+          <FieldButton icon={<ImageIcon className="w-4 h-4 text-purple-600" />} label="Image" onClick={() => addField("image")} type={"imageBtn"} />
           <FieldButton icon={<Youtube className="w-4 h-4 text-pink-600" />} label="YouTube" onClick={() => addField("youtube")} type={"youtubeBtn"} />
           <FieldButton icon={<Code2 className="w-4 h-4 text-green-600" />} label="Code" onClick={() => addField("code")} type={"codeBtn"} />
           <FieldButton icon={<HelpCircle className="w-4 h-4 text-orange-600" />} label="Question" onClick={() => addField("question")} type={"questionBtn"} />
@@ -62,19 +77,25 @@ export default function LessonEditor({
       {/* Fields List */}
       <div className="space-y-4">
         {selectedLesson.fields.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">No content blocks yet. Add your first block above!</p>
+          <div className="text-center py-16 px-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border-2 border-dashed border-gray-300">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+              <BookOpen className="w-8 h-8 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Start Building Your Lesson</h3>
+            <p className="text-sm text-gray-600 mb-4 max-w-sm mx-auto">
+              Add content blocks to create engaging educational material. You can mix text, images, videos, code, and interactive elements!
+            </p>
+            <p className="text-xs text-gray-500">👆 Pick a content type above to begin</p>
           </div>
         ) : (
           selectedLesson.fields.map((field) => (
             <div
               key={field.id}
-              className={`p-4 bg-white rounded-xl border-2 border-gray-300 hover:border-black/50 transition-colors ${draggedFieldId === field.id ? "opacity-50" : ""
-                }`}
+              className={`p-4 bg-white rounded-xl border-gray-300 hover:border-2 hover:border-gray-400 ${getFieldHoverBorderColor(field.type)} hover:shadow-md
+                }`} // border here
             >
               {/* Field Header with Draggable Grip */}
-              <div 
+              <div
                 draggable
                 onDragStart={(e) => handleFieldDragStart(e, field.id)}
                 onDragOver={handleFieldDragOver}
@@ -110,6 +131,18 @@ export default function LessonEditor({
           ))
         )}
       </div>
+
+      {/* Workflow Navigation */}
+      <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">
+        <p className="text-sm text-gray-600">📚 <span className="font-semibold">Lessons done?</span> Create a quiz to test your students.</p>
+        <Button
+          onClick={onNavigateToQuiz}
+          className="gap-2 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all"
+        >
+          Create Quiz
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      </div>
     </Card>
   )
 }
@@ -142,55 +175,61 @@ function getFieldIcon(type) {
   return icons[type] || null
 }
 
+function getFieldBorderColor(type) {
+  const colors = {
+    paragraph: "border-l-blue-500",
+    image: "border-l-purple-500",
+    youtube: "border-l-pink-500",
+    code: "border-l-green-500",
+    question: "border-l-orange-500",
+    minigame: "border-l-indigo-500",
+    animation: "border-l-cyan-500",
+  }
+  return colors[type] || "border-l-gray-300"
+}
+
+function getFieldHoverBorderColor(type) {
+  const colors = {
+    paragraph: "hover:border-blue-600",
+    image: "hover:border-purple-600",
+    youtube: "hover:border-pink-600",
+    code: "hover:border-green-600",
+    question: "hover:border-orange-600",
+    minigame: "hover:border-indigo-600",
+    animation: "hover:border-cyan-600",
+  }
+  return colors[type] || "hover:border-l-gray-400"
+}
+
 /* --- Field Type Rendering --- */
 function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpload }) {
   switch (field.type) {
     case "paragraph":
       return (
-        <Textarea
+        <TextAreaInput
+          // label="Paragraph Content"
           value={field.content}
           onChange={(e) => updateField(field.id, { content: e.target.value })}
           placeholder="Enter your text content..."
           rows={4}
-          className="border-2 border-gray-300 resize-none"
+          maxLength={2000}
+          // helper="Make your content engaging and easy to understand"
+          required
         />
       )
 
     case "image":
       return (
-        <div className="space-y-2">
-          <div className="flex gap-2 items-center">
-            <Input
-              value={field.content}
-              onChange={(e) => updateField(field.id, { content: e.target.value })}
-              placeholder="Enter image URL or upload..."
-              className="border-2 flex-1 border-gray-300"
-            />
-            <label className="cursor-pointer">
-              <Button variant="outline" className="gap-2 border-2 bg-transparent" asChild>
-                <span>
-                  <Upload className="w-4 h-4 text-gray-600" />
-                </span>
-              </Button>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleImageUpload(file, field.id)
-                }}
-              />
-            </label>
-          </div>
-          {field.content && (
-            <img
-              src={field.content}
-              alt="Field Preview"
-              className="w-full h-48 object-cover rounded-lg border-2 border-gray-300"
-            />
-          )}
-        </div>
+        <FileInput
+          label="Image"
+          value={field.content}
+          onChange={(e) => updateField(field.id, { content: e.target.value })}
+          onFileUpload={(file) => handleImageUpload(file, field.id)}
+          previewType="image"
+          accept="image/*"
+          // helper="Upload an image or paste an image URL"
+          required
+        />
       )
 
     case "youtube":

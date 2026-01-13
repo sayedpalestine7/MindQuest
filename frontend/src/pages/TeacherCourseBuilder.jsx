@@ -2,17 +2,22 @@
 import React, { useEffect, useState } from "react"
 import { useParams } from "react-router"
 import Header from "../components/courseBuilder/Header"
-import Sidebar from "../components/courseBuilder/Sidebar"
+import Breadcrumb from "../components/courseBuilder/Breadcrumb"
+import WorkflowProgress from "../components/courseBuilder/WorkflowProgress"
+import LeftPanel from "../components/courseBuilder/LeftPanel"
 import CourseInfo from "../components/courseBuilder/CourseInfo"
 import LessonEditor from "../components/courseBuilder/LessonEditor"
-import QuizSection from "../components/courseBuilder/QuizSection"
+import QuizEditor from "../components/courseBuilder/QuizEditor"
 import PreviewModal from "../components/courseBuilder/PreviewModal"
 import AIGenerateModal from "../components/courseBuilder/AIGenerateModal"
+import { ProgressBar } from "../components/courseBuilder/ProgressBar"
+import { ErrorBanner } from "../components/courseBuilder/ErrorBanner"
 import courseService from "../services/courseService"
 import { useAuth } from "../context/AuthContext"
 import useCourseBuilder from "../hooks/useCourseBuilder"
 import {
   validateCourse,
+  validateQuiz,
   sanitizeCourseForAPI,
   sanitizeLessonForAPI,
   sanitizeQuizForAPI,
@@ -25,8 +30,19 @@ export default function TeacherCourseBuilder() {
   const courseBuilder = useCourseBuilder(courseId)
   const [isAIGenerateOpen, setIsAIGenerateOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
-  
+  const [activeEditorTab, setActiveEditorTab] = useState("lessons")
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem("courseBuilder-sidebar-collapsed")
+    return saved === "true"
+  })
+  const [saveProgress, setSaveProgress] = useState({ status: "idle", message: "", progress: 0 })
+
   /* ---------- EFFECTS ---------- */
+  // Persist sidebar collapsed state
+  useEffect(() => {
+    localStorage.setItem("courseBuilder-sidebar-collapsed", String(isSidebarCollapsed))
+  }, [isSidebarCollapsed])
+
   // Check auth and load course
   useEffect(() => {
     // Wait for auth to finish loading from localStorage
@@ -57,15 +73,30 @@ export default function TeacherCourseBuilder() {
     return () => clearTimeout(timeoutId)
   }, [courseBuilder.course, courseBuilder.lessons])
 
+  // Warn user if they try to leave with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (courseBuilder.saveStatus === "unsaved") {
+        e.preventDefault()
+        e.returnValue = ""
+        return ""
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [courseBuilder.saveStatus])
+
   /* ---------- SAVE / PREVIEW ---------- */
   const handleSave = async () => {
     courseBuilder.setErrors([])
     courseBuilder.setIsSaving(true)
+    setSaveProgress({ status: "loading", message: "Validating course...", progress: 20 })
 
     // Check auth
     if (!isAuthenticated || !user?._id) {
       courseBuilder.setErrors(["Please login to save courses"])
       courseBuilder.setIsSaving(false)
+      setSaveProgress({ status: "error", message: "Authentication failed", error: "Please login first" })
       toast.error("Please login to save courses")
       return
     }
@@ -75,25 +106,42 @@ export default function TeacherCourseBuilder() {
     if (!courseValidation.isValid) {
       courseBuilder.setErrors(courseValidation.errors)
       courseBuilder.setIsSaving(false)
+      setSaveProgress({ status: "error", message: "Validation failed", error: courseValidation.errors[0] })
       courseValidation.errors.forEach((err) => toast.error(err))
       return
     }
-
     // Validate lessons exist
     if (courseBuilder.lessons.length === 0) {
       courseBuilder.setErrors(["Must have at least one lesson"])
       courseBuilder.setIsSaving(false)
+      setSaveProgress({ status: "error", message: "Validation failed", error: "Add at least one lesson" })
       toast.error("Must have at least one lesson")
       return
     }
 
+    // Validate quiz if it has questions
+    if (courseBuilder.course.finalQuiz?.questions?.length > 0) {
+      const quizValidation = validateQuiz(courseBuilder.course.finalQuiz)
+      if (!quizValidation.isValid) {
+        courseBuilder.setErrors(quizValidation.errors)
+        courseBuilder.setIsSaving(false)
+        setSaveProgress({ status: "error", message: "Quiz validation failed", error: quizValidation.errors[0] })
+        quizValidation.errors.forEach((err) => toast.error(err))
+        return
+      }
+    }
+
     try {
+      setSaveProgress({ status: "loading", message: "Preparing data...", progress: 40 })
+
       // Sanitize course, lessons, and quiz data
       const courseData = sanitizeCourseForAPI(courseBuilder.course)
       const lessonsData = courseBuilder.lessons.map(sanitizeLessonForAPI)
       const quizData = courseBuilder.course.finalQuiz
         ? sanitizeQuizForAPI(courseBuilder.course.finalQuiz)
         : null
+
+      setSaveProgress({ status: "loading", message: "Saving to server...", progress: 60 })
 
       // DEBUG: log payload being sent to backend (stringified for full view)
       try {
@@ -130,16 +178,21 @@ export default function TeacherCourseBuilder() {
       }
 
       if (result.success) {
+        setSaveProgress({ status: "success", message: courseId ? "Course updated!" : "Course created!", progress: 100 })
         toast.success(courseId ? "Course updated successfully!" : "Course created successfully!")
         courseBuilder.setSaveStatus("saved")
+        // Auto-dismiss success after 2s
+        setTimeout(() => setSaveProgress({ status: "idle" }), 2000)
         // Optionally redirect after save
         // navigate(`/teacher/courseBuilder/${result.id}`)
       } else {
+        setSaveProgress({ status: "error", message: "Save failed", error: result.error })
         courseBuilder.setErrors([result.error])
         toast.error(`Save failed: ${result.error}`)
       }
     } catch (error) {
       const errorMsg = error.message || "Failed to save course"
+      setSaveProgress({ status: "error", message: "Error saving", error: errorMsg })
       courseBuilder.setErrors([errorMsg])
       toast.error(errorMsg)
       console.error("Save error:", error)
@@ -175,7 +228,7 @@ export default function TeacherCourseBuilder() {
 
       try {
         console.debug("n8n generate: POST", n8nUrl, n8nPayload)
-      } catch (e) {}
+      } catch (e) { }
 
       const resp = await fetch(n8nUrl, {
         method: "POST",
@@ -231,7 +284,7 @@ export default function TeacherCourseBuilder() {
         console.debug("n8n generate: received=", questions.length, "types=", typesReceived)
         console.debug("n8n generate: filtered=", filtered.length, "types=", typesFiltered)
         console.debug("n8n generate: final=", finalQuestions.length, "types=", typesFinal)
-      } catch (e) {}
+      } catch (e) { }
 
       if (finalQuestions.length === 0) {
         toast.error("n8n returned questions, but none matched the selected type(s)")
@@ -325,56 +378,59 @@ export default function TeacherCourseBuilder() {
         onSave={handleSave}
         isSaving={courseBuilder.isSaving}
         isLoading={courseBuilder.isLoading}
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
-      {/* Error Messages */}
-      {courseBuilder.errors.length > 0 && (
-        <div className="container mx-auto px-6 py-4">
-          <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded">
-            <p className="font-semibold text-red-800 mb-2">Errors:</p>
-            <ul className="text-red-700 text-sm space-y-1">
-              {courseBuilder.errors.map((error, idx) => (
-                <li key={idx}>• {error}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+
 
       {/* Main Layout */}
       {!courseBuilder.isLoading ? (
-        <div className="container mx-auto px-6 py-8 space-y-8">
-          {/* Top: Course Info */}
+        <div className="container mx-auto px-6 py-8 space-y-6">
+          {/* Workflow Progress */}
+          <WorkflowProgress course={courseBuilder.course} lessons={courseBuilder.lessons} />
+
+          {/* Breadcrumb Navigation */}
+          <Breadcrumb
+            courseTitle={courseBuilder.course.title}
+            lessonTitle={courseBuilder.selectedLesson?.title}
+            activeTab={activeEditorTab}
+          />
+
+          {/* Error Banner */}
+          <ErrorBanner
+            errors={courseBuilder.errors}
+            onDismiss={() => courseBuilder.setErrors([])}
+            type="error"
+            dismissible
+          />
+
+          {/* Course Info - Collapsible */}
           <CourseInfo
             course={courseBuilder.course}
             setCourse={courseBuilder.setCourse}
             handleImageUpload={courseBuilder.handleImageUpload}
           />
 
-          {/* Middle: Lessons & Quiz (Left) + Lesson Editor (Right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Left Panel: Lessons + Quiz */}
-            <div className="lg:col-span-1 space-y-6">
-              {/* Lessons Panel */}
-              <div className="bg-white rounded-xl shadow-lg p-6 border-2">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Lessons ({courseBuilder.lessons.length})</h3>
-                <Sidebar
+          {/* Main Content: Left Panel (Tabbed) + Lesson Editor */}
+          <div className="grid grid-cols-1 lg:grid-cols-7 gap-6 min-h-[600px]">
+            {/* Left Panel: Tabbed Interface - Conditionally Visible */}
+            {!isSidebarCollapsed && (
+              <div className="lg:col-span-2">
+                <LeftPanel
+                  // Lessons props
                   lessons={courseBuilder.lessons}
                   selectedLessonId={courseBuilder.selectedLessonId}
                   setSelectedLessonId={courseBuilder.setSelectedLessonId}
                   addLesson={courseBuilder.addLesson}
                   deleteLesson={courseBuilder.deleteLesson}
-                  updateLessonTitle={courseBuilder.updateLessonTitle}
-                  handleDragStart={courseBuilder.handleDragStart}
-                  handleDragOver={courseBuilder.handleDragOver}
-                  handleDrop={courseBuilder.handleDrop}
-                  handleDragEnd={courseBuilder.handleDragEnd}
-                  draggedLessonId={courseBuilder.draggedLessonId}
-                />
-              </div>
-
-              {/* Quiz Panel */}
-              <QuizSection
+                updateLessonTitle={courseBuilder.updateLessonTitle}
+                handleDragStart={courseBuilder.handleDragStart}
+                handleDragOver={courseBuilder.handleDragOver}
+                handleDrop={courseBuilder.handleDrop}
+                handleDragEnd={courseBuilder.handleDragEnd}
+                draggedLessonId={courseBuilder.draggedLessonId}
+                // Quiz props
                 course={courseBuilder.course}
                 setCourse={courseBuilder.setCourse}
                 isQuizSectionOpen={courseBuilder.isQuizSectionOpen}
@@ -384,37 +440,48 @@ export default function TeacherCourseBuilder() {
                 updateQuizOption={courseBuilder.updateQuizOption}
                 deleteQuizQuestion={courseBuilder.deleteQuizQuestion}
                 updateQuizSettings={courseBuilder.updateQuizSettings}
+                // AI Tools props
+                onOpenAIGenerate={() => setIsAIGenerateOpen(true)}
+                isGenerating={isGenerating}
+                // Tab control
+                activeTab={activeEditorTab}
+                onTabChange={setActiveEditorTab}
               />
-              <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-                <p className="text-sm text-blue-700 font-semibold">💡 AI Quiz Generation</p>
-                <p className="text-xs text-blue-600 mt-2">Use the "Generate from AI" button to auto-create quiz questions from your course content.</p>
-                <div className="mt-3">
-                  <button
-                    onClick={() => setIsAIGenerateOpen(true)}
-                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    disabled={isGenerating}
-                  >
-                    {isGenerating ? 'Generating...' : 'Generate from AI'}
-                  </button>
-                </div>
               </div>
-            </div>
+            )}
 
-            {/* Right Panel: Lesson Editor */}
-            <div className="lg:col-span-3">
-              <LessonEditor
-                selectedLesson={courseBuilder.selectedLesson}
-                draggedFieldId={courseBuilder.draggedFieldId}
-                handleFieldDragStart={courseBuilder.handleFieldDragStart}
-                handleFieldDragOver={courseBuilder.handleFieldDragOver}
-                handleFieldDrop={courseBuilder.handleFieldDrop}
-                handleFieldDragEnd={courseBuilder.handleFieldDragEnd}
-                addField={courseBuilder.addField}
-                deleteField={courseBuilder.deleteField}
-                updateField={courseBuilder.updateField}
-                handleHtmlFileUpload={courseBuilder.handleHtmlFileUpload}
-                handleImageUpload={courseBuilder.handleImageUpload}
-              />
+            {/* Right Panel: Conditional Editor - Expands when sidebar collapsed */}
+            <div className={isSidebarCollapsed ? "lg:col-span-7" : "lg:col-span-5"}>
+              {activeEditorTab === "quiz" ? (
+                <QuizEditor
+                  course={courseBuilder.course}
+                  addQuizQuestion={courseBuilder.addQuizQuestion}
+                  updateQuizQuestion={courseBuilder.updateQuizQuestion}
+                  updateQuizOption={courseBuilder.updateQuizOption}
+                  deleteQuizQuestion={courseBuilder.deleteQuizQuestion}
+                  updateQuizSettings={courseBuilder.updateQuizSettings}
+                  onNavigateToLessons={() => setActiveEditorTab("lessons")}
+                />
+              ) : (
+                <LessonEditor
+                  selectedLesson={courseBuilder.selectedLesson}
+                  draggedFieldId={courseBuilder.draggedFieldId}
+                  handleFieldDragStart={courseBuilder.handleFieldDragStart}
+                  handleFieldDragOver={courseBuilder.handleFieldDragOver}
+                  handleFieldDrop={courseBuilder.handleFieldDrop}
+                  handleFieldDragEnd={courseBuilder.handleFieldDragEnd}
+                  addField={courseBuilder.addField}
+                  deleteField={courseBuilder.deleteField}
+                  updateField={courseBuilder.updateField}
+                  handleHtmlFileUpload={courseBuilder.handleHtmlFileUpload}
+                  handleImageUpload={courseBuilder.handleImageUpload}
+                  onNavigateToQuiz={() => {
+                    setActiveEditorTab("quiz")
+                    // Also switch the LeftPanel tab for consistency
+                    // LeftPanel uses activeEditorTab via props so this is enough
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -436,6 +503,14 @@ export default function TeacherCourseBuilder() {
         isOpen={isAIGenerateOpen}
         onClose={() => setIsAIGenerateOpen(false)}
         onSubmit={handleAIGenerateSubmit}
+      />
+
+      {/* Save Progress Indicator */}
+      <ProgressBar
+        progress={saveProgress.progress}
+        status={saveProgress.status}
+        message={saveProgress.message}
+        error={saveProgress.error}
       />
     </div>
   )

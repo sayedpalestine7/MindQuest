@@ -1,24 +1,43 @@
 // /src/components/Header.jsx
 import React from "react"
-import { BookOpen, Check, Loader2, Sun, Moon, Eye, Save } from "lucide-react"
+import { BookOpen, Check, Loader2, Sun, Moon, Eye, Save, Menu, X } from "lucide-react"
 import { Button } from "./UI"
 
 export default function Header({
   saveStatus,
   onPreview,
   onSave,
+  isSidebarCollapsed,
+  onToggleSidebar,
 }) {
   return (
     <header className="border-b-2 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Left Section: Logo + Title */}
+        {/* Left Section: Logo + Title + Sidebar Toggle */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center">
-            <BookOpen className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">MindQuest</h1>
-            <p className="text-sm text-gray-500">Course Builder</p>
+          {/* Sidebar Toggle Button */}
+          <Button
+            onClick={onToggleSidebar}
+            variant="ghost"
+            size="sm"
+            className="hidden lg:inline-flex p-2 h-auto hover:bg-gray-100"
+            title={isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+          >
+            {isSidebarCollapsed ? (
+              <Menu className="w-5 h-5 text-gray-600" />
+            ) : (
+              <X className="w-5 h-5 text-gray-600" />
+            )}
+          </Button>
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center">
+              <BookOpen className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">MindQuest</h1>
+              <p className="text-sm text-gray-500">Course Builder</p>
+            </div>
           </div>
         </div>
 

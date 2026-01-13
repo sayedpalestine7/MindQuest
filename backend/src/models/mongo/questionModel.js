@@ -6,6 +6,7 @@ const questionSchema = new mongoose.Schema(
         type: { type: String, enum: ["mcq", "tf", "short"], default: "mcq" },
         options: [String],
         correctAnswer: { type: String, required: true },
+        correctAnswerIndex: { type: Number }, // For MCQ questions
         points: { type: Number, default: 1 },
         explanation: String,
     },

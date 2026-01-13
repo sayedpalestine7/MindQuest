@@ -101,10 +101,13 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit }) {
 
     case "image":
       return (
-        <i
+        <img
           src={field.content}
           alt="Lesson visual"
           className="rounded-lg w-full border-2 border-gray-300 object-cover"
+          onError={(e) => {
+            e.currentTarget.src = "/placeholder.svg"
+          }}
         />
       )
 

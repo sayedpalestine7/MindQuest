@@ -100,11 +100,23 @@ export const courseService = {
           "Content-Type": "multipart/form-data",
         },
       });
-      return { success: true, url: response.data.url };
+      
+      console.log("Upload response:", response.data);
+      
+      if (response.data.success) {
+        console.log("Image uploaded successfully. URL:", response.data.url);
+        return { success: true, url: response.data.url };
+      } else {
+        return {
+          success: false,
+          error: response.data.message || "Upload failed",
+        };
+      }
     } catch (error) {
+      console.error("Upload error:", error);
       return {
         success: false,
-        error: error.response?.data?.message || error.message,
+        error: error.response?.data?.message || error.message || "Upload failed",
       };
     }
   },

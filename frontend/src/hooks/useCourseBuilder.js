@@ -62,13 +62,27 @@ export const useCourseBuilder = (courseId) => {
       if (result.data._id !== id) {
         console.warn('⚠️ WARNING: Course ID mismatch! Expected:', id, 'Got:', result.data._id);
       }
-      
+      // Map quiz questions (if populated) into builder-friendly shape
+      let finalQuizData = { questions: [], passingScore: 70, points: 100 };
+      if (result.data.quizId && result.data.quizId.questionIds && Array.isArray(result.data.quizId.questionIds)) {
+        finalQuizData.questions = result.data.quizId.questionIds.map((q) => ({
+          id: q._id || q.id,
+          type: q.type || 'mcq',
+          question: q.text || q.question || '',
+          options: Array.isArray(q.options) ? q.options : [],
+          correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : null,
+          correctAnswer: q.correctAnswer || '',
+          points: q.points || 1,
+          explanation: q.explanation || '',
+        }));
+      }
+
       setCourse({
         title: result.data.title,
         description: result.data.description,
         difficulty: result.data.difficulty,
         thumbnail: result.data.thumbnail,
-        finalQuiz: { questions: [], passingScore: 70, points: 100 },
+        finalQuiz: finalQuizData,
       });
 
       if (result.data.lessonIds && Array.isArray(result.data.lessonIds)) {
@@ -254,6 +268,8 @@ export const useCourseBuilder = (courseId) => {
       options: ["", "", "", ""],
       correctAnswerIndex: 0,
       correctAnswer: "",
+      points: 1,
+      explanation: "",
     };
     setCourse((prev) => ({
       ...prev,
@@ -319,6 +335,8 @@ export const useCourseBuilder = (courseId) => {
       const questionText = q.question || q.text || "";
       const options = Array.isArray(q.options) ? q.options : [];
       const correctAnswer = (q.correctAnswer || '').toString();
+      const points = q.points || 1;
+      const explanation = q.explanation || "";
 
       if (normalizedType === 'mcq') {
         const finalOptions = options.length > 0 ? options : ["", "", "", ""];
@@ -333,6 +351,8 @@ export const useCourseBuilder = (courseId) => {
           options: finalOptions,
           correctAnswerIndex,
           correctAnswer: "",
+          points,
+          explanation,
         };
       }
 
@@ -346,6 +366,8 @@ export const useCourseBuilder = (courseId) => {
           options: ['True', 'False'],
           correctAnswerIndex: 0,
           correctAnswer: tfAnswer,
+          points,
+          explanation,
         };
       }
 
@@ -356,6 +378,8 @@ export const useCourseBuilder = (courseId) => {
         options: [],
         correctAnswerIndex: 0,
         correctAnswer,
+        points,
+        explanation,
       };
     });
   };

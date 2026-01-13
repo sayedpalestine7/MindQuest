@@ -72,9 +72,65 @@ export const createCourse = async (req, res) => {
     // Create quiz if provided
     let quizId = null;
     if (quiz) {
+      // Create Question documents if questions are provided
+      let questionIds = [];
+      if (quiz.questions && Array.isArray(quiz.questions) && quiz.questions.length > 0) {
+        console.log(`🧪 createCourse: Processing ${quiz.questions.length} quiz questions...`);
+        
+        // Validate and map questions
+        const questionsToInsert = quiz.questions
+          .map((q, idx) => {
+            // Skip if no question text
+            if (!q || !q.question) {
+              console.warn(`⚠️ Question ${idx + 1}: Skipped - Missing question text`);
+              return null;
+            }
+
+            const options = Array.isArray(q.options) ? q.options.filter(opt => opt !== undefined && opt !== null && String(opt).trim() !== "") : [];
+            
+            // Try to get correctAnswer from various sources
+            let correctAnswer = (q.correctAnswer || '').toString().trim();
+            
+            // If no explicit correctAnswer but we have a valid correctAnswerIndex, derive from options
+            if (!correctAnswer && q.correctAnswerIndex !== undefined && q.correctAnswerIndex !== null) {
+              const idx = Number(q.correctAnswerIndex);
+              if (Array.isArray(options) && idx >= 0 && idx < options.length) {
+                correctAnswer = String(options[idx]).trim();
+              }
+            }
+
+            // Validate that we have a correct answer
+            if (!correctAnswer) {
+              console.warn(`⚠️ Question "${q.question.substring(0, 50)}...": Skipped - No correct answer provided`);
+              return null;
+            }
+
+            console.log(`✅ Question ${idx + 1}: Valid - "${q.question.substring(0, 50)}..."`);
+
+            return {
+              text: q.question.trim(),
+              type: q.type || 'mcq',
+              options: options,
+              correctAnswer: correctAnswer,
+              correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : null,
+              points: q.points || 1,
+              explanation: (q.explanation || '').toString()
+            };
+          })
+          .filter(q => q !== null); // Remove null entries (skipped questions)
+
+        console.log(`📊 Questions processed: ${questionsToInsert.length} of ${quiz.questions.length} passed validation`);
+
+        if (questionsToInsert.length > 0) {
+          const createdQuestions = await Question.insertMany(questionsToInsert);
+          questionIds = createdQuestions.map((q) => q._id);
+        }
+      }
+
       const createdQuiz = await Quiz.create({
-        ...quiz,
-        courseId: course._id, // Now we have the course ID
+        title: quiz.title || 'Final Quiz',
+        courseId: course._id,
+        questionIds: questionIds,
       });
       quizId = createdQuiz._id;
     }
@@ -92,6 +148,7 @@ export const createCourse = async (req, res) => {
 
     res.status(201).json({ message: "✅ Course created successfully", course: updatedCourse });
   } catch (err) {
+    console.error('createCourse error:', err);
     res.status(500).json({ message: "❌ Error creating course", error: err.message });
   }
 };
@@ -199,15 +256,77 @@ export const updateCourse = async (req, res) => {
     }
 
     // Update quiz if provided
-    let newQuizId = quizId || currentCourse.quizId;
+    let newQuizId = currentCourse.quizId;
     if (quiz) {
       // Delete old quiz if exists
       if (currentCourse.quizId) {
+        // Also delete associated questions
+        const oldQuiz = await Quiz.findById(currentCourse.quizId);
+        if (oldQuiz && oldQuiz.questionIds) {
+          await Question.deleteMany({ _id: { $in: oldQuiz.questionIds } });
+        }
         await Quiz.findByIdAndDelete(currentCourse.quizId);
       }
+      
+      // Create Question documents if questions are provided
+      let questionIds = [];
+      if (quiz.questions && Array.isArray(quiz.questions) && quiz.questions.length > 0) {
+        console.log(`🧪 updateCourse: Processing ${quiz.questions.length} quiz questions...`);
+        
+        // Validate and map questions
+        const questionsToInsert = quiz.questions
+          .map((q, idx) => {
+            // Skip if no question text
+            if (!q || !q.question) {
+              console.warn(`⚠️ Question ${idx + 1}: Skipped - Missing question text`);
+              return null;
+            }
+
+            const options = Array.isArray(q.options) ? q.options.filter(opt => opt !== undefined && opt !== null && String(opt).trim() !== "") : [];
+            
+            // Try to get correctAnswer from various sources
+            let correctAnswer = (q.correctAnswer || '').toString().trim();
+            
+            // If no explicit correctAnswer but we have a valid correctAnswerIndex, derive from options
+            if (!correctAnswer && q.correctAnswerIndex !== undefined && q.correctAnswerIndex !== null) {
+              const idx = Number(q.correctAnswerIndex);
+              if (Array.isArray(options) && idx >= 0 && idx < options.length) {
+                correctAnswer = String(options[idx]).trim();
+              }
+            }
+
+            // Validate that we have a correct answer
+            if (!correctAnswer) {
+              console.warn(`⚠️ Question "${q.question.substring(0, 50)}...": Skipped - No correct answer provided`);
+              return null;
+            }
+
+            console.log(`✅ Question ${idx + 1}: Valid - "${q.question.substring(0, 50)}..."`);
+
+            return {
+              text: q.question.trim(),
+              type: q.type || 'mcq',
+              options: options,
+              correctAnswer: correctAnswer,
+              correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : null,
+              points: q.points || 1,
+              explanation: (q.explanation || '').toString()
+            };
+          })
+          .filter(q => q !== null); // Remove null entries (skipped questions)
+
+        console.log(`📊 Questions processed: ${questionsToInsert.length} of ${quiz.questions.length} passed validation`);
+
+        if (questionsToInsert.length > 0) {
+          const createdQuestions = await Question.insertMany(questionsToInsert);
+          questionIds = createdQuestions.map((q) => q._id);
+        }
+      }
+
       const createdQuiz = await Quiz.create({
-        ...quiz,
+        title: quiz.title || 'Final Quiz',
         courseId: req.params.id,
+        questionIds: questionIds,
       });
       newQuizId = createdQuiz._id;
     }
@@ -230,6 +349,7 @@ export const updateCourse = async (req, res) => {
 
     res.status(200).json({ message: "✅ Course updated successfully", course: updatedCourse });
   } catch (err) {
+    console.error('updateCourse error:', err);
     res.status(500).json({ message: "❌ Error updating course", error: err.message });
   }
 };

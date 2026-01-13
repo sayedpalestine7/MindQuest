@@ -222,13 +222,30 @@ export const sanitizeFieldForAPI = (field) => {
  */
 export const sanitizeQuizForAPI = (quiz) => {
   return {
-    questions: quiz.questions.map((q) => ({
-      type: q.type,
-      question: q.question,
-      options: q.options,
-      correctAnswerIndex: q.correctAnswerIndex,
-      correctAnswer: q.correctAnswer,
-    })),
+    title: quiz.title || "Final Quiz",
+    questions: quiz.questions.map((q) => {
+      const type = q.type || "mcq";
+      const options = Array.isArray(q.options) ? q.options : [];
+      
+      // For MCQ questions, derive correctAnswer from options if not explicitly set
+      let correctAnswer = q.correctAnswer || "";
+      if (type === "mcq" && !correctAnswer && q.correctAnswerIndex !== undefined && q.correctAnswerIndex !== null) {
+        // Get the answer text from the options array using the index
+        if (options[q.correctAnswerIndex]) {
+          correctAnswer = String(options[q.correctAnswerIndex]);
+        }
+      }
+      
+      return {
+        type,
+        question: q.question,
+        options,
+        correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : null,
+        correctAnswer,
+        points: q.points || 1,
+        explanation: q.explanation || "",
+      };
+    }),
     passingScore: quiz.passingScore || 70,
     points: quiz.points || 100,
   };
