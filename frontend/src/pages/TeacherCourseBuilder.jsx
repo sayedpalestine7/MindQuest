@@ -152,18 +152,35 @@ export default function TeacherCourseBuilder() {
     // payload: { topic, numQuestions, questionType }
     try {
       setIsGenerating(true)
-      const resp = await fetch("http://localhost:5678/webhook/MindQuest", {
+
+      const n8nUrl = "http://localhost:5678/webhook/MindQuest"
+      // Normalize requested types to canonical tokens before sending to n8n
+      const normalizeType = (t) => {
+        const s = String(t || "").toLowerCase().trim()
+        if (["t/f", "tf", "true_false", "truefalse", "true-false"].includes(s)) return "tf"
+        if (["short", "short_answer", "short-answer", "shortanswer"].includes(s)) return "short"
+        if (["mcq", "multiple", "multiple_choice", "multiple-choice", "multiplechoice"].includes(s)) return "mcq"
+        return s || 'mcq'
+      }
+
+      const allowedTypes = Array.isArray(payload?.questionTypes)
+        ? [...new Set(payload.questionTypes.map(normalizeType))]
+        : []
+
+      const n8nPayload = {
+        topic: payload?.topic,
+        num: payload?.numQuestions,
+        types: allowedTypes,
+      }
+
+      try {
+        console.debug("n8n generate: POST", n8nUrl, n8nPayload)
+      } catch (e) {}
+
+      const resp = await fetch(n8nUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          courseId,
-          topic: payload?.topic,
-          // n8n expects: num + types (keep the other keys for backward-compat)
-          num: payload?.numQuestions,
-          types: payload?.questionTypes,
-          numQuestions: payload?.numQuestions,
-          questionTypes: payload?.questionTypes,
-        }),
+        body: JSON.stringify(n8nPayload),
       })
 
       let body = null
@@ -196,18 +213,7 @@ export default function TeacherCourseBuilder() {
       }
 
       // Client-side enforcement (n8n/LLM may ignore requested num/types)
-      const normalizeType = (t) => {
-        const s = String(t || "").toLowerCase().trim()
-        if (["t/f", "tf", "true_false", "truefalse", "true-false"].includes(s)) return "tf"
-        if (["short", "short_answer", "short-answer", "shortanswer"].includes(s)) return "short"
-        if (["mcq", "multiple", "multiple_choice", "multiple-choice", "multiplechoice"].includes(s)) return "mcq"
-        return "mcq"
-      }
-
       const requestedCount = Number(payload?.numQuestions)
-      const allowedTypes = Array.isArray(payload?.questionTypes)
-        ? [...new Set(payload.questionTypes.map(normalizeType))]
-        : []
 
       const filtered = allowedTypes.length > 0
         ? questions.filter((q) => allowedTypes.includes(normalizeType(q?.type)))
@@ -236,13 +242,33 @@ export default function TeacherCourseBuilder() {
         toast.error(`n8n returned only ${finalQuestions.length} question(s) matching your selected type(s)`)
       }
 
-      // Insert into builder
-      if (typeof courseBuilder.replaceGeneratedQuestions === "function") {
-        courseBuilder.replaceGeneratedQuestions(finalQuestions)
-      } else if (typeof courseBuilder.insertGeneratedQuestions === "function") {
-        courseBuilder.insertGeneratedQuestions(finalQuestions)
+      // If user requested persistence and we have a courseId, send to backend import endpoint
+      if (payload?.persist && courseId) {
+        try {
+          const importBody = { questions: finalQuestions, createQuiz: true, quizTitle: `Generated: ${payload.topic}` };
+          const imp = await courseService.importQuestions(courseId, importBody);
+          if (imp.success) {
+            // Refresh course to pick up persisted quiz/questions
+            await courseBuilder.loadCourse(courseId);
+            toast.success('Generated questions persisted to course quiz');
+          } else {
+            toast.error(`Persist failed: ${imp.error}`);
+            // Fallback: still insert locally
+            if (typeof courseBuilder.insertGeneratedQuestions === 'function') courseBuilder.insertGeneratedQuestions(finalQuestions);
+          }
+        } catch (e) {
+          toast.error('Failed to persist generated questions');
+          if (typeof courseBuilder.insertGeneratedQuestions === 'function') courseBuilder.insertGeneratedQuestions(finalQuestions);
+        }
       } else {
-        toast.error("Builder cannot accept generated questions")
+        // Insert into builder — prefer inserting (prepend) new questions instead of replacing
+        if (typeof courseBuilder.insertGeneratedQuestions === "function") {
+          courseBuilder.insertGeneratedQuestions(finalQuestions)
+        } else if (typeof courseBuilder.replaceGeneratedQuestions === "function") {
+          courseBuilder.replaceGeneratedQuestions(finalQuestions)
+        } else {
+          toast.error("Builder cannot accept generated questions")
+        }
       }
     } catch (err) {
       setIsGenerating(false)

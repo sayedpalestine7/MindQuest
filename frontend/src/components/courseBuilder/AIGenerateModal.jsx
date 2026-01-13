@@ -6,6 +6,7 @@ export default function AIGenerateModal({ isOpen, onClose, onSubmit }) {
   const [numQuestions, setNumQuestions] = useState(5);
   const [questionTypes, setQuestionTypes] = useState(["mcq"]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [persist, setPersist] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -39,6 +40,7 @@ export default function AIGenerateModal({ isOpen, onClose, onSubmit }) {
         topic: topic.trim(),
         numQuestions: Number(numQuestions),
         questionTypes,
+        persist,
       };
 
       // Allow caller to return a promise for awaiting
@@ -145,6 +147,10 @@ export default function AIGenerateModal({ isOpen, onClose, onSubmit }) {
             >
               Cancel
             </button>
+            <label className="inline-flex items-center mr-3">
+              <input type="checkbox" className="mr-2" checked={persist} onChange={(e) => setPersist(e.target.checked)} />
+              <span className="text-sm">Persist to course quiz</span>
+            </label>
             <button
               onClick={handleSubmit}
               className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"

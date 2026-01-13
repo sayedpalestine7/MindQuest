@@ -368,7 +368,8 @@ export const useCourseBuilder = (courseId) => {
       ...prev,
       finalQuiz: {
         ...prev.finalQuiz,
-        questions: [...(prev.finalQuiz?.questions || []), ...mapped],
+        // Prepend new generated questions so they appear above previous ones
+        questions: [...mapped, ...(prev.finalQuiz?.questions || [])],
       },
     }));
 

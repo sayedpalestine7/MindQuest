@@ -371,15 +371,35 @@ export const importQuestions = async (req, res) => {
 
     let createdQuiz = null;
     if (createQuiz) {
-      const quiz = await Quiz.create({
-        title: quizTitle || `Generated: ${course.title}`,
-        courseId: course._id,
-        questionIds: created.map(c => c._id)
-      });
-      // attach to course
-      course.quizId = quiz._id;
-      await course.save();
-      createdQuiz = quiz;
+      if (course.quizId) {
+        // Append (prepend new items so they appear above previous questions)
+        const existingQuiz = await Quiz.findById(course.quizId);
+        if (existingQuiz) {
+          const newIds = created.map(c => c._id);
+          existingQuiz.questionIds = [...newIds, ...(existingQuiz.questionIds || [])];
+          await existingQuiz.save();
+          createdQuiz = existingQuiz;
+        } else {
+          const quiz = await Quiz.create({
+            title: quizTitle || `Generated: ${course.title}`,
+            courseId: course._id,
+            questionIds: created.map(c => c._id)
+          });
+          course.quizId = quiz._id;
+          await course.save();
+          createdQuiz = quiz;
+        }
+      } else {
+        const quiz = await Quiz.create({
+          title: quizTitle || `Generated: ${course.title}`,
+          courseId: course._id,
+          questionIds: created.map(c => c._id)
+        });
+        // attach to course
+        course.quizId = quiz._id;
+        await course.save();
+        createdQuiz = quiz;
+      }
     }
 
     return res.status(201).json({ success: true, message: 'Imported questions', data: { questions: created, quiz: createdQuiz } });
