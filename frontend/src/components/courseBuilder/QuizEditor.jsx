@@ -46,49 +46,49 @@ export default function QuizEditor({
             </div>
 
             {/* Quiz Settings - STICKY */}
-            <div ref={stickyRef} className={`sticky top-0 z-10 mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border-2 border-gray-300 shadow-md ${stickyClassName}`}>
-                <p className="text-sm font-semibold text-gray-800 mb-3">Quiz Settings</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Passing Score (%)
-                        </label>
-                        <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={quiz?.passingScore ?? 70}
-                            onChange={(e) =>
-                                updateQuizSettings("passingScore", Number(e.target.value))
-                            }
-                            className="border-2 border-gray-300"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Course Points
-                        </label>
-                        <Input
-                            type="number"
-                            min="0"
-                            value={quiz?.points ?? 100}
-                            onChange={(e) =>
-                                updateQuizSettings("points", Number(e.target.value))
-                            }
-                            className="border-2 border-gray-300"
-                        />
-                    </div>
-                </div>
-                <div className="mt-3">
-                    <Button
-                        onClick={addQuizQuestion}
-                        className="w-full gap-2 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Add Quiz Question
-                    </Button>
-                </div>
-            </div>
+                        <div ref={stickyRef} className={`top-0 z-10 mb-6 p-4 rounded-xl border-2 border-gray-300 shadow-md ${stickyClassName}`}>
+                            <p className="text-sm font-semibold text-gray-800 mb-3">Quiz Settings</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Passing Score (%)
+                                    </label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={quiz?.passingScore ?? 70}
+                                        onChange={(e) =>
+                                            updateQuizSettings("passingScore", Number(e.target.value))
+                                        }
+                                        className="border-2 border-gray-300"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Course Points
+                                    </label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        value={quiz?.points ?? 100}
+                                        onChange={(e) =>
+                                            updateQuizSettings("points", Number(e.target.value))
+                                        }
+                                        className="border-2 border-gray-300"
+                                    />
+                                </div>
+                            </div>
+                            <div className="mt-3">
+                                <Button
+                                    onClick={addQuizQuestion}
+                                    className="w-full gap-2 bg-yellow-600 hover:bg-yellow-700 text-white shadow-md hover:shadow-lg transition-all"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Add Quiz Question
+                                </Button>
+                            </div>
+                        </div>
 
             {/* Questions List */}
             <div className="space-y-4">
@@ -290,7 +290,7 @@ export default function QuizEditor({
                         </div>
                     ))
                 ) : (
-                    <div className="text-center py-16 px-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border-2 border-dashed border-gray-300">
+                    <div className="text-center py-16 px-6 rounded-xl border-2 border-dashed border-gray-300">
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 mb-4">
                             <Award className="w-8 h-8 text-yellow-600" />
                         </div>

@@ -60,18 +60,51 @@ export default function TeacherCourseBuilder() {
     }
   }, [courseId, isLoading, isAuthenticated, user?.role])
 
-  // Auto-save to localStorage after 2s (as backup)
+  // Auto-save to database after 3s
   useEffect(() => {
+    if (!courseId || !isAuthenticated || !user?._id) return
+
     courseBuilder.setSaveStatus("unsaved")
-    const timeoutId = setTimeout(() => {
-      localStorage.setItem("course-backup", JSON.stringify({
-        course: courseBuilder.course,
-        lessons: courseBuilder.lessons,
-      }))
-      courseBuilder.setSaveStatus("saved")
-    }, 2000)
+    const timeoutId = setTimeout(async () => {
+      try {
+        // Validate course data before auto-save
+        const courseValidation = validateCourse(courseBuilder.course)
+        if (!courseValidation.isValid) {
+          // Skip auto-save if validation fails, keep it as unsaved
+          return
+        }
+
+        // Validate lessons exist
+        if (courseBuilder.lessons.length === 0) {
+          return
+        }
+
+        // Prepare data for auto-save
+        const courseData = sanitizeCourseForAPI(courseBuilder.course)
+        const lessonsData = courseBuilder.lessons.map(sanitizeLessonForAPI)
+        const quizData = courseBuilder.course.finalQuiz
+          ? sanitizeQuizForAPI(courseBuilder.course.finalQuiz)
+          : null
+
+        // Auto-save to database
+        const result = await courseService.updateCourse(courseId, {
+          ...courseData,
+          lessons: lessonsData,
+          quiz: quizData,
+        })
+
+        if (result.success) {
+          courseBuilder.setSaveStatus("saved")
+          console.log("Auto-save successful")
+        }
+      } catch (error) {
+        console.error("Auto-save error:", error)
+        // Don't show error to user for auto-save failures
+      }
+    }, 3000)
+
     return () => clearTimeout(timeoutId)
-  }, [courseBuilder.course, courseBuilder.lessons])
+  }, [courseBuilder.course, courseBuilder.lessons, courseId, isAuthenticated, user?._id])
 
   // Warn user if they try to leave with unsaved changes
   useEffect(() => {
@@ -388,7 +421,7 @@ export default function TeacherCourseBuilder() {
       {!courseBuilder.isLoading ? (
         <div className="container mx-auto px-6 py-8 space-y-6">
           {/* Workflow Progress */}
-          <WorkflowProgress course={courseBuilder.course} lessons={courseBuilder.lessons} />
+          {/* <WorkflowProgress course={courseBuilder.course} lessons={courseBuilder.lessons} /> */}
 
           {/* Breadcrumb Navigation */}
           <Breadcrumb
@@ -441,7 +474,10 @@ export default function TeacherCourseBuilder() {
                 deleteQuizQuestion={courseBuilder.deleteQuizQuestion}
                 updateQuizSettings={courseBuilder.updateQuizSettings}
                 // AI Tools props
-                onOpenAIGenerate={() => setIsAIGenerateOpen(true)}
+                onOpenAIGenerate={() => {
+                  setIsAIGenerateOpen(true)
+                  setActiveEditorTab("quiz")
+                }}
                 isGenerating={isGenerating}
                 // Tab control
                 activeTab={activeEditorTab}

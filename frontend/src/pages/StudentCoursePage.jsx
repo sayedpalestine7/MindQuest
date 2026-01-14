@@ -52,12 +52,24 @@ export default function StudentCoursePage() {
             })),
           }))
 
+          // Handle quiz data - ensure it's properly populated
+          const quizData = full.quizId
+            ? typeof full.quizId === "string"
+              ? {
+                  id: full.quizId,
+                  questions: [],
+                  passingScore: 70,
+                  points: 100,
+                }
+              : full.quizId
+            : null
+
           const courseData = {
             id: full._id,
             title: full.title,
             description: full.description,
             difficulty: full.difficulty,
-            finalQuiz: full.quizId,
+            finalQuiz: quizData,
           }
 
           setCourse(courseData)
@@ -252,6 +264,9 @@ export default function StudentCoursePage() {
             completedLessons={completedLessons}
             onSelectLesson={setCurrentLessonId}
             progress={progress}
+            finalQuiz={course?.finalQuiz}
+            onOpenQuiz={() => setIsQuizOpen(true)}
+            isAllLessonsCompleted={completedLessons.length === lessons.length}
           />
 
           <main className="flex-1 space-y-6">
@@ -266,7 +281,7 @@ export default function StudentCoursePage() {
 
       {/* Final Quiz Modal */}
       {isQuizOpen && course.finalQuiz && (
-        <QuizModal quiz={course.finalQuiz} onClose={() => setIsQuizOpen(false)} />
+        <QuizModal quiz={course.finalQuiz} courseId={courseId} onClose={() => setIsQuizOpen(false)} />
       )}
     </div>
   )

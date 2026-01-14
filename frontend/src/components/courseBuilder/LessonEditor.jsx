@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { Button, Input, Textarea, Select, Card } from "./UI"
 import AnimationSelector from "./AnimationSelector"
+import FloatingAddContent from "./FloatingAddContent"
 import { useStickyVisibility } from "../../hooks/useStickyVisibility"
 import { TextAreaInput, FileInput } from "./FieldInputs"
 
@@ -53,97 +54,102 @@ export default function LessonEditor({
   }
 
   return (
-    <Card className="p-8 border-2 hover:shadow-lg transition-shadow">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">
-        {selectedLesson.title}
-      </h2>
+    <>
+      <Card className="p-8 border-2 hover:shadow-lg transition-shadow">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          {selectedLesson.title}
+        </h2>
 
-      {/* Add Field Buttons - STICKY */}
-      <div ref={stickyRef} className={`sticky top-11 z-0 mb-6 p-4 rounded-xl  flex flex-col ${stickyClassName}`}>
-        <p className="text-sm font-semibold text-gray-800 mb-3">
-          Add Content Block:
-        </p>
-        <div className="flex flex-wrap gap-2 justify-center p-3 rounded-lg w-fit ">
-          <FieldButton icon={<FileText className="w-4 h-4 text-blue-600" />} label="Paragraph" onClick={() => addField("paragraph")} type={"paragraphBtn"} />
-          <FieldButton icon={<ImageIcon className="w-4 h-4 text-purple-600" />} label="Image" onClick={() => addField("image")} type={"imageBtn"} />
-          <FieldButton icon={<Youtube className="w-4 h-4 text-pink-600" />} label="YouTube" onClick={() => addField("youtube")} type={"youtubeBtn"} />
-          <FieldButton icon={<Code2 className="w-4 h-4 text-green-600" />} label="Code" onClick={() => addField("code")} type={"codeBtn"} />
-          <FieldButton icon={<HelpCircle className="w-4 h-4 text-orange-600" />} label="Question" onClick={() => addField("question")} type={"questionBtn"} />
-          <FieldButton icon={<Gamepad2 className="w-4 h-4 text-purple-600" />} label="Mini-game" onClick={() => addField("minigame")} type={"gameBtn"} />
-          <FieldButton icon={<Sparkles className="w-4 h-4 text-blue-600" />} label="Animation" onClick={() => addField("animation")} type={"animationBtn"} />
-        </div>
-      </div>
-
-      {/* Fields List */}
-      <div className="space-y-4">
-        {selectedLesson.fields.length === 0 ? (
-          <div className="text-center py-16 px-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border-2 border-dashed border-gray-300">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
-              <BookOpen className="w-8 h-8 text-blue-600" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Start Building Your Lesson</h3>
-            <p className="text-sm text-gray-600 mb-4 max-w-sm mx-auto">
-              Add content blocks to create engaging educational material. You can mix text, images, videos, code, and interactive elements!
-            </p>
-            <p className="text-xs text-gray-500">👆 Pick a content type above to begin</p>
+        {/* Add Field Buttons - STICKY */}
+        <div ref={stickyRef} className={`top-11 z-0 mb-6 p-4 rounded-xl  flex flex-col ${stickyClassName}`}>
+          <p className="text-sm font-semibold text-gray-800 mb-3">
+            Add Content Block:
+          </p>
+          <div className="flex flex-wrap gap-2 justify-center p-3 rounded-lg w-fit ">
+            <FieldButton icon={<FileText className="w-4 h-4 text-blue-600" />} label="Paragraph" onClick={() => addField("paragraph")} type={"paragraphBtn"} />
+            <FieldButton icon={<ImageIcon className="w-4 h-4 text-purple-600" />} label="Image" onClick={() => addField("image")} type={"imageBtn"} />
+            <FieldButton icon={<Youtube className="w-4 h-4 text-pink-600" />} label="YouTube" onClick={() => addField("youtube")} type={"youtubeBtn"} />
+            <FieldButton icon={<Code2 className="w-4 h-4 text-green-600" />} label="Code" onClick={() => addField("code")} type={"codeBtn"} />
+            <FieldButton icon={<HelpCircle className="w-4 h-4 text-orange-600" />} label="Question" onClick={() => addField("question")} type={"questionBtn"} />
+            <FieldButton icon={<Gamepad2 className="w-4 h-4 text-purple-600" />} label="Mini-game" onClick={() => addField("minigame")} type={"gameBtn"} />
+            <FieldButton icon={<Sparkles className="w-4 h-4 text-blue-600" />} label="Animation" onClick={() => addField("animation")} type={"animationBtn"} />
           </div>
-        ) : (
-          selectedLesson.fields.map((field) => (
-            <div
-              key={field.id}
-              className={`p-4 bg-white rounded-xl border-gray-300 hover:border-2 hover:border-gray-400 ${getFieldHoverBorderColor(field.type)} hover:shadow-md
-                }`} // border here
-            >
-              {/* Field Header with Draggable Grip */}
-              <div
-                draggable
-                onDragStart={(e) => handleFieldDragStart(e, field.id)}
-                onDragOver={handleFieldDragOver}
-                onDrop={(e) => handleFieldDrop(e, field.id)}
-                onDragEnd={handleFieldDragEnd}
-                className="flex items-center justify-between mb-3 cursor-move select-none"
-              >
-                <div className="flex items-center gap-2">
-                  <GripVertical className="w-5 h-5 text-gray-400 cursor-grab active:cursor-grabbing flex-shrink-0" />
-                  {getFieldIcon(field.type)}
-                  <span className="text-sm font-semibold text-gray-900 capitalize">
-                    {field.type}
-                  </span>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => deleteField(field.id)}
-                  className="h-8 w-8 p-0 hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4 text-red-500" />
-                </Button>
+        </div>
+
+        {/* Fields List */}
+        <div className="space-y-4">
+          {selectedLesson.fields.length === 0 ? (
+            <div className="text-center py-16 px-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border-2 border-dashed border-gray-300">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+                <BookOpen className="w-8 h-8 text-blue-600" />
               </div>
-
-              {/* Field Content Inputs - NO DRAG */}
-              <FieldContent
-                field={field}
-                updateField={updateField}
-                handleImageUpload={handleImageUpload}
-                handleHtmlFileUpload={handleHtmlFileUpload}
-              />
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Start Building Your Lesson</h3>
+              <p className="text-sm text-gray-600 mb-4 max-w-sm mx-auto">
+                Add content blocks to create engaging educational material. You can mix text, images, videos, code, and interactive elements!
+              </p>
+              <p className="text-xs text-gray-500">👆 Pick a content type above to begin</p>
             </div>
-          ))
-        )}
-      </div>
+          ) : (
+            selectedLesson.fields.map((field) => (
+              <div
+                key={field.id}
+                className={`p-4 bg-white rounded-xl border-gray-300 hover:border-2 hover:border-gray-400 ${getFieldHoverBorderColor(field.type)} hover:shadow-md
+                  }`} // border here
+              >
+                {/* Field Header with Draggable Grip */}
+                <div
+                  draggable
+                  onDragStart={(e) => handleFieldDragStart(e, field.id)}
+                  onDragOver={handleFieldDragOver}
+                  onDrop={(e) => handleFieldDrop(e, field.id)}
+                  onDragEnd={handleFieldDragEnd}
+                  className="flex items-center justify-between mb-3 cursor-move select-none"
+                >
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="w-5 h-5 text-gray-400 cursor-grab active:cursor-grabbing flex-shrink-0" />
+                    {getFieldIcon(field.type)}
+                    <span className="text-sm font-semibold text-gray-900 capitalize">
+                      {field.type}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => deleteField(field.id)}
+                    className="h-8 w-8 p-0 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </Button>
+                </div>
 
-      {/* Workflow Navigation */}
-      <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">
-        <p className="text-sm text-gray-600">📚 <span className="font-semibold">Lessons done?</span> Create a quiz to test your students.</p>
-        <Button
-          onClick={onNavigateToQuiz}
-          className="gap-2 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all"
-        >
-          Create Quiz
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      </div>
-    </Card>
+                {/* Field Content Inputs - NO DRAG */}
+                <FieldContent
+                  field={field}
+                  updateField={updateField}
+                  handleImageUpload={handleImageUpload}
+                  handleHtmlFileUpload={handleHtmlFileUpload}
+                />
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Workflow Navigation */}
+        <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">
+          <p className="text-sm text-gray-600">📚 <span className="font-semibold">Lessons done?</span> Create a quiz to test your students.</p>
+          <Button
+            onClick={onNavigateToQuiz}
+            className="gap-2 bg-blue-600 hover:from-blue-600 hover:to-blur-700 text-white shadow-md hover:shadow-lg transition-all"
+          > 
+            Create Quiz
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </Card>
+
+      {/* Floating Add Content Button */}
+      <FloatingAddContent addField={addField} selectedLesson={selectedLesson} />
+    </>
   )
 }
 

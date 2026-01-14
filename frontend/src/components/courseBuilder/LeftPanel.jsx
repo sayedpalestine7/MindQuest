@@ -52,11 +52,11 @@ export default function LeftPanel({
             icon: <HelpCircle className="w-4 h-4" />,
             badge: course.finalQuiz?.questions?.length || 0,
         },
-        {
-            id: "ai",
-            label: "AI Tools",
-            icon: <Sparkles className="w-4 h-4" />,
-        },
+        // {
+        //     id: "ai",
+        //     label: "AI Tools",
+        //     icon: <Sparkles className="w-4 h-4" />,
+        // },
     ]
 
     return (
@@ -97,54 +97,32 @@ export default function LeftPanel({
                                         <h3 className="text-lg font-bold text-gray-900 mb-2">
                                             Quiz Builder
                                         </h3>
-                                        <p className="text-sm text-gray-700 mb-3">
-                                            The quiz editor is now displayed in the main area on the right →
-                                        </p>
-                                        <p className="text-sm text-gray-700">
-                                            This tab shows your quiz overview. The full editor appears on the right!
-                                        </p>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">Questions:</span>
+                                                <span className="text-sm font-semibold text-gray-900">
+                                                    {course.finalQuiz?.questions?.length || 0}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">Course Points:</span>
+                                                <span className="text-sm font-semibold text-gray-900">
+                                                    {course.finalQuiz?.points || 100}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">Passing Score:</span>
+                                                <span className="text-sm font-semibold text-gray-900">
+                                                    {course.finalQuiz?.passingScore || 70}%
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Quiz Stats */}
-                            <div className="p-4 bg-white rounded-lg border-2 border-gray-200">
-                                <h4 className="text-sm font-semibold text-gray-700 mb-3">Quiz Overview</h4>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Questions:</span>
-                                        <span className="text-sm font-semibold text-gray-900">
-                                            {course.finalQuiz?.questions?.length || 0}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Passing Score:</span>
-                                        <span className="text-sm font-semibold text-gray-900">
-                                            {course.finalQuiz?.passingScore || 70}%
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Course Points:</span>
-                                        <span className="text-sm font-semibold text-gray-900">
-                                            {course.finalQuiz?.points || 100}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
 
-                            {/* Quick Tips */}
-                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                <p className="text-xs text-blue-800">
-                                    <span className="font-semibold">💡 Tip:</span> You can add multiple question types: Multiple Choice, True/False, and Short Answer.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === "ai" && (
-                    <div className="h-full overflow-y-auto p-4">
-                        <div className="space-y-4">
+                            <div className="space-y-4">
                             {/* AI Generation Info */}
                             <div className="p-4 rounded-lg border-2 border-gray-200">
                                 <div className="flex items-start gap-3">
@@ -213,15 +191,22 @@ export default function LeftPanel({
                             </div>
 
                             {/* Tips */}
-                            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            {/* <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                                 <p className="text-xs text-yellow-800">
                                     <span className="font-semibold">💡 Tip:</span> For best results, make
                                     sure your course has detailed lesson content before generating questions.
                                 </p>
-                            </div>
+                            </div> */}
+                        </div>
                         </div>
                     </div>
                 )}
+
+                {/* {activeTab === "ai" && (
+                    <div className="h-full overflow-y-auto p-4">
+                        
+                    </div>
+                )} */}
             </div>
         </div>
     )
