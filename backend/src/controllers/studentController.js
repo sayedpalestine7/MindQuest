@@ -1,5 +1,7 @@
 import User from "../models/mongo/userModel.js";
+import Progress from "../models/mongo/progressModel.js";
 import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
 //http://localhost:5000/api/student/id/690e68ad573b0a98730c2dcd
 
 export const getStudentByID = async (req, res) => {
@@ -152,6 +154,16 @@ export const getEnrolledCourses = async (req, res) => {
       return res.status(404).json({ message: "Student not found" });
     }
 
+    // Ensure studentData exists
+    if (!student.studentData) {
+      student.studentData = {
+        enrolledCourses: [],
+        score: 0,
+        finishedCourses: 0,
+        courseProgress: []
+      };
+    }
+
     res.status(200).json({
       enrolledCourses: student.studentData.enrolledCourses || [],
     });
@@ -161,11 +173,11 @@ export const getEnrolledCourses = async (req, res) => {
   }
 };
 
-// Update student's progress in a course
-export const updateCourseProgress = async (req, res) => {
+// Get student's progress in a specific course
+// Get student's progress in a specific course
+export const getCourseProgress = async (req, res) => {
   try {
     const { studentId, courseId } = req.params;
-    const { completedLessons, currentLessonId } = req.body;
 
     // Find the student
     const student = await User.findById(studentId);
@@ -178,46 +190,263 @@ export const updateCourseProgress = async (req, res) => {
       student.studentData = {};
     }
 
-    // Initialize progress tracking if it doesn't exist
-    if (!student.studentData.courseProgress) {
-      student.studentData.courseProgress = {};
-    }
-
-    // Initialize progress for this course if it doesn't exist
-    if (!student.studentData.courseProgress[courseId]) {
-      student.studentData.courseProgress[courseId] = {
-        completedLessons: [],
-        currentLessonId: null,
-        lastAccessed: new Date()
-      };
-    }
-
-    // Update completed lessons if provided
-    if (completedLessons && Array.isArray(completedLessons)) {
-      // Merge and deduplicate completed lessons
-      const uniqueLessons = new Set([
-        ...(student.studentData.courseProgress[courseId].completedLessons || []),
-        ...completedLessons
-      ]);
-      student.studentData.courseProgress[courseId].completedLessons = Array.from(uniqueLessons);
-    }
-
-    // Update current lesson if provided
-    if (currentLessonId) {
-      student.studentData.courseProgress[courseId].currentLessonId = currentLessonId;
-      student.studentData.courseProgress[courseId].lastAccessed = new Date();
-    }
-
-    // Save the updated student document
-    await student.save();
+    // Find progress for this specific course
+    const courseProgress = student.studentData.courseProgress?.find(
+      (cp) => cp.courseId?.toString() === courseId || cp.courseId === courseId
+    );
 
     res.status(200).json({
       success: true,
-      data: student.studentData.courseProgress[courseId]
+      data: courseProgress || {
+        completedLessons: [],
+        currentLessonId: null,
+        lastAccessed: null,
+        quizCompleted: false,
+        quizScore: 0,
+      }
     });
 
   } catch (err) {
-    console.error("Error updating course progress:", err);
+    console.error("Error fetching course progress:", err);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error",
+      error: err.message 
+    });
+  }
+};
+
+// Update student's progress in a course
+export const updateCourseProgress = async (req, res) => {
+  try {
+    const { studentId, courseId } = req.params;
+    const { completedLessons, currentLessonId } = req.body;
+
+    // Find the student to check if they exist and get current progress
+    const student = await User.findById(studentId);
+    
+    if (!student || student.role !== "student") {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Ensure studentData exists
+    if (!student.studentData) {
+      student.studentData = { courseProgress: [] };
+      await student.save();
+    }
+
+    // Initialize courseProgress array if it doesn't exist
+    if (!student.studentData.courseProgress) {
+      student.studentData.courseProgress = [];
+    }
+
+    // Find existing progress for this course
+    let courseProgressIndex = student.studentData.courseProgress.findIndex(
+      (cp) => cp.courseId?.toString() === courseId || cp.courseId === courseId
+    );
+
+    // Build the update object
+    let updateQuery;
+    
+    if (courseProgressIndex === -1) {
+      // Create new entry
+      updateQuery = {
+        $push: {
+          "studentData.courseProgress": {
+            courseId: courseId,
+            completedLessons: completedLessons || [],
+            currentLessonId: currentLessonId || null,
+            lastAccessed: new Date(),
+            quizCompleted: false,
+            quizScore: 0,
+          }
+        }
+      };
+    } else {
+      // Update existing entry
+      // Merge completed lessons
+      const existingLessons = student.studentData.courseProgress[courseProgressIndex].completedLessons || [];
+      const newLessons = completedLessons || [];
+      const mergedLessons = Array.from(new Set([
+        ...existingLessons.map(id => id.toString()),
+        ...newLessons.map(id => id.toString())
+      ])).map(id => new mongoose.Types.ObjectId(id));
+      
+      updateQuery = {
+        $set: {
+          "studentData.courseProgress": student.studentData.courseProgress.map((cp, idx) => {
+            if (idx === courseProgressIndex) {
+              return {
+                ...cp.toObject ? cp.toObject() : cp,
+                completedLessons: mergedLessons,
+                currentLessonId: currentLessonId || cp.currentLessonId,
+                lastAccessed: new Date()
+              };
+            }
+            return cp.toObject ? cp.toObject() : cp;
+          })
+        }
+      };
+    }
+    
+    const updatedStudent = await User.findByIdAndUpdate(
+      studentId,
+      updateQuery,
+      { new: true, runValidators: true }
+    );
+
+    // Find the updated progress entry
+    const updatedProgress = updatedStudent.studentData.courseProgress.find(
+      cp => cp.courseId?.toString() === courseId
+    );
+
+    // 🔄 ALSO update/create the Progress collection document for consistency
+    try {
+      let progressDoc = await Progress.findOne({ studentId, courseId });
+      
+      if (!progressDoc) {
+        progressDoc = await Progress.create({
+          studentId,
+          courseId,
+          completedLessons: updatedProgress?.completedLessons || [],
+          quizScore: updatedProgress?.quizScore || 0,
+          totalScore: 0,
+          status: "in-progress"
+        });
+      } else {
+        progressDoc.completedLessons = updatedProgress?.completedLessons || [];
+        progressDoc.quizScore = updatedProgress?.quizScore || 0;
+        progressDoc.totalScore = updatedProgress?.quizScore || 0;
+        if (updatedProgress?.quizCompleted) {
+          progressDoc.status = "completed";
+        }
+        await progressDoc.save();
+      }
+    } catch (syncErr) {
+      console.error("❌ Error syncing Progress collection:", syncErr.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: updatedProgress
+    });
+  } catch (err) {
+    console.error("❌ Error updating course progress:", err);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error",
+      error: err.message 
+    });
+  }
+};
+
+// Reset student's progress in a course (clear all progress and set to initial state)
+export const resetCourseProgress = async (req, res) => {
+  try {
+    const { studentId, courseId } = req.params;
+    const { firstLessonId } = req.body;
+
+    // Find the student
+    const student = await User.findById(studentId);
+    if (!student || student.role !== "student") {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Ensure studentData exists
+    if (!student.studentData) {
+      student.studentData = { courseProgress: [] };
+      await student.save();
+    }
+
+    // Initialize courseProgress array if it doesn't exist
+    if (!student.studentData.courseProgress) {
+      student.studentData.courseProgress = [];
+    }
+
+    // Find existing progress for this course
+    const courseProgressIndex = student.studentData.courseProgress.findIndex(
+      (cp) => cp.courseId?.toString() === courseId || cp.courseId === courseId
+    );
+
+    let updateQuery;
+    
+    if (courseProgressIndex === -1) {
+      // Create new entry with reset state
+      updateQuery = {
+        $push: {
+          "studentData.courseProgress": {
+            courseId: courseId,
+            completedLessons: [],
+            currentLessonId: firstLessonId || null,
+            lastAccessed: new Date(),
+            quizCompleted: false,
+            quizScore: 0,
+          }
+        }
+      };
+    } else {
+      // Reset existing entry
+      updateQuery = {
+        $set: {
+          "studentData.courseProgress": student.studentData.courseProgress.map((cp, idx) => {
+            if (idx === courseProgressIndex) {
+              return {
+                ...cp.toObject ? cp.toObject() : cp,
+                completedLessons: [],
+                currentLessonId: firstLessonId || null,
+                lastAccessed: new Date(),
+                quizCompleted: false,
+                quizScore: 0,
+              };
+            }
+            return cp.toObject ? cp.toObject() : cp;
+          })
+        }
+      };
+    }
+    
+    const updatedStudent = await User.findByIdAndUpdate(
+      studentId,
+      updateQuery,
+      { new: true, runValidators: true }
+    );
+
+    // Find the updated progress entry
+    const updatedProgress = updatedStudent.studentData.courseProgress.find(
+      cp => cp.courseId?.toString() === courseId
+    );
+
+    // 🔄 ALSO reset the Progress collection document for consistency
+    try {
+      let progressDoc = await Progress.findOne({ studentId, courseId });
+      
+      if (!progressDoc) {
+        progressDoc = await Progress.create({
+          studentId,
+          courseId,
+          completedLessons: [],
+          quizScore: 0,
+          totalScore: 0,
+          status: "in-progress"
+        });
+      } else {
+        progressDoc.completedLessons = [];
+        progressDoc.quizScore = 0;
+        progressDoc.totalScore = 0;
+        progressDoc.status = "in-progress";
+        await progressDoc.save();
+      }
+    } catch (syncErr) {
+      console.error("❌ Error syncing Progress collection:", syncErr.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Course progress reset successfully",
+      data: updatedProgress
+    });
+  } catch (err) {
+    console.error("❌ Error resetting course progress:", err);
     res.status(500).json({ 
       success: false,
       message: "Server error",

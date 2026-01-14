@@ -10,7 +10,9 @@ import courseService from "../services/courseService"
 export default function StudentCoursePage() {
   const { courseId } = useParams()
   const navigate = useNavigate()
-
+  // Use a ref to track if we've already loaded progress from DB
+  const progressLoadedRef = React.useRef(false)
+  // Initialize studentId synchronously to avoid effect ordering races
   /* -------------------- STATE -------------------- */
   const [course, setCourse] = useState(null)
   const [lessons, setLessons] = useState([])
@@ -19,16 +21,15 @@ export default function StudentCoursePage() {
   const [isQuizOpen, setIsQuizOpen] = useState(false)
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
-  const [studentId, setStudentId] = useState(null)
+  const [studentId, setStudentId] = useState(() => localStorage.getItem("userId") || null)
   const [enrolledCourseIds, setEnrolledCourseIds] = useState([])
+  const [isEnrolled, setIsEnrolled] = useState(true)
+  const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
 
-  /* -------------------- GET STUDENT ID FROM AUTH -------------------- */
-  useEffect(() => {
-    const userId = localStorage.getItem("userId")
-    if (userId) {
-      setStudentId(userId)
-    }
-  }, [])
+  /* -------------------- STORAGE KEY (namespaced per student+course) -------------------- */
+  const storageKey = React.useMemo(() => {
+    return studentId && courseId ? `student-progress:${studentId}:${courseId}` : null
+  }, [studentId, courseId])
 
   /* -------------------- LOAD COURSE DATA -------------------- */
   useEffect(() => {
@@ -52,17 +53,36 @@ export default function StudentCoursePage() {
             })),
           }))
 
-          // Handle quiz data - ensure it's properly populated
-          const quizData = full.quizId
-            ? typeof full.quizId === "string"
-              ? {
-                  id: full.quizId,
-                  questions: [],
-                  passingScore: 70,
-                  points: 100,
+          // Handle quiz data - should be populated by backend
+          let quizData = null
+          if (full.quizId) {
+            if (typeof full.quizId === "string") {
+              // If it's just an ID string, fetch the full quiz data
+              try {
+                const qRes = await courseService.getQuizzesByCourse(full._id)
+                if (qRes.success && Array.isArray(qRes.data)) {
+                  const foundQuiz = qRes.data.find((q) => q._id === full.quizId || q.id === full.quizId) || qRes.data[0] || null
+                  if (foundQuiz) {
+                    // Transform questionIds to questions for QuizModal
+                    quizData = {
+                      ...foundQuiz,
+                      questions: foundQuiz.questionIds || []
+                    }
+                  }
                 }
-              : full.quizId
-            : null
+              } catch (e) {
+                console.error("Failed fetching quiz details:", e)
+                quizData = null
+              }
+            } else {
+              // It's already the populated quiz object from backend
+              // Transform questionIds to questions for QuizModal
+              quizData = {
+                ...full.quizId,
+                questions: full.quizId.questionIds || []
+              }
+            }
+          }
 
           const courseData = {
             id: full._id,
@@ -78,12 +98,34 @@ export default function StudentCoursePage() {
             setCurrentLessonId(lessonsData[0].id)
           }
 
-          // Restore student progress if exists
-          const progress = localStorage.getItem("student-progress")
-          if (progress) {
-            const { completedLessons: c, currentLessonId: cId } = JSON.parse(progress)
-            setCompletedLessons(c || [])
-            if (cId) setCurrentLessonId(cId)
+          // Check enrollment when studentId available
+          if (studentId) {
+            try {
+              const enrollRes = await courseService.getEnrolledCourses(studentId)
+              if (enrollRes.success && Array.isArray(enrollRes.data)) {
+                const enrolledIds = enrollRes.data.map(c => c._id || c.id)
+                setEnrolledCourseIds(enrolledIds)
+                setIsEnrolled(enrolledIds.includes(full._id))
+              } else {
+                setIsEnrolled(false)
+              }
+            } catch (e) {
+              console.error("Failed checking enrollment:", e)
+              setIsEnrolled(false)
+            }
+          } else {
+            setIsEnrolled(false)
+          }
+
+          // Restore student progress if exists (namespaced)
+          if (storageKey) {
+            const progress = localStorage.getItem(storageKey)
+            if (progress) {
+              const { completedLessons: c, currentLessonId: cId } = JSON.parse(progress)
+              setCompletedLessons(c || [])
+              // validate restored currentLessonId exists in lessons
+              if (cId && lessonsData.some(l => l.id === cId)) setCurrentLessonId(cId)
+            }
           }
         } else {
           console.error("Failed to load course:", res.error)
@@ -96,12 +138,11 @@ export default function StudentCoursePage() {
         } else {
           console.error("Failed to load courses:", res.error)
         }
-
-        // Fetch enrolled courses
+        // Fetch enrolled courses (used on course listing)
         if (studentId) {
           const enrollRes = await courseService.getEnrolledCourses(studentId)
           if (enrollRes.success && enrollRes.data) {
-            const enrolledIds = enrollRes.data.map(c => c._id)
+            const enrolledIds = enrollRes.data.map(c => c._id || c.id)
             setEnrolledCourseIds(enrolledIds)
           }
         }
@@ -113,14 +154,96 @@ export default function StudentCoursePage() {
     loadCourseData()
   }, [courseId, studentId])
 
-  /* -------------------- AUTO-SAVE PROGRESS -------------------- */
+  /* -------------------- LOAD PROGRESS FROM DATABASE -------------------- */
   useEffect(() => {
+    // Only load progress once per course
+    if (!studentId || !courseId || lessons.length === 0 || progressLoadedRef.current) return
+    progressLoadedRef.current = true
+
+    const loadProgressFromDatabase = async () => {
+      try {
+        // Try to fetch student progress from database
+        const progressRes = await courseService.getStudentProgress(studentId, courseId)
+        
+        if (progressRes.success && progressRes.data) {
+          const { completedLessons: dbCompletedLessons, currentLessonId: dbCurrentLessonId } = progressRes.data
+          
+          // Set progress from database (prioritize database over localStorage)
+          if (dbCompletedLessons && Array.isArray(dbCompletedLessons) && dbCompletedLessons.length > 0) {
+            setCompletedLessons(dbCompletedLessons)
+          }
+          
+          if (dbCurrentLessonId && lessons.some(l => l.id === dbCurrentLessonId)) {
+            setCurrentLessonId(dbCurrentLessonId)
+          }
+        } else {
+          // No progress in database - clear localStorage cache to reflect clean state
+          if (storageKey) {
+            localStorage.removeItem(storageKey)
+          }
+          // Reset to initial state (first lesson)
+          setCompletedLessons([])
+          if (lessons.length > 0) {
+            setCurrentLessonId(lessons[0].id)
+          }
+        }
+      } catch (error) {
+        console.error("Error loading progress from database:", error)
+      }
+    }
+
+    loadProgressFromDatabase()
+  }, [studentId, courseId, lessons.length, storageKey])
+
+  /* -------------------- AUTO-SAVE PROGRESS (Local & Database) -------------------- */
+  useEffect(() => {
+    if (!storageKey) {
+      return
+    }
+    
     const data = {
       currentLessonId,
       completedLessons,
     }
-    localStorage.setItem("student-progress", JSON.stringify(data))
-  }, [currentLessonId, completedLessons])
+    localStorage.setItem(storageKey, JSON.stringify(data))
+
+    // Auto-save to database with debouncing
+    const saveTimer = setTimeout(async () => {
+      if (studentId && courseId) {
+        try {
+          const result = await courseService.updateStudentProgress(studentId, courseId, {
+            completedLessons,
+            currentLessonId,
+          })
+          if (result.success) {
+            // Refresh progress from database to ensure UI is in sync
+            try {
+              const refreshedProgress = await courseService.getStudentProgress(studentId, courseId)
+              if (refreshedProgress.success && refreshedProgress.data) {
+                const { completedLessons: dbCompletedLessons, currentLessonId: dbCurrentLessonId } = refreshedProgress.data
+                
+                // Update state with refreshed data
+                if (dbCompletedLessons && Array.isArray(dbCompletedLessons)) {
+                  setCompletedLessons(dbCompletedLessons)
+                }
+                if (dbCurrentLessonId) {
+                  setCurrentLessonId(dbCurrentLessonId)
+                }
+              }
+            } catch (refreshErr) {
+              console.error("Failed to refresh progress from DB:", refreshErr)
+            }
+          }
+        } catch (error) {
+          console.error("Failed to auto-save progress to database:", error)
+        }
+      }
+    }, 1000) // Debounce by 1 second
+
+    return () => {
+      clearTimeout(saveTimer)
+    }
+  }, [currentLessonId, completedLessons, studentId, courseId, storageKey])
 
 
   /* -------------------- HELPERS -------------------- */
@@ -130,48 +253,64 @@ export default function StudentCoursePage() {
     : 0
 
   const handleLessonComplete = async () => {
-    if (!currentLessonId || !studentId || !courseId) return;
-    
-    try {
-      // Update UI immediately for better UX
-      const updated = [...new Set([...completedLessons, currentLessonId])];
-      setCompletedLessons(updated);
+    if (!currentLessonId || !studentId || !courseId) return
 
-      // Save to backend
+    const prev = [...completedLessons]
+    const updated = Array.from(new Set([...prev, currentLessonId]))
+    setCompletedLessons(updated)
+
+    try {
       const response = await courseService.updateStudentProgress(studentId, courseId, {
         completedLessons: updated,
-        currentLessonId
-      });
+        currentLessonId,
+      })
 
       if (!response.success) {
-        console.error("Failed to update progress:", response.error);
-        // Revert UI if backend update fails
-        setCompletedLessons(completedLessons);
-        return;
+        console.error("Failed to update progress:", response.error)
+        setCompletedLessons(prev)
+        return
       }
 
       // If last lesson, open final quiz automatically
       if (updated.length === lessons.length) {
-        setTimeout(() => setIsQuizOpen(true), 500);
+        setTimeout(() => setIsQuizOpen(true), 500)
       } else {
-        // Go to next lesson
-        const currentIdx = lessons.findIndex((l) => l.id === currentLessonId);
-        const next = lessons[currentIdx + 1];
-        if (next) setCurrentLessonId(next.id);
+        const currentIdx = lessons.findIndex((l) => l.id === currentLessonId)
+        const next = lessons[currentIdx + 1]
+        if (next) setCurrentLessonId(next.id)
       }
-
     } catch (error) {
-      console.error("Error updating progress:", error);
-      // Revert UI on error
-      setCompletedLessons(completedLessons);
+      console.error("Error updating progress:", error)
+      setCompletedLessons(prev)
     }
   }
 
-  const handleRestartCourse = () => {
-    setCompletedLessons([])
-    setCurrentLessonId(lessons[0]?.id || null)
-    setIsQuizOpen(false)
-    localStorage.removeItem("student-progress")
+  const handleRestartCourse = async () => {
+    if (!studentId || !courseId || !lessons.length) return
+
+    try {
+      // Reset the database progress
+      const firstLessonId = lessons[0]?.id || null
+      const resetResult = await courseService.resetStudentProgress(studentId, courseId, firstLessonId)
+      
+      if (!resetResult.success) {
+        console.error("Failed to reset progress in database:", resetResult.error)
+      }
+    } catch (error) {
+      console.error("Failed to reset progress in database:", error)
+    }
+
+    // Clear all related localStorage keys
+    if (storageKey) {
+      localStorage.removeItem(storageKey)
+    }
+    // Also clear any quiz progress that might be cached
+    localStorage.removeItem(`quiz-progress-${courseId}`)
+    
+    // Wait a moment then do a full page reload to reset everything
+    setTimeout(() => {
+      window.location.reload()
+    }, 300)
   }
 
   const handleEnrollCourse = async (courseId) => {
@@ -184,9 +323,11 @@ export default function StudentCoursePage() {
       const enrolled = await courseService.enrollCourse(studentId, courseId)
       if (enrolled.success) {
         alert("Successfully enrolled! Loading course...")
-        // Reload the page to fetch the enrolled course
+        // Update local state without full reload
+        setEnrolledCourseIds((prev) => Array.from(new Set([...(prev || []), courseId])))
+        setIsEnrolled(true)
+        // Optionally navigate to course page route (SPA navigation)
         navigate(`/student/coursePage/${courseId}`)
-        window.location.reload()
       } else {
         alert(enrolled.error || "Failed to enroll")
       }
@@ -206,6 +347,26 @@ export default function StudentCoursePage() {
   }
 
   // If no course selected, show available courses to enroll
+  // If a course is loaded but the student is not enrolled, show enroll CTA for this course
+  if (course && !isEnrolled) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-600">
+        <div className="max-w-4xl w-full p-6">
+          <h2 className="text-2xl font-bold mb-4">{course.title}</h2>
+          <p className="text-sm text-gray-600">{course.description}</p>
+          <div className="mt-4">
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              onClick={() => handleEnrollCourse(course.id)}
+            >
+              Enroll to continue
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (!course)
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-600">
@@ -216,16 +377,17 @@ export default function StudentCoursePage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {courses.map((c) => {
-                const isEnrolled = enrolledCourseIds.includes(c._id)
+                const enrolledFlag = enrolledCourseIds.includes(c._id)
                 return (
                   <div key={c._id} className="p-4 border-2 rounded-lg bg-white">
                     <h3 className="font-semibold">{c.title}</h3>
                     <p className="text-sm text-gray-600">{c.description}</p>
                     <p className="text-xs text-gray-500 mt-2">Difficulty: {c.difficulty}</p>
                     <div className="mt-3 flex gap-2">
-                      {isEnrolled ? (
+                      {enrolledFlag ? (
                         <button
                           disabled
+                          aria-disabled
                           className="px-3 py-1 bg-green-600 text-white rounded cursor-default opacity-75"
                         >
                           ✓ Enrolled
@@ -267,15 +429,30 @@ export default function StudentCoursePage() {
             finalQuiz={course?.finalQuiz}
             onOpenQuiz={() => setIsQuizOpen(true)}
             isAllLessonsCompleted={completedLessons.length === lessons.length}
+            isAIPanelOpen={isAIPanelOpen}
+            onToggleAIPanel={() => setIsAIPanelOpen(!isAIPanelOpen)}
           />
 
-          <main className="flex-1 space-y-6">
+          <main className={`flex-1 space-y-6 transition-all duration-300 ${isAIPanelOpen ? "mr-96" : ""}`}>
             <LessonContent
               lesson={currentLesson}
               completed={completedLessons.includes(currentLessonId)}
               onCompleteLesson={handleLessonComplete}
             />
           </main>
+
+          {/* AI Panel - Collapsible */}
+          {isAIPanelOpen && (
+            <aside className="w-96 sticky top-24 h-fit">
+              <div className="bg-gradient-to-b from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg p-6">
+                <h2 className="text-lg font-bold text-blue-900 mb-4">AI Assistant</h2>
+                <div className="text-center text-gray-600 text-sm">
+                  <p>AI features coming soon!</p>
+                  <p className="mt-2 text-xs text-gray-500">This panel is reserved for future AI-powered learning assistance.</p>
+                </div>
+              </div>
+            </aside>
+          )}
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 // /src/components/StudentSidebar.jsx
 import React, { useState } from "react"
-import { CheckCircle2, PlayCircle, ChevronRight, Lock, Award } from "lucide-react"
+import { CheckCircle2, PlayCircle, ChevronRight, Lock, Award, Zap } from "lucide-react"
 import { Card, Button } from "../courseBuilder/UI"
 
 export default function StudentSidebar({
@@ -12,6 +12,8 @@ export default function StudentSidebar({
   finalQuiz,
   onOpenQuiz,
   isAllLessonsCompleted,
+  isAIPanelOpen,
+  onToggleAIPanel,
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -132,6 +134,21 @@ export default function StudentSidebar({
                 </div>
               </div>
             )}
+
+            {/* AI Assistant Button */}
+            <div className="mt-6 pt-4 border-t-2 border-gray-200">
+              <button
+                onClick={onToggleAIPanel}
+                className={`w-full px-4 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+                  isAIPanelOpen
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-gray-100 hover:bg-gray-200 text-gray-900 border-2 border-gray-300"
+                }`}
+              >
+                <Zap className="w-5 h-5" />
+                {isAIPanelOpen ? "Close AI" : "Open AI"}
+              </button>
+            </div>
           </>
         )}
 
@@ -179,6 +196,19 @@ export default function StudentSidebar({
                 <Award className="w-5 h-5" />
               </button>
             )}
+
+            {/* Collapsed AI Button */}
+            <button
+              onClick={onToggleAIPanel}
+              className={`w-full mt-2 p-2 rounded-lg transition-all flex items-center justify-center ${
+                isAIPanelOpen
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-gray-300 hover:bg-gray-400 text-white"
+              }`}
+              title="Toggle AI Assistant"
+            >
+              <Zap className="w-5 h-5" />
+            </button>
           </>
         )}
       </Card>

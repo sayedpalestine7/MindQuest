@@ -175,11 +175,54 @@ export const courseService = {
     }
   },
 
+  // Get quizzes for a course
+  getQuizzesByCourse: async (courseId) => {
+    try {
+      const response = await apiClient.get(`/quizzes/course/${courseId}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
   // Update student progress in a course
   updateStudentProgress: async (studentId, courseId, progressData) => {
     try {
       const response = await apiClient.put(`/student/${studentId}/progress/${courseId}`, progressData);
-      return { success: true, data: response.data };
+      // Backend already returns { success: true, data: ... }, so return it directly
+      return response.data;
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  // Get student progress in a course
+  getStudentProgress: async (studentId, courseId) => {
+    try {
+      const response = await apiClient.get(`/student/${studentId}/progress/${courseId}`);
+      // Backend already returns { success: true, data: ... }, so return it directly
+      return response.data;
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  // Reset student progress in a course
+  resetStudentProgress: async (studentId, courseId, firstLessonId) => {
+    try {
+      const response = await apiClient.delete(`/student/${studentId}/progress/${courseId}`, {
+        data: { firstLessonId }
+      });
+      return response.data;
     } catch (error) {
       return {
         success: false,

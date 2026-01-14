@@ -8,11 +8,21 @@ const teacherDataSchema = new mongoose.Schema({
     rejectionReason: String,
 });
 
+const courseProgressSchema = new mongoose.Schema({
+    courseId: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
+    completedLessons: [{ type: mongoose.Schema.Types.ObjectId, ref: "Lesson" }],
+    currentLessonId: { type: mongoose.Schema.Types.ObjectId, ref: "Lesson" },
+    lastAccessed: { type: Date, default: Date.now },
+    quizCompleted: { type: Boolean, default: false },
+    quizScore: { type: Number, default: 0 },
+}, { timestamps: true });
+
 const studentDataSchema = new mongoose.Schema({
     score: { type: Number, default: 0 },
     finishedCourses: { type: Number, default: 0 },
     enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }],
-});
+    courseProgress: [courseProgressSchema],
+}, { _id: false });
 
 const userSchema = new mongoose.Schema(
     {

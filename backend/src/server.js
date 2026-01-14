@@ -60,6 +60,14 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// DEBUG: Log all PUT requests
+app.use((req, res, next) => {
+  if (req.method === 'PUT') {
+    console.log(`🔴 PUT REQUEST: ${req.method} ${req.path}`, { params: req.params, body: req.body });
+  }
+  next();
+});
+
 // -------------------- SOCKET.IO SERVER --------------------
 const server = http.createServer(app);
 

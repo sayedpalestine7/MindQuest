@@ -4,7 +4,9 @@ import {
   putStudentByID, 
   enrollCourse, 
   getEnrolledCourses, 
-  updateCourseProgress 
+  updateCourseProgress,
+  getCourseProgress,
+  resetCourseProgress
 } from "../controllers/studentController.js";
 
 const router = express.Router();
@@ -21,7 +23,13 @@ router.post("/:studentId/enroll/:courseId", enrollCourse);
 // Get enrolled courses
 router.get("/:studentId/courses", getEnrolledCourses);
 
+// Get course progress
+router.get("/:studentId/progress/:courseId", getCourseProgress);
+
 // Update course progress
 router.put("/:studentId/progress/:courseId", updateCourseProgress);
+
+// Reset course progress
+router.delete("/:studentId/progress/:courseId", resetCourseProgress);
 
 export default router;
