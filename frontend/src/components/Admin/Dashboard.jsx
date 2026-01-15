@@ -25,12 +25,6 @@
                 icon: FileText,
                 route: "/admin/verification",
             },
-            {
-                title: "Settings",
-                description: "Update platform configuration and preferences",
-                icon: FileText,
-                route: "/admin/Settings",
-            },
         ];
 
         return (

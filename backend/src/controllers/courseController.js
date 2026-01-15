@@ -4,6 +4,7 @@ import Lesson from "../models/mongo/lessonModel.js";
 import Quiz from "../models/mongo/quizModel.js";
 import Field from "../models/mongo/fieldModel.js";
 import Question from "../models/mongo/questionModel.js";
+import { Teacher } from "../models/mongo/teacherSchema.js";
 import { generateQuizFromAI } from "../services/aiService.js";
 
 // 🧠 CREATE a new course
@@ -610,6 +611,14 @@ export const approveCourse = async (req, res) => {
     course.reviewedAt = new Date();
     course.reviewedBy = req.user.id;
     course.rejectionReason = null;
+    
+    // Increment teacher's points by 10 for approved course
+    const teacher = await Teacher.findOne({ userId: course.teacherId });
+    if (teacher) {
+      teacher.totalPoints = (teacher.totalPoints || 0) + 10;
+      await teacher.save();
+    }
+    
     await course.save();
     
     res.status(200).json({ 

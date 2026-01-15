@@ -1,5 +1,6 @@
 import User from "../models/mongo/userModel.js";
 import Progress from "../models/mongo/progressModel.js";
+import Course from "../models/mongo/courseModel.js";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 //http://localhost:5000/api/student/id/690e68ad573b0a98730c2dcd
@@ -106,9 +107,19 @@ export const enrollCourse = async (req, res) => {
       return res.status(400).json({ message: "Already enrolled in this course" });
     }
 
+    // Find the course and increment student count
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
     // Add course to enrolled courses
     student.studentData.enrolledCourses.push(courseId);
-    await student.save();
+    
+    // Increment the students count in the course
+    course.students = (course.students || 0) + 1;
+    
+    await Promise.all([student.save(), course.save()]);
 
     res.status(200).json({
       message: "Successfully enrolled in course",

@@ -16,7 +16,7 @@ export default function StatsSection({ stats }) {
     },
     { 
       title: "Students", 
-      value: stats.totalStudents || 0, 
+      value: stats.totalEnrolledStudents || 0, 
       icon: Users,
       iconColor: "#607D8B", // Blue-gray (neutral)
       iconBg: "#ECEFF1"
@@ -61,6 +61,7 @@ export default function StatsSection({ stats }) {
             <div className="flex-1">
               <p className="text-xs font-medium" style={{ color: '#607D8B' }}>{stat.title}</p>
               <p className="text-2xl font-bold" style={{ color: '#263238' }}>{stat.value}</p>
+              {stat.subtitle && <p className="text-xs" style={{ color: '#9E9E9E' }}>{stat.subtitle}</p>}
             </div>
           </div>
         </motion.div>

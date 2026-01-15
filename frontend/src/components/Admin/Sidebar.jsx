@@ -6,7 +6,7 @@ const navigation = [
   { name: "Manage Courses", href: "/admin/courses", icon: BookOpen },
   { name: "Manage Users", href: "/admin/users", icon: Users },
   { name: "Teacher Verification", href: "/admin/verification", icon: FileQuestion },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
+  // { name: "Settings", href: "/admin/settings", icon: Settings },
 ]
 
 function Sidebar() {

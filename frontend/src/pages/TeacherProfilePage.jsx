@@ -51,11 +51,16 @@ export default function TeacherProfilePage() {
         
         const teacher = res.data;
         
+        // Calculate total students enrolled across all courses
+        const courses = teacher.courses || [];
+        const totalCourses = courses.length;
+        const totalEnrolledStudents = courses.reduce((sum, course) => sum + (course.students || 0), 0);
+        
         // Enrich with calculated stats if not in backend response
         const enrichedData = {
           ...teacher,
-          totalCourses: teacher.courses?.length || teacher.totalCourses || 0,
-          totalStudents: teacher.totalStudents || 0,
+          totalCourses: totalCourses || teacher.totalCourses || 0,
+          totalEnrolledStudents: totalEnrolledStudents,
           rating: teacher.rating || 0,
           totalPoints: teacher.totalPoints || 0,
         };
@@ -261,7 +266,7 @@ export default function TeacherProfilePage() {
 
   const stats = {
     totalCourses: profileData.totalCourses ?? 0,
-    totalStudents: profileData.totalStudents ?? 0,
+    totalEnrolledStudents: profileData.totalEnrolledStudents ?? 0,
     rating: Number(profileData.rating) || 0,
     totalPoints: profileData.totalPoints ?? 0,
   };

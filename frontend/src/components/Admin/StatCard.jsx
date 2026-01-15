@@ -55,8 +55,6 @@ function StatCard({ title, value, Icon, index, trend }) {
               trend.isPositive ? "text-success" : "text-error"
             }`}
           >
-            {trend.isPositive ? "+" : ""}
-            {trend.value}% from last month
           </motion.p>
         )}
         </div>

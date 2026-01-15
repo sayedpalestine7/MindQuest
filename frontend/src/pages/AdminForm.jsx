@@ -1,17 +1,54 @@
 import Sidebar from '../components/Admin/Sidebar.jsx'
 import Dashboard from '../components/Admin/Dashboard.jsx'
 import StatCard from '../components/Admin/StatCard.jsx'
-import { Users, BookOpen, Settings, GraduationCap } from "lucide-react"
+import { Users, BookOpen, GraduationCap, CheckCircle } from "lucide-react"
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react"
+import { Loader2 } from "lucide-react";
+import axios from "axios"
 
 function AdminForm() {
-  // Example data for the StatCards
-  const stats = [
-    { title: "Total Users", value: 1234, icon: Users, index: 0, trend: { value: 4.5, isPositive: true } },
-    { title: "Courses", value: 56, icon: BookOpen, index: 1, trend: { value: 2.1, isPositive: false } },
-    { title: "Active Students", value: 789, icon: GraduationCap, index: 2, trend: { value: 6.3, isPositive: true } },
-    { title: "Settings Changed", value: 12, icon: Settings, index: 3, trend: { value: 1.5, isPositive: false } },
-  ]
+  const [stats, setStats] = useState([
+    { title: "Total Users", value: 0, icon: Users, index: 0, trend: { value: 0, isPositive: true } },
+    { title: "Courses", value: 0, icon: BookOpen, index: 1, trend: { value: 0, isPositive: true } },
+    { title: "Active Students", value: 0, icon: GraduationCap, index: 2, trend: { value: 0, isPositive: true } },
+    { title: "Approved Courses", value: 0, icon: CheckCircle, index: 3, trend: { value: 0, isPositive: true } },
+  ])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        const token = localStorage.getItem("token")
+        const headers = token ? { Authorization: `Bearer ${token}` } : {}
+        
+        // Fetch users
+        const usersRes = await axios.get("http://localhost:5000/api/admin/users", { headers })
+        const allUsers = usersRes.data || []
+        const totalUsers = allUsers.length
+        const activeStudents = allUsers.filter(u => u.role === "student").length
+        
+        // Fetch courses
+        const coursesRes = await axios.get("http://localhost:5000/api/courses", { headers })
+        const allCourses = coursesRes.data || []
+        const totalCourses = allCourses.length
+        const approvedCourses = allCourses.filter(c => c.approvalStatus === "approved").length
+        
+        setStats([
+          { title: "Total Users", value: totalUsers, icon: Users, index: 0, trend: { value: 0, isPositive: true } },
+          { title: "Courses", value: totalCourses, icon: BookOpen, index: 1, trend: { value: 0, isPositive: true } },
+          { title: "Active Students", value: activeStudents, icon: GraduationCap, index: 2, trend: { value: 0, isPositive: true } },
+          { title: "Approved Courses", value: approvedCourses, icon: CheckCircle, index: 3, trend: { value: 0, isPositive: true } },
+        ])
+        setLoading(false)
+      } catch (err) {
+        console.error("Error fetching dashboard stats:", err)
+        setLoading(false)
+      }
+    }
+    
+    fetchDashboardStats()
+  }, [])
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
@@ -36,9 +73,17 @@ function AdminForm() {
 
         {/* Stat Cards Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 ">
-          {stats.map((stat, i) => (
-            <StatCard key={i} title={stat.title} value={stat.value} Icon={stat.icon} trend={stat.trend} />
-          ))}
+          {loading ? (
+            <div className="col-span-full text-center py-8 text-gray-500">
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            </div>
+          ) : (
+            stats.map((stat, i) => (
+              <StatCard key={i} title={stat.title} value={stat.value} Icon={stat.icon} trend={stat.trend} />
+            ))
+          )}
         </div>
 
         <Dashboard />

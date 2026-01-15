@@ -16,9 +16,8 @@ function ManageCourses() {
           className="mb-8"
         >
           <div className="flex items-center gap-3 mb-2">
-            <BookCheck className="w-8 h-8 text-indigo-600" />
             <h1 className="text-3xl font-extrabold bg-gradient-to-r from-sky-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
-              Review Course Submissions
+              Course Submissions
             </h1>
           </div>
           <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
