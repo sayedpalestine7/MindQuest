@@ -19,6 +19,7 @@ import AnimationSelector from "./AnimationSelector"
 import FloatingAddContent from "./FloatingAddContent"
 import { useStickyVisibility } from "../../hooks/useStickyVisibility"
 import { TextAreaInput, FileInput } from "./FieldInputs"
+import { RichTextInput } from "./RichTextInput"
 
 export default function LessonEditor({
   selectedLesson,
@@ -212,14 +213,10 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
   switch (field.type) {
     case "paragraph":
       return (
-        <TextAreaInput
-          // label="Paragraph Content"
+        <RichTextInput
           value={field.content}
           onChange={(e) => updateField(field.id, { content: e.target.value })}
           placeholder="Enter your text content..."
-          rows={4}
-          maxLength={2000}
-          // helper="Make your content engaging and easy to understand"
           required
         />
       )

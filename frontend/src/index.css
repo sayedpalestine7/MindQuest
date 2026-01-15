@@ -9,3 +9,30 @@
   border-right: 50px solid transparent;
   border-bottom: 100px solid green;
 }
+
+/* Shared course content typography to match editor */
+.mq-prose p {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+.mq-prose h1 { font-size: 2em; font-weight: 700; margin: 0.67rem 0; }
+.mq-prose h2 { font-size: 1.5em; font-weight: 700; margin: 0.75rem 0; }
+.mq-prose h3 { font-size: 1.17em; font-weight: 700; margin: 0.83rem 0; }
+.mq-prose ul, .mq-prose ol {
+  margin-left: 2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  list-style-position: outside;
+  padding-left: 1.5rem;
+  /* Ensure visible markers and default list types */
+  list-style-type: initial;
+}
+.mq-prose li { margin: 0.12rem 0; }
+.mq-prose li p { margin: 0; }
+.mq-prose li > p { display: inline; }
+.mq-prose li::marker { color: #374151; font-weight: 600; }
+.mq-prose pre { margin: 0.5rem 0; }
+
+/* Defensive: remove any pseudo-element markers and ensure ordered lists show decimals */
+.mq-prose li::before { content: none !important; }
+.mq-prose ol { list-style-type: decimal; }
