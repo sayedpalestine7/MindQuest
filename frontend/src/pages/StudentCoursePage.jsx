@@ -12,6 +12,8 @@ export default function StudentCoursePage() {
   const navigate = useNavigate()
   // Use a ref to track if we've already loaded progress from DB
   const progressLoadedRef = React.useRef(false)
+  // Ref to avoid overlapping saves
+  const inFlightSaveRef = React.useRef(false)
   // Initialize studentId synchronously to avoid effect ordering races
   /* -------------------- STATE -------------------- */
   const [course, setCourse] = useState(null)
@@ -21,7 +23,18 @@ export default function StudentCoursePage() {
   const [isQuizOpen, setIsQuizOpen] = useState(false)
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
-  const [studentId, setStudentId] = useState(() => localStorage.getItem("userId") || null)
+  const [studentId, setStudentId] = useState(() => {
+    try {
+      const storedUser = localStorage.getItem("user")
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser)
+        return parsed?._id || parsed?.id || localStorage.getItem("userId") || null
+      }
+    } catch (e) {
+      // Ignore parse errors and fall back
+    }
+    return localStorage.getItem("userId") || null
+  })
   const [enrolledCourseIds, setEnrolledCourseIds] = useState([])
   const [isEnrolled, setIsEnrolled] = useState(true)
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
@@ -43,10 +56,10 @@ export default function StudentCoursePage() {
           const full = res.data
           // Convert populated lesson/field structure into { id, title, fields[] }
           const lessonsData = (full.lessonIds || []).map((l) => ({
-            id: l._id,
+            id: String(l._id),
             title: l.title,
             fields: (l.fieldIds || []).map((f) => ({
-              id: f._id || f.id,
+              id: String(f._id || f.id),
               type: f.type,
               content: f.content,
               animationId: f.animationId || null,
@@ -63,10 +76,19 @@ export default function StudentCoursePage() {
                 if (qRes.success && Array.isArray(qRes.data)) {
                   const foundQuiz = qRes.data.find((q) => q._id === full.quizId || q.id === full.quizId) || qRes.data[0] || null
                   if (foundQuiz) {
-                    // Transform questionIds to questions for QuizModal
+                    // Transform populated questionIds into the shape expected by QuizModal
                     quizData = {
                       ...foundQuiz,
-                      questions: foundQuiz.questionIds || []
+                      questions: (foundQuiz.questionIds || []).map((q) => ({
+                        id: q._id || q.id,
+                        type: q.type || 'mcq',
+                        question: q.text || q.question || '',
+                        options: Array.isArray(q.options) ? q.options : [],
+                        correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : null,
+                        correctAnswer: q.correctAnswer || '',
+                        points: q.points || 1,
+                        explanation: q.explanation || '',
+                      }))
                     }
                   }
                 }
@@ -76,10 +98,19 @@ export default function StudentCoursePage() {
               }
             } else {
               // It's already the populated quiz object from backend
-              // Transform questionIds to questions for QuizModal
+              // Transform questionIds to the shape expected by QuizModal
               quizData = {
                 ...full.quizId,
-                questions: full.quizId.questionIds || []
+                questions: (full.quizId.questionIds || []).map((q) => ({
+                  id: q._id || q.id,
+                  type: q.type || 'mcq',
+                  question: q.text || q.question || '',
+                  options: Array.isArray(q.options) ? q.options : [],
+                  correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : null,
+                  correctAnswer: q.correctAnswer || '',
+                  points: q.points || 1,
+                  explanation: q.explanation || '',
+                }))
               }
             }
           }
@@ -94,7 +125,9 @@ export default function StudentCoursePage() {
 
           setCourse(courseData)
           setLessons(lessonsData)
-          if (lessonsData.length > 0) {
+          // Avoid setting current lesson immediately — wait for progress
+          // hydration (localStorage or DB) which may override this.
+          if (!storageKey && lessonsData.length > 0) {
             setCurrentLessonId(lessonsData[0].id)
           }
 
@@ -122,9 +155,9 @@ export default function StudentCoursePage() {
             const progress = localStorage.getItem(storageKey)
             if (progress) {
               const { completedLessons: c, currentLessonId: cId } = JSON.parse(progress)
-              setCompletedLessons(c || [])
+              setCompletedLessons((c || []).map((id) => String(id)))
               // validate restored currentLessonId exists in lessons
-              if (cId && lessonsData.some(l => l.id === cId)) setCurrentLessonId(cId)
+              if (cId && lessonsData.some(l => l.id === String(cId))) setCurrentLessonId(String(cId))
             }
           }
         } else {
@@ -167,14 +200,14 @@ export default function StudentCoursePage() {
         
         if (progressRes.success && progressRes.data) {
           const { completedLessons: dbCompletedLessons, currentLessonId: dbCurrentLessonId } = progressRes.data
-          
-          // Set progress from database (prioritize database over localStorage)
+
+          // Normalize DB ids to strings to match lesson ids
           if (dbCompletedLessons && Array.isArray(dbCompletedLessons) && dbCompletedLessons.length > 0) {
-            setCompletedLessons(dbCompletedLessons)
+            setCompletedLessons(dbCompletedLessons.map((id) => String(id)))
           }
-          
-          if (dbCurrentLessonId && lessons.some(l => l.id === dbCurrentLessonId)) {
-            setCurrentLessonId(dbCurrentLessonId)
+
+          if (dbCurrentLessonId && lessons.some(l => l.id === String(dbCurrentLessonId))) {
+            setCurrentLessonId(String(dbCurrentLessonId))
           }
         } else {
           // No progress in database - clear localStorage cache to reflect clean state
@@ -197,52 +230,43 @@ export default function StudentCoursePage() {
 
   /* -------------------- AUTO-SAVE PROGRESS (Local & Database) -------------------- */
   useEffect(() => {
-    if (!storageKey) {
-      return
-    }
-    
-    const data = {
-      currentLessonId,
-      completedLessons,
-    }
+    if (!storageKey) return
+
+    const data = { currentLessonId, completedLessons }
     localStorage.setItem(storageKey, JSON.stringify(data))
 
-    // Auto-save to database with debouncing
+    // Auto-save to database with debouncing. Use a ref to avoid overlapping saves
     const saveTimer = setTimeout(async () => {
-      if (studentId && courseId) {
-        try {
-          const result = await courseService.updateStudentProgress(studentId, courseId, {
-            completedLessons,
-            currentLessonId,
-          })
-          if (result.success) {
-            // Refresh progress from database to ensure UI is in sync
-            try {
-              const refreshedProgress = await courseService.getStudentProgress(studentId, courseId)
-              if (refreshedProgress.success && refreshedProgress.data) {
-                const { completedLessons: dbCompletedLessons, currentLessonId: dbCurrentLessonId } = refreshedProgress.data
-                
-                // Update state with refreshed data
-                if (dbCompletedLessons && Array.isArray(dbCompletedLessons)) {
-                  setCompletedLessons(dbCompletedLessons)
-                }
-                if (dbCurrentLessonId) {
-                  setCurrentLessonId(dbCurrentLessonId)
-                }
-              }
-            } catch (refreshErr) {
-              console.error("Failed to refresh progress from DB:", refreshErr)
-            }
-          }
-        } catch (error) {
-          console.error("Failed to auto-save progress to database:", error)
-        }
-      }
-    }, 1000) // Debounce by 1 second
+      if (!studentId || !courseId) return
+      if (inFlightSaveRef.current) return
+      inFlightSaveRef.current = true
+      try {
+        const result = await courseService.updateStudentProgress(studentId, courseId, {
+          completedLessons,
+          currentLessonId,
+        })
 
-    return () => {
-      clearTimeout(saveTimer)
-    }
+        // Merge backend result only when it differs from local optimistic state
+        if (result && result.success && result.data) {
+          const { completedLessons: dbCompletedLessons, currentLessonId: dbCurrentLessonId } = result.data
+          if (Array.isArray(dbCompletedLessons)) {
+            const localSet = new Set(completedLessons)
+            const dbSet = new Set(dbCompletedLessons)
+            const equal = localSet.size === dbSet.size && [...localSet].every(x => dbSet.has(x))
+            if (!equal) setCompletedLessons(dbCompletedLessons)
+          }
+          if (dbCurrentLessonId && dbCurrentLessonId !== currentLessonId) {
+            setCurrentLessonId(dbCurrentLessonId)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to auto-save progress to database:", error)
+      } finally {
+        inFlightSaveRef.current = false
+      }
+    }, 1000)
+
+    return () => clearTimeout(saveTimer)
   }, [currentLessonId, completedLessons, studentId, courseId, storageKey])
 
 
@@ -252,36 +276,44 @@ export default function StudentCoursePage() {
     ? Math.round((completedLessons.length / lessons.length) * 100)
     : 0
 
+  // Determine whether all lessons are completed by normalizing ids to strings
+  const isAllLessonsCompleted = lessons.length > 0 && lessons.every((l) => completedLessons.map(String).includes(String(l.id)))
+
   const handleLessonComplete = async () => {
-    if (!currentLessonId || !studentId || !courseId) return
+    if (!currentLessonId || !courseId) return
 
     const prev = [...completedLessons]
     const updated = Array.from(new Set([...prev, currentLessonId]))
+    // Optimistic update so UI responds immediately
     setCompletedLessons(updated)
 
-    try {
-      const response = await courseService.updateStudentProgress(studentId, courseId, {
-        completedLessons: updated,
-        currentLessonId,
-      })
+    // Persist if we have a studentId; otherwise continue optimistic flow
+    if (studentId) {
+      try {
+        const response = await courseService.updateStudentProgress(studentId, courseId, {
+          completedLessons: updated,
+          currentLessonId,
+        })
 
-      if (!response.success) {
-        console.error("Failed to update progress:", response.error)
+        if (!response.success) {
+          console.error("Failed to update progress:", response.error)
+          setCompletedLessons(prev)
+          return
+        }
+      } catch (error) {
+        console.error("Error updating progress:", error)
         setCompletedLessons(prev)
         return
       }
+    }
 
-      // If last lesson, open final quiz automatically
-      if (updated.length === lessons.length) {
-        setTimeout(() => setIsQuizOpen(true), 500)
-      } else {
-        const currentIdx = lessons.findIndex((l) => l.id === currentLessonId)
-        const next = lessons[currentIdx + 1]
-        if (next) setCurrentLessonId(next.id)
-      }
-    } catch (error) {
-      console.error("Error updating progress:", error)
-      setCompletedLessons(prev)
+    // Navigate to next lesson or open quiz
+    if (updated.length === lessons.length) {
+      setTimeout(() => setIsQuizOpen(true), 500)
+    } else {
+      const currentIdx = lessons.findIndex((l) => l.id === currentLessonId)
+      const next = lessons[currentIdx + 1]
+      if (next) setCurrentLessonId(next.id)
     }
   }
 
@@ -427,8 +459,45 @@ export default function StudentCoursePage() {
             onSelectLesson={setCurrentLessonId}
             progress={progress}
             finalQuiz={course?.finalQuiz}
-            onOpenQuiz={() => setIsQuizOpen(true)}
-            isAllLessonsCompleted={completedLessons.length === lessons.length}
+            onOpenQuiz={async () => {
+              // If quiz data already has questions, open immediately
+              if (course?.finalQuiz && Array.isArray(course.finalQuiz.questions) && course.finalQuiz.questions.length > 0) {
+                setIsQuizOpen(true)
+                return
+              }
+
+              // Otherwise try to fetch quizzes for the course and populate questions
+              try {
+                const qRes = await courseService.getQuizzesByCourse(courseId)
+                if (qRes.success && Array.isArray(qRes.data) && qRes.data.length > 0) {
+                  const foundQuiz = qRes.data.find((q) => String(q._id) === String(course?.finalQuiz?._id) || String(q._id) === String(course?.finalQuiz?.id)) || qRes.data[0]
+                  if (foundQuiz) {
+                    const quizData = {
+                      ...foundQuiz,
+                      questions: (foundQuiz.questionIds || []).map((q) => ({
+                        id: q._id || q.id,
+                        type: q.type || 'mcq',
+                        question: q.text || q.question || '',
+                        options: Array.isArray(q.options) ? q.options : [],
+                        correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : null,
+                        correctAnswer: q.correctAnswer || '',
+                        points: q.points || 1,
+                        explanation: q.explanation || '',
+                      }))
+                    }
+                    setCourse((prev) => ({ ...prev, finalQuiz: quizData }))
+                    setIsQuizOpen(true)
+                    return
+                  }
+                }
+              } catch (e) {
+                console.error("Failed to fetch quiz on open:", e)
+              }
+
+              // Fallback: open modal anyway (it will render null if no questions)
+              setIsQuizOpen(true)
+            }}
+            isAllLessonsCompleted={isAllLessonsCompleted}
             isAIPanelOpen={isAIPanelOpen}
             onToggleAIPanel={() => setIsAIPanelOpen(!isAIPanelOpen)}
           />

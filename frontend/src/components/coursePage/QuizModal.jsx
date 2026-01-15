@@ -1,5 +1,8 @@
 // /src/components/QuizModal.jsx
 import React, { useState, useEffect, useRef } from "react"
+import courseService from "../../services/courseService"
+import toast from "react-hot-toast"
+import { useNavigate } from "react-router"
 import { X, Award, CheckCircle2, XCircle, RotateCcw, Clock, Pause, Play } from "lucide-react"
 import { Card, Button } from "../courseBuilder/UI"
 
@@ -49,37 +52,74 @@ export default function QuizModal({ quiz, onClose, courseId }) {
   const [showResults, setShowResults] = useState(false)
   const [score, setScore] = useState(0)
   const [confetti, setConfetti] = useState(false)
+  const [quizMarked, setQuizMarked] = useState(false)
   const [questionResults, setQuestionResults] = useState([])
   const [isPaused, setIsPaused] = useState(false)
   const [timeLeft, setTimeLeft] = useState(null)
   const [shuffledQuestions, setShuffledQuestions] = useState([])
   const [reviewFilter, setReviewFilter] = useState("all") // "all", "correct", "incorrect"
   const timerRef = useRef(null)
+  const navigate = useNavigate()
+  const confettiCanvas = useConfetti(confetti)
 
-  if (!quiz || !quiz.questions || quiz.questions.length === 0) return null
+  // Allow the modal to mount even if `quiz.questions` is empty so we can
+  // attempt to fetch/populate questions or show a helpful message.
+  if (!quiz) return null
 
   // Initialize: load saved progress or create new session
   useEffect(() => {
-    const savedProgress = courseId ? localStorage.getItem(`quiz-progress-${courseId}`) : null
-    
-    if (savedProgress) {
-      const { currentQuestion: q, answers: a, shuffled, timeLeft: t } = JSON.parse(savedProgress)
-      setCurrentQuestion(q)
-      setAnswers(a)
-      setShuffledQuestions(shuffled)
-      setTimeLeft(t)
-    } else {
-      // Create shuffled question array
-      const questions = quiz.questions.map((q, idx) => ({ ...q, originalIndex: idx }))
-      const shuffled = questions.sort(() => Math.random() - 0.5)
-      setShuffledQuestions(shuffled)
-      
+    const init = async () => {
+      const savedProgress = courseId ? localStorage.getItem(`quiz-progress-${courseId}`) : null
+
+      if (savedProgress) {
+        const { currentQuestion: q, answers: a, shuffled, timeLeft: t } = JSON.parse(savedProgress)
+        setCurrentQuestion(q)
+        setAnswers(a)
+        setShuffledQuestions(shuffled)
+        setTimeLeft(t)
+        return
+      }
+
+      // If quiz provides questions, use them. Otherwise attempt to fetch quizzes for the course.
+      const providedQuestions = quiz.questions || []
+      if (providedQuestions.length > 0) {
+        const questions = providedQuestions.map((q, idx) => ({ ...q, originalIndex: idx }))
+        const shuffled = questions.sort(() => Math.random() - 0.5)
+        setShuffledQuestions(shuffled)
+      } else if (courseId) {
+        try {
+          const qRes = await courseService.getQuizzesByCourse(courseId)
+          if (qRes.success && Array.isArray(qRes.data)) {
+            const found = qRes.data.find((x) => String(x._id) === String(quiz._id)) || qRes.data[0]
+            if (found && Array.isArray(found.questionIds) && found.questionIds.length > 0) {
+              const mapped = found.questionIds.map((q, idx) => ({
+                id: q._id || q.id,
+                type: q.type || 'mcq',
+                question: q.text || q.question || '',
+                options: Array.isArray(q.options) ? q.options : [],
+                correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : null,
+                correctAnswer: q.correctAnswer || '',
+                points: q.points || 1,
+                explanation: q.explanation || '',
+                originalIndex: idx,
+              }))
+              const shuffled = mapped.sort(() => Math.random() - 0.5)
+              setShuffledQuestions(shuffled)
+            }
+          }
+        } catch (e) {
+          console.error("QuizModal: failed to fetch quizzes for course", e)
+        }
+      }
+
       // Set timer if quiz has time limit (e.g., 1 minute per question)
       const timeLimit = quiz.timeLimit || null
       if (timeLimit) {
         setTimeLeft(timeLimit * 60)
       }
     }
+
+    init()
   }, [quiz, courseId])
 
   // Timer effect
@@ -100,8 +140,8 @@ export default function QuizModal({ quiz, onClose, courseId }) {
     return () => clearInterval(timerRef.current)
   }, [timeLeft, isPaused, showResults])
 
-  const total = shuffledQuestions.length || quiz.questions.length
-  const currentQuiz = shuffledQuestions.length > 0 ? shuffledQuestions[currentQuestion] : quiz.questions[currentQuestion]
+  const total = shuffledQuestions.length || (quiz?.questions?.length || 0)
+  const currentQuiz = shuffledQuestions.length > 0 ? shuffledQuestions[currentQuestion] : (quiz?.questions?.[currentQuestion] || null)
   const isAnswered = answers[currentQuestion] !== undefined
 
   // Handle answer for all question types
@@ -153,6 +193,23 @@ export default function QuizModal({ quiz, onClose, courseId }) {
     if (courseId) {
       localStorage.removeItem(`quiz-progress-${courseId}`)
     }
+    // Attempt to notify backend that quiz was completed
+    (async () => {
+      try {
+        const studentId = localStorage.getItem("userId")
+        if (studentId && courseId) {
+          const resp = await courseService.markQuizCompleted(studentId, courseId, correct, total)
+          if (resp.success) {
+            setQuizMarked(true)
+            toast.success("Quiz progress saved")
+          } else {
+            toast.error(resp.error || "Failed saving quiz progress")
+          }
+        }
+      } catch (err) {
+        console.error("Failed to mark quiz complete:", err)
+      }
+    })()
   }
 
   const handleNext = () => {
@@ -201,7 +258,6 @@ export default function QuizModal({ quiz, onClose, courseId }) {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [currentQuestion, isAnswered, total, showResults, isPaused, handleNext])
 
-  // Save progress to localStorage
   useEffect(() => {
     if (!showResults && courseId) {
       const progress = {
@@ -213,6 +269,7 @@ export default function QuizModal({ quiz, onClose, courseId }) {
       localStorage.setItem(`quiz-progress-${courseId}`, JSON.stringify(progress))
     }
   }, [currentQuestion, answers, shuffledQuestions, timeLeft, showResults, courseId])
+
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60)
@@ -262,9 +319,9 @@ export default function QuizModal({ quiz, onClose, courseId }) {
           </div>
         </div>
 
-        <div className="p-8 overflow-y-auto max-h-[calc(90vh-88px)] relative">
+          <div className="p-8 overflow-y-auto max-h-[calc(90vh-88px)] relative">
           {/* Confetti Canvas */}
-          {confetti && useConfetti(true)}
+          {confetti && confettiCanvas}
 
           {/* Pause Overlay */}
           {isPaused && !showResults && (
@@ -284,6 +341,44 @@ export default function QuizModal({ quiz, onClose, courseId }) {
 
           {!showResults ? (
             <div className="space-y-6" style={{ opacity: isPaused ? 0.5 : 1, pointerEvents: isPaused ? "none" : "auto" }}>
+              {shuffledQuestions.length === 0 && (!quiz?.questions || quiz.questions.length === 0) && (
+                <div className="p-6 bg-yellow-50 border-2 border-yellow-200 rounded-lg text-center">
+                  <p className="text-sm text-yellow-800 mb-3">No questions are available for this quiz.</p>
+                  <p className="text-xs text-gray-500 mb-4">If this looks wrong, try refreshing the quiz data.</p>
+                  <div className="flex justify-center gap-2">
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const qRes = await courseService.getQuizzesByCourse(courseId)
+                          if (qRes.success && Array.isArray(qRes.data) && qRes.data.length > 0) {
+                            const found = qRes.data.find((x) => String(x._id) === String(quiz._id)) || qRes.data[0]
+                            if (found && Array.isArray(found.questionIds) && found.questionIds.length > 0) {
+                              const mapped = found.questionIds.map((q, idx) => ({
+                                id: q._id || q.id,
+                                type: q.type || 'mcq',
+                                question: q.text || q.question || '',
+                                options: Array.isArray(q.options) ? q.options : [],
+                                correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : null,
+                                correctAnswer: q.correctAnswer || '',
+                                points: q.points || 1,
+                                explanation: q.explanation || '',
+                                originalIndex: idx,
+                              }))
+                              setShuffledQuestions(mapped.sort(() => Math.random() - 0.5))
+                            }
+                          }
+                        } catch (e) {
+                          console.error("QuizModal refresh failed:", e)
+                        }
+                      }}
+                      className="bg-yellow-600 text-white"
+                    >
+                      Refresh Questions
+                    </Button>
+                    <Button onClick={onClose} variant="ghost">Close</Button>
+                  </div>
+                </div>
+              )}
               {/* Question progress */}
               <div className="flex justify-between items-center">
                 <p className="text-sm text-gray-500">
@@ -543,12 +638,44 @@ export default function QuizModal({ quiz, onClose, courseId }) {
                   <RotateCcw className="w-4 h-4" />
                   Retry
                 </Button>
-                <Button
-                  onClick={onClose}
-                  className="gap-2 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white"
-                >
-                  Close
-                </Button>
+                {score >= (quiz.passingScore || 70) ? (
+                  <>
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const studentId = localStorage.getItem("userId")
+                          if (studentId && courseId && !quizMarked) {
+                            await courseService.markQuizCompleted(studentId, courseId, Math.round((questionResults.filter(r => r.isCorrect).length)), total)
+                          }
+                        } catch (err) {
+                          console.error(err)
+                        }
+                        toast.success("Course completed! Redirecting...")
+                        onClose()
+                        const sid = localStorage.getItem("userId")
+                        if (sid) navigate(`/student/${sid}`)
+                      }}
+                      className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      Finish Course
+                    </Button>
+                    <Button
+                      onClick={onClose}
+                      variant="ghost"
+                      className="gap-2"
+                    >
+                      Close
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={onClose}
+                    className="gap-2 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white"
+                  >
+                    Close
+                  </Button>
+                )}
               </div>
             </div>
           )}

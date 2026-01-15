@@ -230,6 +230,20 @@ export const courseService = {
       };
     }
   },
+  // Mark quiz completed (updates progress.quizScore, totalScore and status if passed)
+  markQuizCompleted: async (studentId, courseId, quizScore, totalScore) => {
+    try {
+      const response = await apiClient.post(`/progress/quizCompleted`, {
+        studentId,
+        courseId,
+        quizScore,
+        totalScore,
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.message || error.message };
+    }
+  },
 };
 
 export default courseService;

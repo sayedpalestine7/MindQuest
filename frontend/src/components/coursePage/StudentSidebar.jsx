@@ -118,7 +118,17 @@ export default function StudentSidebar({
                             You've completed all lessons! Ready to test your knowledge?
                           </p>
                           <button
-                            onClick={onOpenQuiz}
+                            onClick={() => {
+                              try {
+                                // Safety log to ensure handler exists
+                                // eslint-disable-next-line no-console
+                                console.log("StudentSidebar: Take Quiz clicked", { onOpenQuiz })
+                                if (typeof onOpenQuiz === "function") onOpenQuiz()
+                              } catch (e) {
+                                // eslint-disable-next-line no-console
+                                console.error("Error invoking onOpenQuiz:", e)
+                              }
+                            }}
                             className="w-full px-3 py-2 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white rounded-lg text-sm font-medium transition-all shadow-md hover:shadow-lg"
                           >
                             Take Quiz
@@ -189,7 +199,16 @@ export default function StudentSidebar({
             {/* Collapsed Quiz Button */}
             {finalQuiz && isAllLessonsCompleted && (
               <button
-                onClick={onOpenQuiz}
+                onClick={() => {
+                  try {
+                    // eslint-disable-next-line no-console
+                    console.log("StudentSidebar (collapsed): Take Quiz clicked", { onOpenQuiz })
+                    if (typeof onOpenQuiz === "function") onOpenQuiz()
+                  } catch (e) {
+                    // eslint-disable-next-line no-console
+                    console.error("Error invoking onOpenQuiz (collapsed):", e)
+                  }
+                }}
                 className="w-full mt-4 p-2 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white transition-all flex items-center justify-center"
                 title="Take Quiz"
               >
