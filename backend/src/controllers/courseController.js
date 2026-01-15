@@ -163,11 +163,28 @@ export const getCourses = async (req, res) => {
     // Support filtering by published status: /api/courses?published=true
     // Support filtering by approval status: /api/courses?approvalStatus=pending
     const filter = {};
+    
     if (req.query.published !== undefined) {
-      filter.published = req.query.published === 'true';
+      const publishedValue = req.query.published === 'true';
+      // Include legacy courses where published is missing/null (treat as false)
+      filter.$or = [
+        { published: publishedValue },
+        ...(publishedValue ? [] : [{ published: { $in: [null, undefined] } }])
+      ];
     }
+    
     if (req.query.approvalStatus !== undefined) {
-      filter.approvalStatus = req.query.approvalStatus;
+      const statusValue = req.query.approvalStatus;
+      // Include legacy courses where approvalStatus is missing (treat as draft)
+      if (statusValue === 'draft') {
+        filter.$or = [
+          ...(filter.$or || []),
+          { approvalStatus: 'draft' },
+          { approvalStatus: { $in: [null, undefined] } }
+        ];
+      } else {
+        filter.approvalStatus = statusValue;
+      }
     }
     
     const courses = await Course.find(filter)
@@ -568,7 +585,7 @@ export const submitCourseForReview = async (req, res) => {
     
     course.approvalStatus = "pending";
     course.submittedAt = new Date();
-    course.rejectionReason = null; // Clear previous rejection reason
+    course.rejectionReason = undefined; // Clear previous rejection reason
     await course.save();
     
     res.status(200).json({ 

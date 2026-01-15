@@ -1,7 +1,7 @@
 import React from "react"
-import { CalendarDays, Eye, Trash2, Upload, BookOpen , ChartColumnStacked, CheckCircle, XCircle } from "lucide-react"
+import { CalendarDays, Eye, BookOpen , ChartColumnStacked, CheckCircle, XCircle } from "lucide-react"
 
-export default function CourseCard({ course, onView, onApprove, onReject, onDelete }) {
+export default function CourseCard({ course, onView, onApprove, onReject }) {
   const createdDate = new Date(course.createdAt || Date.now()).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -100,15 +100,6 @@ export default function CourseCard({ course, onView, onApprove, onReject, onDele
               Reject
             </button>
           )}
-
-          {/* Delete */}
-          <button
-            onClick={onDelete}
-            className="flex-1 flex items-center justify-center gap-1 border border-red-500 text-red-500 py-1 rounded-md hover:bg-red-500/10 transition"
-          >
-            <Trash2 size={15} />
-            Delete
-          </button>
         </div>
       </div>
     </div>
