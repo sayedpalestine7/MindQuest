@@ -68,34 +68,6 @@ export default function UserSummaryHeader({ profileData, stats, onEdit }) {
           )}
           {bio && <p className="mt-3 max-w-2xl" style={{ color: '#607D8B' }}>{bio}</p>}
         </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold" style={{ color: '#3F51B5' }}>
-              {stats.totalCourses}
-            </div>
-            <div className="text-xs" style={{ color: '#607D8B' }}>Courses</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold" style={{ color: '#607D8B' }}>
-              {stats.totalStudents}
-            </div>
-            <div className="text-xs" style={{ color: '#607D8B' }}>Students</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold" style={{ color: '#F9A825' }}>
-              {stats.rating.toFixed(1)}
-            </div>
-            <div className="text-xs" style={{ color: '#607D8B' }}>Rating</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold" style={{ color: '#26A69A' }}>
-              {stats.totalPoints}
-            </div>
-            <div className="text-xs" style={{ color: '#607D8B' }}>Points</div>
-          </div>
-        </div>
       </div>
     </motion.div>
   );

@@ -186,7 +186,7 @@ export default function CoursesTable() {
               <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-300" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Published Courses</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Courses</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{courses.length}</p>
             </div>
           </div>
@@ -199,46 +199,12 @@ export default function CoursesTable() {
           className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-teal-100 dark:bg-teal-900 rounded-lg">
-              <Users className="w-6 h-6 text-teal-600 dark:text-teal-300" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Students</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalStudents}</p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm"
-        >
-          <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
               <GraduationCap className="w-6 h-6 text-purple-600 dark:text-purple-300" />
             </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Active Teachers</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{uniqueTeachers}</p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-yellow-600 dark:text-yellow-300" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Avg Rating</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{avgRating}/5</p>
             </div>
           </div>
         </motion.div>
