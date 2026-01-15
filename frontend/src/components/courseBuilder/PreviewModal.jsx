@@ -155,7 +155,7 @@ function FieldPreview({ field }) {
             </p>
           </div>
           <p className="text-sm text-gray-600 italic">
-            Answer: {field.answer || "No answer provided"}
+            Answer: {(field.correctAnswer ?? field.answer) || "No answer provided"}
           </p>
           {field.explanation && (
             <p className="text-sm text-gray-600 mt-2">

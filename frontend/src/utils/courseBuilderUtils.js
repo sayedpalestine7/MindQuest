@@ -99,7 +99,8 @@ export const validateField = (field) => {
       if (!field.content?.trim()) {
         errors.push("Question text is required");
       }
-      if (!field.answer?.trim()) {
+      // Accept either field.correctAnswer (new key) or field.answer (legacy)
+      if (!((field.correctAnswer && String(field.correctAnswer).trim()) || (field.answer && String(field.answer).trim()))) {
         errors.push("Answer is required");
       }
       break;
@@ -222,8 +223,15 @@ export const sanitizeFieldForAPI = (field) => {
       return {
         ...base,
         content: field.content,
-        answer: field.answer,
+        // new inline question fields
+        questionType: field.questionType || (field.type === 'question' ? 'short' : null),
+        options: Array.isArray(field.options) ? field.options : [],
+        correctAnswer: field.correctAnswer ?? field.answer ?? "",
+        correctAnswerIndex: field.correctAnswerIndex !== undefined ? field.correctAnswerIndex : null,
+        points: field.points !== undefined ? field.points : 1,
         explanation: field.explanation || "",
+        // keep legacy answer key for compatibility
+        answer: field.answer,
       };
     case "minigame":
       return { ...base, content: field.content };

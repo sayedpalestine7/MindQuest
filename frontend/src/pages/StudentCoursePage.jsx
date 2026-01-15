@@ -6,10 +6,12 @@ import StudentSidebar from "../components/coursePage/StudentSidebar"
 import LessonContent from "../components/coursePage/LessonContent"
 import QuizModal from "../components/coursePage/QuizModal"
 import courseService from "../services/courseService"
+import { useAuth } from "../context/AuthContext"
 
 export default function StudentCoursePage() {
   const { courseId } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   // Use a ref to track if we've already loaded progress from DB
   const progressLoadedRef = React.useRef(false)
   // Ref to avoid overlapping saves
@@ -63,6 +65,8 @@ export default function StudentCoursePage() {
               type: f.type,
               content: f.content,
               animationId: f.animationId || null,
+              // include potential correct answer fields from backend
+              correctAnswer: f.correctAnswer ?? f.answer ?? "",
             })),
           }))
 
@@ -448,6 +452,9 @@ export default function StudentCoursePage() {
         courseTitle={course.title}
         progress={progress}
         onRestart={handleRestartCourse}
+        userAvatar={user?.profileImage || user?.avatar}
+        userName={user?.name}
+        userId={user?._id}
       />
 
       <div className="container mx-auto px-6 py-8">

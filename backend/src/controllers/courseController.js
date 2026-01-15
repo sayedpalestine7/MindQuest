@@ -49,16 +49,37 @@ export const createCourse = async (req, res) => {
         // If the lesson contains fields, create Field documents and attach their ids
         let fieldIds = [];
         if (lesson.fields && Array.isArray(lesson.fields) && lesson.fields.length > 0) {
-          const createdFields = await Field.insertMany(
-            lesson.fields.map((f, idx) => ({
+          // Prepare fields to create. For question-type fields, store question data inline on Field.
+          const fieldsToCreate = [];
+          for (let idx = 0; idx < lesson.fields.length; idx++) {
+            const f = lesson.fields[idx];
+            const questionId = f.questionId || null; // keep legacy reference if present
+            let questionType = f.questionType || (f.type === 'question' ? 'short' : null);
+            const options = Array.isArray(f.options) ? f.options : [];
+            const correctAnswer = (f.correctAnswer ?? f.answer ?? null);
+            const correctAnswerIndex = f.correctAnswerIndex !== undefined ? f.correctAnswerIndex : null;
+            const points = f.points !== undefined ? f.points : 1;
+            const explanation = f.explanation || "";
+
+            const fieldObj = {
               lessonId: createdLesson._id,
               type: f.type,
               content: f.content,
-              questionId: f.questionId || null,
+              questionId: questionId,
+              questionType: questionType,
+              options: options,
+              correctAnswer: correctAnswer,
+              correctAnswerIndex: correctAnswerIndex,
+              points: points,
+              explanation: explanation,
+              migratedFromQuestionId: null,
               animationId: f.animationId || null,
               order: idx,
-            }))
-          );
+            };
+
+            fieldsToCreate.push(fieldObj);
+          }
+          const createdFields = await Field.insertMany(fieldsToCreate);
           fieldIds = createdFields.map((cf) => cf._id);
         }
 
@@ -222,7 +243,35 @@ export const getCourseById = async (req, res) => {
       });
 
     if (!course) return res.status(404).json({ message: "Course not found" });
-    res.status(200).json(course);
+
+    // Normalize populated lesson/field objects to ensure frontend receives
+    // the new inline question properties regardless of storage quirks.
+    let courseObj = course.toObject ? course.toObject() : JSON.parse(JSON.stringify(course));
+    if (Array.isArray(courseObj.lessonIds)) {
+      courseObj.lessonIds = courseObj.lessonIds.map((lesson) => {
+        if (Array.isArray(lesson.fieldIds)) {
+          lesson.fieldIds = lesson.fieldIds.map((f) => ({
+            _id: f._id || f.id,
+            id: f._id || f.id,
+            type: f.type,
+            content: f.content,
+            questionId: f.questionId || null,
+            questionType: f.questionType || null,
+            options: Array.isArray(f.options) ? f.options : [],
+            correctAnswer: (f.correctAnswer ?? f.answer) ?? "",
+            correctAnswerIndex: f.correctAnswerIndex !== undefined ? f.correctAnswerIndex : null,
+            points: f.points ?? 1,
+            explanation: f.explanation ?? "",
+            migratedFromQuestionId: f.migratedFromQuestionId ?? null,
+            animationId: f.animationId || null,
+            order: f.order ?? 0,
+          }));
+        }
+        return lesson;
+      });
+    }
+
+    res.status(200).json(courseObj);
   } catch (err) {
     res.status(500).json({ message: "❌ Error fetching course", error: err.message });
   }
@@ -250,9 +299,15 @@ export const updateCourse = async (req, res) => {
     if (lessons && Array.isArray(lessons)) {
       // Sanitize lessons content first
       const sanitizedLessons = sanitizeLessons(lessons);
-      
-      // Delete old lessons
-      // Delete old lessons and their fields
+
+      // Fetch existing fields so we can preserve question data if incoming payload lacks it
+      const existingFields = await Field.find({ lessonId: { $in: currentCourse.lessonIds } });
+      const existingFieldMap = {};
+      existingFields.forEach((ef) => {
+        existingFieldMap[String(ef._id)] = ef;
+      });
+
+      // Delete old lessons and their fields (we will recreate, but try to preserve values above)
       await Field.deleteMany({ lessonId: { $in: currentCourse.lessonIds } });
       await Lesson.deleteMany({ _id: { $in: currentCourse.lessonIds } });
 
@@ -264,16 +319,44 @@ export const updateCourse = async (req, res) => {
 
           let fieldIds = [];
           if (lesson.fields && Array.isArray(lesson.fields) && lesson.fields.length > 0) {
-            const createdFields = await Field.insertMany(
-              lesson.fields.map((f, idx) => ({
+            const fieldsToCreate = [];
+            for (let idx = 0; idx < lesson.fields.length; idx++) {
+              const f = lesson.fields[idx];
+              const questionId = f.questionId || null;
+              const questionType = f.questionType || (f.type === 'question' ? 'short' : null);
+              const options = Array.isArray(f.options) ? f.options : [];
+
+              // Prefer incoming correctAnswer; if empty, try to preserve from existing field with same id
+              let correctAnswer = (f.correctAnswer ?? f.answer ?? null);
+              if ((correctAnswer === null || String(correctAnswer).trim() === "") && f.id && existingFieldMap[f.id]) {
+                correctAnswer = existingFieldMap[f.id].correctAnswer ?? existingFieldMap[f.id].answer ?? null;
+              }
+
+              const correctAnswerIndex = f.correctAnswerIndex !== undefined ? f.correctAnswerIndex : null;
+              const points = f.points !== undefined ? f.points : 1;
+
+              let explanation = f.explanation || "";
+              if ((!explanation || String(explanation).trim() === "") && f.id && existingFieldMap[f.id]) {
+                explanation = existingFieldMap[f.id].explanation ?? "";
+              }
+
+              fieldsToCreate.push({
                 lessonId: createdLesson._id,
                 type: f.type,
                 content: f.content,
-                questionId: f.questionId || null,
+                questionId: questionId,
+                questionType: questionType,
+                options: options,
+                correctAnswer: correctAnswer,
+                correctAnswerIndex: correctAnswerIndex,
+                points: points,
+                explanation: explanation,
+                migratedFromQuestionId: null,
                 animationId: f.animationId || null,
                 order: idx,
-              }))
-            );
+              });
+            }
+            const createdFields = await Field.insertMany(fieldsToCreate);
             fieldIds = createdFields.map((cf) => cf._id);
           }
 

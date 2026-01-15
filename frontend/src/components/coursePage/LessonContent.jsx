@@ -23,16 +23,11 @@ export default function LessonContent({
   const [feedback, setFeedback] = useState({})
 
   const handleAnswerSubmit = (fieldId, userAnswer, correctAnswer) => {
-    const isCorrect =
-      userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
-    setFeedback({
-      ...feedback,
-      [fieldId]: isCorrect ? "correct" : "incorrect",
-    })
-    setAnswers({
-      ...answers,
-      [fieldId]: userAnswer,
-    })
+    const ua = String(userAnswer || "").trim().toLowerCase()
+    const ca = String(correctAnswer || "").trim().toLowerCase()
+    const isCorrect = ua === ca
+    setFeedback((prev) => ({ ...prev, [fieldId]: isCorrect ? "correct" : "incorrect" }))
+    setAnswers((prev) => ({ ...prev, [fieldId]: userAnswer }))
   }
 
   if (!lesson)
@@ -61,6 +56,7 @@ export default function LessonContent({
               feedback={feedback[field.id]}
               answer={answers[field.id]}
               onAnswerSubmit={handleAnswerSubmit}
+              onAnswerChange={(val) => setAnswers((prev) => ({ ...prev, [field.id]: val }))}
             />
           ))}
         </div>
@@ -90,7 +86,7 @@ export default function LessonContent({
 
 /* ---------------- FIELD RENDERER ---------------- */
 
-function FieldRenderer({ field, feedback, answer, onAnswerSubmit }) {
+function FieldRenderer({ field, feedback, answer, onAnswerSubmit, onAnswerChange }) {
   switch (field.type) {
     case "paragraph":
       return (
@@ -105,7 +101,7 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit }) {
         <img
           src={field.content}
           alt="Lesson visual"
-          className="rounded-lg w-full border-2 border-gray-300 object-cover"
+          className="rounded-lg w-full max-h-96 object-contain"
           onError={(e) => {
             e.currentTarget.src = "/placeholder.svg"
           }}
@@ -142,22 +138,27 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit }) {
 
     case "question":
       return (
-        <div className="p-6 rounded-xl border-2 border-orange-200 bg-orange-50 space-y-3">
+        <div className="p-6 rounded-xl border-2 space-y-3">
           <div className="flex items-start gap-2">
             <HelpCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
             <p className="font-medium text-gray-900 ">
               {field.content}
             </p>
           </div>
-          <Input
-            placeholder="Type your answer..."
-            value={answer || ""}
-            onChange={(e) => onAnswerSubmit(field.id, e.target.value, "")}
-            onBlur={(e) =>
-              onAnswerSubmit(field.id, e.target.value, field.answer || "")
-            }
-            className="border-2 border-gray-300 "
-          />
+          <div className="flex gap-2">
+            <Input
+              placeholder="Type your answer..."
+              value={answer || ""}
+              onChange={(e) => onAnswerChange && onAnswerChange(e.target.value)}
+              className="border-2 border-gray-300 flex-1"
+            />
+            <Button
+              onClick={() => onAnswerSubmit(field.id, answer || "", field.correctAnswer || field.answer || "")}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
+            >
+              Submit
+            </Button>
+          </div>
           {feedback === "correct" && (
             <p className="flex items-center gap-2 text-green-600 text-sm">
               <CheckCircle2 className="w-4 h-4" />

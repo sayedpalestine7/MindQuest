@@ -295,8 +295,8 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
               Correct Answer
             </label>
             <Input
-              value={field.answer || ""}
-              onChange={(e) => updateField(field.id, { answer: e.target.value })}
+              value={field.correctAnswer ?? field.answer ?? ""}
+              onChange={(e) => updateField(field.id, { correctAnswer: e.target.value, answer: e.target.value })}
               placeholder="Enter the correct answer..."
               className="border-2 border-gray-300"
             />
