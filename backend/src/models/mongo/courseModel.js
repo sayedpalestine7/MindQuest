@@ -24,6 +24,7 @@ const courseSchema = new mongoose.Schema(
     price: { type: String, default: "Free" },
     tags: [{ type: String }],
     scoreOnFinish: { type: Number, default: 0 },
+    published: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

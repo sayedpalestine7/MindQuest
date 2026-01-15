@@ -7,6 +7,7 @@ import {
   deleteCourse,
   generateQuiz,
   importQuestions,
+  togglePublishCourse,
 } from "../controllers/courseController.js";
 import { protect, requireRole } from "../middleware/authMiddleware.js";
 
@@ -18,6 +19,8 @@ router.post("/", protect, requireRole(["teacher", "admin"]), createCourse);
 router.post("/:id/generate-quiz", protect, requireRole(["teacher", "admin"]), generateQuiz);
 // Import questions generated externally (n8n webhook)
 router.post("/:id/import-questions", protect, requireRole(["teacher", "admin"]), importQuestions);
+// Toggle publish status for a course
+router.patch("/:courseId/publish", protect, requireRole(["teacher", "admin"]), togglePublishCourse);
 router.get("/", getCourses);
 router.get("/:id", getCourseById);
 router.put("/:id", protect, requireRole(["teacher", "admin"]), updateCourse);

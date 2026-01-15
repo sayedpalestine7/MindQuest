@@ -80,23 +80,25 @@ export default function StudentSidebar({
     <motion.div 
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="w-80 border-r bg-gradient-to-b from-gray-50 to-white flex flex-col shadow-sm"
+      className="w-80 h-full min-h-0 flex flex-col"
+      style={{ borderRight: '1px solid #E0E0E0', backgroundColor: '#F5F7FA' }}
     >
       {/* Header */}
-      <div className="p-4 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+      <div className="p-4 text-white" style={{ borderBottom: '1px solid #E0E0E0', background: 'linear-gradient(to right, #3F51B5, #5C6BC0)' }}>
         <h3 className="font-bold text-lg flex items-center gap-2">
           <Users className="w-5 h-5" /> Students ({filteredStudents.length})
         </h3>
       </div>
 
       {/* Search & Filters */}
-      <div className="p-4 border-b space-y-3 bg-white">
+      <div className="p-4 space-y-3" style={{ borderBottom: '1px solid #E0E0E0', backgroundColor: '#FFFFFF' }}>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: '#607D8B' }} />
           <input
             type="text"
             placeholder="Search students..."
-            className="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border rounded-lg pl-10 pr-3 py-2 focus:outline-none focus:ring-2"
+            style={{ borderColor: '#E0E0E0', color: '#263238' }}
             value={searchValue}
             onChange={(e) => onSearch(e.target.value)}
           />
@@ -109,11 +111,11 @@ export default function StudentSidebar({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1 rounded-full text-sm font-semibold transition ${
-                filter === f
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
+              className="px-3 py-1 rounded-full text-sm font-semibold transition"
+              style={{
+                backgroundColor: filter === f ? '#3F51B5' : '#E0E0E0',
+                color: filter === f ? '#FFFFFF' : '#607D8B'
+              }}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </motion.button>
@@ -124,7 +126,7 @@ export default function StudentSidebar({
           <div className="flex gap-2 flex-wrap mt-2">
             <button
               className={`px-3 py-1 rounded-full text-sm font-semibold transition ${
-                courseFilter === "" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
+                courseFilter === "" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
               }`}
               onClick={() => setCourseFilter("")}
             >
@@ -134,7 +136,7 @@ export default function StudentSidebar({
               <button
                 key={c}
                 className={`px-3 py-1 rounded-full text-sm font-semibold transition ${
-                  courseFilter === c ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
+                  courseFilter === c ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
                 }`}
                 onClick={() => setCourseFilter(c)}
               >
@@ -146,7 +148,7 @@ export default function StudentSidebar({
       </div>
 
       {/* Student List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
         {filteredStudents.length > 0 ? (
           filteredStudents.map((s, idx) => {
             const isSelected =
@@ -161,16 +163,21 @@ export default function StudentSidebar({
                 transition={{ delay: idx * 0.05 }}
                 whileHover={{ x: 4 }}
                 onClick={() => onSelectStudent(s)}
-                className={`w-full text-left p-4 border-b flex items-center gap-3 transition-all ${
-                  isSelected
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md"
-                    : "hover:bg-blue-50"
-                }`}
+                className="w-full text-left p-3 flex items-center gap-3 transition-all"
+                style={{
+                  borderBottom: '1px solid #E0E0E0',
+                  backgroundColor: isSelected ? '#E8EAF6' : 'transparent',
+                  borderLeft: isSelected ? '4px solid #3F51B5' : 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) e.currentTarget.style.backgroundColor = '#F5F7FA';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
                 {/* Avatar */}
-                <div className={`w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden ring-2 ${
-                  isSelected ? "ring-white" : "ring-gray-300"
-                }`}>
+                <div className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden" style={{ border: '2px solid #E0E0E0' }}>
                   {s.avatar ? (
                     <img
                       src={s.avatar}
@@ -178,7 +185,7 @@ export default function StudentSidebar({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-400 to-purple-500 text-white font-bold text-lg">
+                    <div className="w-full h-full flex items-center justify-center text-white font-bold text-lg" style={{ background: 'linear-gradient(to bottom right, #3F51B5, #5C6BC0)' }}>
                       {s.name?.charAt(0) ?? "?"}
                     </div>
                   )}
@@ -186,14 +193,10 @@ export default function StudentSidebar({
 
                 {/* Student Info */}
                 <div className="flex-1 min-w-0">
-                  <p className={`font-semibold truncate ${
-                    isSelected ? "text-white" : "text-gray-800"
-                  }`}>
+                  <p className="font-semibold truncate" style={{ color: isSelected ? '#3F51B5' : '#263238' }}>
                     {s.name}
                   </p>
-                  <p className={`text-xs truncate ${
-                    isSelected ? "text-blue-100" : "text-gray-500"
-                  }`}>
+                  <p className="text-xs truncate" style={{ color: '#607D8B' }}>
                     {s.subject || "Student"}
                   </p>
                 </div>
@@ -203,7 +206,8 @@ export default function StudentSidebar({
                   <motion.div 
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="w-6 h-6 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center flex-shrink-0"
+                    className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: '#E53935' }}
                   >
                     {Math.min(unread, 9)}+
                   </motion.div>

@@ -527,3 +527,28 @@ export const importQuestions = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Error importing questions', error: err.message });
   }
 };
+
+// 📢 TOGGLE course publish status
+export const togglePublishCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+    
+    // Toggle the published status
+    course.published = !course.published;
+    await course.save();
+    
+    res.status(200).json({ 
+      message: course.published ? "Course published successfully" : "Course unpublished successfully", 
+      course 
+    });
+  } catch (err) {
+    console.error("Error toggling publish status:", err);
+    res.status(500).json({ message: "Error toggling publish status", error: err.message });
+  }
+};
+

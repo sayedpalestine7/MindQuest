@@ -11,39 +11,35 @@ export default function StatsSection({ stats }) {
       title: "Courses", 
       value: stats.totalCourses || 0, 
       icon: BookOpen,
-      color: "from-blue-500 to-blue-600",
-      bgColor: "bg-blue-100",
-      iconColor: "text-blue-600"
+      iconColor: "#3F51B5", // Indigo
+      iconBg: "#E8EAF6"
     },
     { 
       title: "Students", 
       value: stats.totalStudents || 0, 
       icon: Users,
-      color: "from-purple-500 to-purple-600",
-      bgColor: "bg-purple-100",
-      iconColor: "text-purple-600"
+      iconColor: "#607D8B", // Blue-gray (neutral)
+      iconBg: "#ECEFF1"
     },
     { 
       title: "Rating", 
       value: (stats.rating || 0).toFixed(1), 
       icon: Star,
-      color: "from-yellow-500 to-yellow-600",
-      bgColor: "bg-yellow-100",
-      iconColor: "text-yellow-600"
+      iconColor: "#F9A825", // Gold
+      iconBg: "#FFF9C4"
     },
     { 
       title: "Points", 
       value: stats.totalPoints || 0, 
       icon: Award,
-      color: "from-green-500 to-green-600",
-      bgColor: "bg-green-100",
-      iconColor: "text-green-600"
+      iconColor: "#26A69A", // Teal
+      iconBg: "#E0F2F1"
     },
   ];
 
   return (
     <motion.div
-      className="space-y-4"
+      className="space-y-3"
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
@@ -54,22 +50,17 @@ export default function StatsSection({ stats }) {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 * i }}
-          whileHover={{ scale: 1.05, translateY: -4 }}
-          className={`bg-gradient-to-br ${stat.color} rounded-xl shadow-md p-4 text-white overflow-hidden relative group`}
+          whileHover={{ scale: 1.02 }}
+          className="rounded-lg shadow-sm p-4 relative"
+          style={{ backgroundColor: '#FFFFFF', borderColor: '#E0E0E0', borderWidth: '1px', borderStyle: 'solid' }}
         >
-          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-300"></div>
-          
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-semibold text-white/80">{stat.title}</p>
-              <stat.icon className="w-5 h-5 text-white/60" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg" style={{ backgroundColor: stat.iconBg }}>
+              <stat.icon className="w-5 h-5" style={{ color: stat.iconColor }} />
             </div>
-            <p className="text-3xl font-bold text-white">{stat.value}</p>
-            <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-white rounded-full"
-                style={{ width: `${Math.min((stat.value / 100) * 100, 100)}%` }}
-              ></div>
+            <div className="flex-1">
+              <p className="text-xs font-medium" style={{ color: '#607D8B' }}>{stat.title}</p>
+              <p className="text-2xl font-bold" style={{ color: '#263238' }}>{stat.value}</p>
             </div>
           </div>
         </motion.div>
