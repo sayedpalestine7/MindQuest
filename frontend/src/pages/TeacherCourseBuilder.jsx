@@ -101,7 +101,7 @@ export default function TeacherCourseBuilder() {
         console.error("Auto-save error:", error)
         // Don't show error to user for auto-save failures
       }
-    }, 3000)
+    }, 10000)
 
     return () => clearTimeout(timeoutId)
   }, [courseBuilder.course, courseBuilder.lessons, courseId, isAuthenticated, user?._id])
