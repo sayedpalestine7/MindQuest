@@ -14,7 +14,7 @@ export default function FiltersBar({
   return (
     <div className="flex flex-wrap gap-3 ">
       <div className="flex gap-2 ">
-        {["all", "published", "draft"].map((status) => (
+        {["all", "pending", "approved", "rejected", "draft"].map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
@@ -45,14 +45,14 @@ export default function FiltersBar({
         ))}
       </select>
 
-      {(statusFilter !== "all" || categoryFilter !== "all" || teacherFilter !== "all") && (
+      {(statusFilter !== "pending" || categoryFilter !== "all" || teacherFilter !== "all") && (
         <button
           onClick={() => {
-            setStatusFilter("all")
+            setStatusFilter("pending")
             setCategoryFilter("all")
             setTeacherFilter("all")
           }}
-          className="text-gray-600 underline"
+          className="text-gray-600 dark:text-gray-400 underline hover:text-gray-800 dark:hover:text-gray-200 transition"
         >
           Clear Filters
         </button>

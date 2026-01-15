@@ -156,9 +156,20 @@ export const createCourse = async (req, res) => {
 // 📚 GET all courses
 export const getCourses = async (req, res) => {
   try {
-    const courses = await Course.find()
-      .populate("teacherId", "name email profileImage")
-      .select("-__v");
+    // Support filtering by published status: /api/courses?published=true
+    // Support filtering by approval status: /api/courses?approvalStatus=pending
+    const filter = {};
+    if (req.query.published !== undefined) {
+      filter.published = req.query.published === 'true';
+    }
+    if (req.query.approvalStatus !== undefined) {
+      filter.approvalStatus = req.query.approvalStatus;
+    }
+    
+    const courses = await Course.find(filter)
+      .populate("teacherId", "name email profileImage avatar")
+      .select("-__v")
+      .sort({ createdAt: -1 });
     res.status(200).json(courses);
   } catch (err) {
     res.status(500).json({ message: "❌ Error fetching courses", error: err.message });
@@ -527,3 +538,126 @@ export const importQuestions = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Error importing questions', error: err.message });
   }
 };
+
+// � SUBMIT course for admin review
+export const submitCourseForReview = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+    
+    // Check if course belongs to the teacher
+    if (course.teacherId.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Unauthorized to submit this course" });
+    }
+    
+    // Only draft or rejected courses can be submitted
+    if (course.approvalStatus !== "draft" && course.approvalStatus !== "rejected") {
+      return res.status(400).json({ message: `Course is already ${course.approvalStatus}` });
+    }
+    
+    course.approvalStatus = "pending";
+    course.submittedAt = new Date();
+    course.rejectionReason = null; // Clear previous rejection reason
+    await course.save();
+    
+    res.status(200).json({ 
+      message: "Course submitted for review successfully", 
+      course 
+    });
+  } catch (err) {
+    console.error("Error submitting course for review:", err);
+    res.status(500).json({ message: "Error submitting course for review", error: err.message });
+  }
+};
+
+// ✅ APPROVE course (admin only)
+export const approveCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+    
+    if (course.approvalStatus !== "pending") {
+      return res.status(400).json({ message: "Only pending courses can be approved" });
+    }
+    
+    course.approvalStatus = "approved";
+    course.published = true; // Auto-publish when approved
+    course.reviewedAt = new Date();
+    course.reviewedBy = req.user.id;
+    course.rejectionReason = null;
+    await course.save();
+    
+    res.status(200).json({ 
+      message: "Course approved and published successfully", 
+      course 
+    });
+  } catch (err) {
+    console.error("Error approving course:", err);
+    res.status(500).json({ message: "Error approving course", error: err.message });
+  }
+};
+
+// ❌ REJECT course (admin only)
+export const rejectCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { reason } = req.body;
+    
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+    
+    if (course.approvalStatus !== "pending") {
+      return res.status(400).json({ message: "Only pending courses can be rejected" });
+    }
+    
+    course.approvalStatus = "rejected";
+    course.published = false;
+    course.reviewedAt = new Date();
+    course.reviewedBy = req.user.id;
+    course.rejectionReason = reason || "No reason provided";
+    await course.save();
+    
+    res.status(200).json({ 
+      message: "Course rejected successfully", 
+      course 
+    });
+  } catch (err) {
+    console.error("Error rejecting course:", err);
+    res.status(500).json({ message: "Error rejecting course", error: err.message });
+  }
+};
+
+// 📢 TOGGLE course publish status (kept for backward compatibility, admin only now)
+export const togglePublishCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+    
+    // Toggle the published status
+    course.published = !course.published;
+    await course.save();
+    
+    res.status(200).json({ 
+      message: course.published ? "Course published successfully" : "Course unpublished successfully", 
+      course 
+    });
+  } catch (err) {
+    console.error("Error toggling publish status:", err);
+    res.status(500).json({ message: "Error toggling publish status", error: err.message });
+  }
+};
+

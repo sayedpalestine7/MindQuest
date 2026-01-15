@@ -1,6 +1,8 @@
 import Sidebar from "./Sidebar"
 import CoursesTable from "./course/CoursesTable"
 import { motion } from "framer-motion"
+import { BookCheck } from "lucide-react"
+
 function ManageCourses() {
     return (
     <div className="flex min-h-screen bg-base-200">
@@ -13,11 +15,14 @@ function ManageCourses() {
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-sky-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
-            Manage Courses
-          </h1>
+          <div className="flex items-center gap-3 mb-2">
+            <BookCheck className="w-8 h-8 text-indigo-600" />
+            <h1 className="text-3xl font-extrabold bg-gradient-to-r from-sky-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
+              Review Course Submissions
+            </h1>
+          </div>
           <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
-            View and manage all courses from all teachers.
+            Review and manage course submissions from teachers. Approve, reject, or delete courses as needed.
           </p>
           <div className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-neutral-300 to-transparent dark:via-neutral-700" />
         </motion.div>

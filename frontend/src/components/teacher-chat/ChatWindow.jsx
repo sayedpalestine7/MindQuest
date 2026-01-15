@@ -10,12 +10,12 @@ export default function ChatWindow({ messages, onSend, selectedStudent }) {
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-blue-50 to-indigo-50"
+        className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-indigo-50 to-violet-50"
       >
         <div className="text-center">
           <div className="text-6xl mb-4">💬</div>
-          <p className="text-xl font-semibold text-gray-700 mb-2">No conversation selected</p>
-          <p className="text-gray-500">Select a student from the list to start chatting</p>
+          <p className="text-xl font-semibold text-slate-800 mb-2">No conversation selected</p>
+          <p className="text-slate-500">Select a student from the list to start chatting</p>
         </div>
       </motion.div>
     );
@@ -25,13 +25,13 @@ export default function ChatWindow({ messages, onSend, selectedStudent }) {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex flex-col h-full bg-white"
+      className="flex flex-col h-full min-h-0 bg-white"
     >
       {/* Chat Header */}
       <ChatHeader student={selectedStudent} />
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-gray-50 to-white space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 bg-gradient-to-b from-slate-50 to-white">
         <ChatMessages messages={messages} />
       </div>
 

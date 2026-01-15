@@ -7,14 +7,15 @@ import axios from "axios";
 import { useParams } from "react-router";
 
 import { socket } from "../utils/socket.js";
+import DashboardLayout from "../components/profiles/teacher/DashboardLayout";
+import LeftPanel from "../components/profiles/teacher/LeftPanel";
+import UserSummaryHeader from "../components/profiles/teacher/UserSummaryHeader";
+import MainPanel from "../components/profiles/teacher/MainPanel";
+import PerformancePanel from "../components/profiles/teacher/PerformancePanel";
+import StatsPanel from "../components/profiles/teacher/StatsPanel";
+import RightPanel from "../components/profiles/teacher/RightPanel";
 import Header from "../components/profiles/teacher/Header";
-import ProfileHeader from "../components/profiles/teacher/ProfileHeader";
-import StatsSection from "../components/profiles/teacher/StatsSection";
-import CoursesSection from "../components/profiles/teacher/CoursesSection";
-import PerformanceSection from "../components/profiles/teacher/PerformanceSection";
 import EditProfileDialog from "../components/profiles/teacher/EditProfileDialog";
-import StudentSidebar from "../components/teacher-chat/StudentSidebar";
-import ChatWindow from "../components/teacher-chat/ChatWindow.jsx";
 
 export default function TeacherProfilePage() {
   const { id: routeTeacherId } = useParams();
@@ -26,9 +27,9 @@ export default function TeacherProfilePage() {
   const [error, setError] = useState(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [activeCourseId, setActiveCourseId] = useState(null);
 
   /* ====== Chat States ====== */
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [studentsList, setStudentsList] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -233,6 +234,27 @@ export default function TeacherProfilePage() {
     window.location.href = "/login";
   };
 
+  /* ====== Course Selection (for inter-panel communication) ====== */
+  const handleCourseSelect = (courseId) => {
+    setActiveCourseId(courseId);
+    // Future: can trigger performance updates or filter chat by course context
+  };
+
+  /* ====== Handle Course Update (after publish/unpublish) ====== */
+  const handleCourseUpdate = (updatedCourse) => {
+    setProfileData((prev) => {
+      if (!prev) return prev;
+      
+      const updatedCourses = prev.courses?.map((course) => {
+        const cid = course._id || course.id;
+        const updatedCid = updatedCourse._id || updatedCourse.id;
+        return cid === updatedCid ? { ...course, published: updatedCourse.published } : course;
+      }) || [];
+      
+      return { ...prev, courses: updatedCourses };
+    });
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
   if (!profileData) return <div className="min-h-screen flex items-center justify-center text-gray-500">No teacher found</div>;
@@ -245,100 +267,65 @@ export default function TeacherProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}>
-        <Header onLogout={handleLogout} teacherId={teacherId} />
-        
-        <div className="container mx-auto p-4 sm:p-6 space-y-8 max-w-7xl">
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <ProfileHeader profileData={profileData} stats={stats} onEdit={() => setIsEditOpen(true)} />
-          </motion.div>
-
-          {/* Performance and Stats in a Grid */}
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <PerformanceSection stats={stats} />
-            </div>
-            <div>
-              <StatsSection stats={stats} />
-            </div>
-          </div>
-
-          {/* Courses Section */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <CoursesSection courses={profileData.courses ?? []} />
-          </motion.div>
-        </div>
-
-        {/* Chat Button */}
-        <motion.button
-          onClick={() => setIsChatOpen(true)}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-4 rounded-full shadow-2xl flex items-center gap-2 font-semibold transition-all duration-200"
-        >
-          <span className="text-xl">💬</span> Messages
-          {Object.values(unreadCount).reduce((a, b) => a + b, 0) > 0 && (
-            <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ml-2">
-              {Object.values(unreadCount).reduce((a, b) => a + b, 0)}
-            </span>
-          )}
-        </motion.button>
-
-        {/* Chat Modal */}
-        {isChatOpen && (
-          <div className="modal modal-open">
-            <div className="modal-box p-0 w-[90vw] max-w-4xl h-[85vh] flex flex-col rounded-2xl shadow-2xl">
-              <div className="p-4 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white flex justify-between items-center rounded-t-2xl">
-                <h3 className="font-bold text-lg">Teacher Messaging Center</h3>
-                <button 
-                  className="btn btn-sm btn-ghost text-white hover:bg-blue-500" 
-                  onClick={() => setIsChatOpen(false)}
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="flex flex-1 overflow-hidden">
-                <StudentSidebar
-                  students={filteredStudents}
-                  selectedStudent={selectedStudent}
-                  onSelectStudent={setSelectedStudent}
-                  searchValue={studentSearch}
-                  onSearch={handleSearchStudents}
-                  socket={socket}
-                  teacherId={teacherId}
-                  unreadCount={unreadCount}
-                  setUnreadCount={setUnreadCount}
-                />
-                <div className="flex-1 border-l flex flex-col bg-white">
-                  <ChatWindow messages={messages} onSend={handleSendMessage} selectedStudent={selectedStudent} />
+    <>
+    <DashboardLayout
+      header={<Header onLogout={handleLogout} teacherId={teacherId} />}
+      leftPanel={
+        <LeftPanel
+          userSummary={
+            <UserSummaryHeader
+              profileData={profileData}
+              stats={stats}
+              onEdit={() => setIsEditOpen(true)}
+            />
+          }
+          mainContent={
+            <MainPanel>
+              <div className="grid lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <PerformancePanel stats={stats} />
+                </div>
+                <div>
+                  <StatsPanel stats={stats} />
                 </div>
               </div>
-            </div>
-            <div 
-              className="modal-backdrop bg-black/50" 
-              onClick={() => setIsChatOpen(false)}
-            ></div>
-          </div>
-        )}
-
-        {isEditOpen && (
-          <EditProfileDialog
-            open={isEditOpen}
-            profileData={profileData}
-            onClose={() => setIsEditOpen(false)}
-            setProfileData={setProfileData}
-          />
-        )}
-      </motion.div>
-    </div>
+            </MainPanel>
+          }
+        />
+      }
+      rightPanel={
+        <RightPanel
+          // Courses props
+          courses={profileData.courses ?? []}
+          activeCourseId={activeCourseId}
+          onCourseSelect={handleCourseSelect}
+          onCourseUpdate={handleCourseUpdate}
+          
+          // Chat props
+          students={filteredStudents}
+          selectedStudent={selectedStudent}
+          onSelectStudent={setSelectedStudent}
+          messages={messages}
+          onSendMessage={handleSendMessage}
+          studentSearch={studentSearch}
+          onSearchStudents={handleSearchStudents}
+          socket={socket}
+          teacherId={teacherId}
+          unreadCount={unreadCount}
+          setUnreadCount={setUnreadCount}
+        />
+      }
+    />
+    
+    {/* Edit Profile Modal */}
+    {isEditOpen && (
+      <EditProfileDialog
+        open={isEditOpen}
+        profileData={profileData}
+        onClose={() => setIsEditOpen(false)}
+        setProfileData={setProfileData}
+      />
+    )}
+    </>
   );
 }
