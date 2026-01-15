@@ -136,7 +136,7 @@ export default function StudentSidebar({
             )}
 
             {/* AI Assistant Button */}
-            <div className="mt-6 pt-4 border-t-2 border-gray-200">
+            {/* <div className="mt-6 pt-4 border-t-2 border-gray-200">
               <button
                 onClick={onToggleAIPanel}
                 className={`w-full px-4 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
@@ -148,7 +148,7 @@ export default function StudentSidebar({
                 <Zap className="w-5 h-5" />
                 {isAIPanelOpen ? "Close AI" : "Open AI"}
               </button>
-            </div>
+            </div> */}
           </>
         )}
 
