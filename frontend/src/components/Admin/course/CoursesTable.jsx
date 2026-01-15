@@ -4,7 +4,6 @@ import SearchBar from "./SearchBar"
 import FiltersBar from "./FiltersBar"
 import CourseCard from "./CourseCard"
 import CourseDialog from "./CourseDialog"
-import DeleteDialog from "./DeleteDialog"
 import { Loader2, BookOpen, Users, GraduationCap, TrendingUp } from "lucide-react"
 import axios from "axios"
 
@@ -17,7 +16,6 @@ export default function CoursesTable() {
   const [teacherFilter, setTeacherFilter] = useState("all")
   const [sortBy, setSortBy] = useState("date")
   const [selectedCourse, setSelectedCourse] = useState(null)
-  const [courseToDelete, setCourseToDelete] = useState(null)
 
   // Fetch courses from database based on approval status
   useEffect(() => {
@@ -47,8 +45,8 @@ export default function CoursesTable() {
         // Transform data to match expected format
         const transformedCourses = res.data.map((course) => ({
           id: course._id,
-          title: course.title,
-          description: course.description,
+          title: course.title || "",
+          description: course.description || "",
           category: course.category || "General",
           teacher: {
             id: course.teacherId?._id || course.teacherId,
@@ -58,7 +56,7 @@ export default function CoursesTable() {
           studentsEnrolled: course.students || 0,
           createdAt: course.createdAt,
           status: course.approvalStatus || "draft",
-          published: course.published,
+          published: course.published ?? false,
           thumbnail: course.thumbnail || "https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&w=800&q=80",
           difficulty: course.difficulty || "Beginner",
           rating: course.rating || 0,
@@ -84,14 +82,18 @@ export default function CoursesTable() {
   const approveCourse = async (id) => {
     try {
       const token = localStorage.getItem("token")
+      if (!token) {
+        alert("No authentication token found. Please log in.")
+        return
+      }
       
       const response = await axios.patch(
         `http://localhost:5000/api/courses/${id}/approve`,
         {},
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: { Authorization: `Bearer ${token}` } }
       )
       
-      // Remove from list or update status
+      // Remove from pending list after approval
       setCourses((prev) => prev.filter((c) => c.id !== id))
       alert(response.data.message || "Course approved successfully")
     } catch (err) {
@@ -102,39 +104,27 @@ export default function CoursesTable() {
 
   const rejectCourse = async (id) => {
     try {
-      const reason = prompt("Enter rejection reason (optional):")
-      
       const token = localStorage.getItem("token")
+      if (!token) {
+        alert("No authentication token found. Please log in.")
+        return
+      }
+      
+      const reason = prompt("Enter rejection reason (optional):")
+      if (reason === null) return // User cancelled
       
       const response = await axios.patch(
         `http://localhost:5000/api/courses/${id}/reject`,
         { reason: reason || "No reason provided" },
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: { Authorization: `Bearer ${token}` } }
       )
       
-      // Remove from list or update status
+      // Remove from pending list after rejection
       setCourses((prev) => prev.filter((c) => c.id !== id))
       alert(response.data.message || "Course rejected successfully")
     } catch (err) {
       console.error("Failed to reject course", err)
       alert(err.response?.data?.message || "Failed to reject course")
-    }
-  }
-
-  const deleteCourse = async (id) => {
-    try {
-      const token = localStorage.getItem("token")
-      
-      await axios.delete(`http://localhost:5000/api/courses/${id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
-      
-      setCourses((prev) => prev.filter((c) => c.id !== id))
-      setCourseToDelete(null)
-      alert("Course deleted successfully")
-    } catch (err) {
-      console.error("Failed to delete course", err)
-      alert("Failed to delete course")
     }
   }
 
@@ -152,9 +142,9 @@ export default function CoursesTable() {
     return courses
       .filter((c) => {
         const matchSearch =
-          c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          c.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          c.teacher.name.toLowerCase().includes(searchQuery.toLowerCase())
+          (c.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (c.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (c.teacher?.name || "").toLowerCase().includes(searchQuery.toLowerCase())
         const matchStatus = statusFilter === "all" || c.status === statusFilter
         const matchCat = categoryFilter === "all" || c.category === categoryFilter
         const matchTeacher = teacherFilter === "all" || c.teacher.id === teacherFilter
@@ -163,7 +153,7 @@ export default function CoursesTable() {
       .sort((a, b) => {
         if (sortBy === "date") return new Date(b.createdAt) - new Date(a.createdAt)
         if (sortBy === "students") return b.studentsEnrolled - a.studentsEnrolled
-        return a.title.localeCompare(b.title)
+        return (a.title || "").localeCompare(b.title || "")
       })
   }, [courses, searchQuery, statusFilter, categoryFilter, teacherFilter, sortBy])
 
@@ -290,7 +280,6 @@ export default function CoursesTable() {
                 onView={() => setSelectedCourse(course)}
                 onApprove={() => approveCourse(course.id)}
                 onReject={() => rejectCourse(course.id)}
-                onDelete={() => setCourseToDelete(course)}
               />
             </motion.div>
           ))}
@@ -303,14 +292,6 @@ export default function CoursesTable() {
 
       {selectedCourse && (
         <CourseDialog course={selectedCourse} onClose={() => setSelectedCourse(null)} />
-      )}
-
-      {courseToDelete && (
-        <DeleteDialog
-          course={courseToDelete}
-          onCancel={() => setCourseToDelete(null)}
-          onConfirm={() => deleteCourse(courseToDelete.id)}
-        />
       )}
     </div>
   )
