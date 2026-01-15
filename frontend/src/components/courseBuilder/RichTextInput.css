@@ -1,0 +1,118 @@
+/* Rich Text Editor Styles */
+
+.rich-text-editor .ProseMirror {
+  outline: none;
+  min-height: 200px;
+  font-family: inherit;
+}
+
+.rich-text-editor .ProseMirror p {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.rich-text-editor .ProseMirror h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 0.67rem 0;
+}
+
+.rich-text-editor .ProseMirror h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0.75rem 0;
+}
+
+.rich-text-editor .ProseMirror h3 {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin: 0.83rem 0;
+}
+
+.rich-text-editor .ProseMirror ul,
+.rich-text-editor .ProseMirror ol {
+  margin-left: 2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Ensure list markers are visible and styled consistently inside the editor */
+.rich-text-editor .ProseMirror ul,
+.rich-text-editor .ProseMirror ol {
+  list-style-position: outside;
+  padding-left: 1.25rem; /* ensure space for markers */
+}
+
+.rich-text-editor .ProseMirror li::marker {
+  color: #374151; /* gray-700 - visible marker color */
+  font-weight: 600;
+}
+
+/* Force visible list markers and provide fallback */
+.rich-text-editor .ProseMirror ul {
+  /* keep default list-style for unordered lists; avoid forcing markers */
+}
+
+.rich-text-editor .ProseMirror ol {
+  /* keep default list-style for ordered lists; avoid forcing markers */
+}
+
+.rich-text-editor .ProseMirror li {
+  margin: 0.12rem 0;
+}
+
+/* Keep list paragraphs inline in the editor so markers sit next to text
+   (restores compact numbering/spacing in the course builder editor). */
+.rich-text-editor .ProseMirror li p {
+  margin: 0;
+  display: inline;
+}
+
+/* Defensive: remove any pseudo-element markers that could be added by other styles */
+.rich-text-editor .ProseMirror li::before { content: none !important; }
+.rich-text-editor .ProseMirror ol { list-style-type: decimal; }
+
+.rich-text-editor .ProseMirror pre {
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.rich-text-editor .ProseMirror code {
+  background-color: #f3f4f6;
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.rich-text-editor .ProseMirror blockquote {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-right: 0;
+  color: #6b7280;
+  font-style: italic;
+  margin: 0.5rem 0;
+}
+
+.rich-text-editor .ProseMirror mark {
+  background-color: #fbbf24;
+  padding: 0.125rem;
+  border-radius: 0.125rem;
+}
+
+.rich-text-editor .ProseMirror strong {
+  font-weight: bold;
+}
+
+.rich-text-editor .ProseMirror em {
+  font-style: italic;
+}
+
+.rich-text-editor .ProseMirror u {
+  text-decoration: underline;
+}

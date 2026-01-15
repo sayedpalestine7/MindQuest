@@ -6,6 +6,7 @@ import Field from "../models/mongo/fieldModel.js";
 import Question from "../models/mongo/questionModel.js";
 import { Teacher } from "../models/mongo/teacherSchema.js";
 import { generateQuizFromAI } from "../services/aiService.js";
+import { sanitizeLessons } from "../services/sanitizationService.js";
 
 // 🧠 CREATE a new course
 export const createCourse = async (req, res) => {
@@ -37,9 +38,12 @@ export const createCourse = async (req, res) => {
     // Create lessons if provided
     let lessonIds = [];
     if (lessons && Array.isArray(lessons) && lessons.length > 0) {
+      // Sanitize lessons content first
+      const sanitizedLessons = sanitizeLessons(lessons);
+      
       // Create lessons and their fields properly (Fields are separate documents)
       const createdLessonIds = [];
-      for (const lesson of lessons) {
+      for (const lesson of sanitizedLessons) {
         const createdLesson = await Lesson.create({ title: lesson.title, courseId: course._id });
 
         // If the lesson contains fields, create Field documents and attach their ids
@@ -244,15 +248,18 @@ export const updateCourse = async (req, res) => {
     // Update lessons if provided
     let lessonIds = currentCourse.lessonIds;
     if (lessons && Array.isArray(lessons)) {
+      // Sanitize lessons content first
+      const sanitizedLessons = sanitizeLessons(lessons);
+      
       // Delete old lessons
       // Delete old lessons and their fields
       await Field.deleteMany({ lessonId: { $in: currentCourse.lessonIds } });
       await Lesson.deleteMany({ _id: { $in: currentCourse.lessonIds } });
 
       // Create new lessons
-      if (lessons.length > 0) {
+      if (sanitizedLessons.length > 0) {
         const createdLessonIds = [];
-        for (const lesson of lessons) {
+        for (const lesson of sanitizedLessons) {
           const createdLesson = await Lesson.create({ title: lesson.title, courseId: req.params.id });
 
           let fieldIds = [];

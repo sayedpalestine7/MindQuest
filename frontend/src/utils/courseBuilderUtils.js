@@ -44,6 +44,21 @@ export const validateLesson = (lesson) => {
 };
 
 /**
+ * Strip HTML tags from content to get plain text
+ */
+const stripHtmlTags = (html) => {
+  if (!html) return "";
+  // Remove HTML tags and decode entities
+  return html
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .trim();
+};
+
+/**
  * Validate field data based on type
  */
 export const validateField = (field) => {
@@ -56,7 +71,9 @@ export const validateField = (field) => {
   // Type-specific validation
   switch (field.type) {
     case "paragraph":
-      if (!field.content?.trim()) {
+      // For paragraph, check if there's actual content (strip HTML tags first)
+      const plainContent = stripHtmlTags(field.content);
+      if (!plainContent) {
         errors.push("Paragraph content is required");
       }
       break;

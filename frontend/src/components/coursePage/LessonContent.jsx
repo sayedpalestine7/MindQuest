@@ -94,9 +94,10 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit }) {
   switch (field.type) {
     case "paragraph":
       return (
-        <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-          {field.content}
-        </p>
+        <div 
+          className="text-gray-800 leading-relaxed prose prose-sm max-w-none mq-prose"
+          dangerouslySetInnerHTML={{ __html: field.content }}
+        />
       )
 
     case "image":
