@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Message from "../models/mongo/message.js";
-import User from "../models//mongo/userModel.js";
+import User from "../models/mongo/userModel.js";
+import Course from "../models/mongo/courseModel.js";
 
 
 // -------------------- SEND MESSAGE --------------------
@@ -206,5 +207,61 @@ export const getStudentUnread = async (req, res) => {
     res.json(unread);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+// -------------------- TEACHER ENROLLED STUDENTS (CHAT SIDEBAR) --------------------
+// Returns only students who are enrolled in at least one course owned by the authenticated teacher.
+// NOTE: Kept separate from /api/admin/users because that endpoint intentionally returns a formatted summary.
+export const getTeacherEnrolledStudents = async (req, res) => {
+  try {
+    const teacherUserId = req.user?._id;
+    if (!teacherUserId) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const teacherCourses = await Course.find({ teacherId: teacherUserId })
+      .select("_id title category")
+      .lean();
+
+    const teacherCourseIds = teacherCourses.map((c) => c._id);
+    if (teacherCourseIds.length === 0) {
+      return res.json([]);
+    }
+
+    const courseIdToMeta = new Map(
+      teacherCourses.map((c) => [c._id.toString(), { title: c.title, category: c.category }])
+    );
+    const teacherCourseIdSet = new Set(teacherCourseIds.map((id) => id.toString()));
+
+    const students = await User.find({
+      role: "student",
+      "studentData.enrolledCourses": { $in: teacherCourseIds },
+    })
+      .select("name email profileImage studentData.enrolledCourses")
+      .lean();
+
+    const result = (students || []).map((s) => {
+      const enrolledIds = (s.studentData?.enrolledCourses || [])
+        .map((id) => (typeof id === "string" ? id : id?.toString()))
+        .filter(Boolean);
+
+      const firstMatchId = enrolledIds.find((id) => teacherCourseIdSet.has(id));
+      const meta = firstMatchId ? courseIdToMeta.get(firstMatchId) : null;
+
+      return {
+        _id: s._id,
+        name: s.name,
+        email: s.email,
+        avatar: s.profileImage,
+        subject: meta?.category || meta?.title || "Student",
+        matchedCourseId: firstMatchId || null,
+      };
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error("Error fetching teacher enrolled students:", err);
+    res.status(500).json({ message: "Failed to fetch students" });
   }
 };

@@ -80,18 +80,40 @@ export default function TeacherProfilePage() {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/admin/users");
-        const students = (res.data || []).filter((u) => u.userType === "student");
+        if (!teacherId) return;
+
+        // If teacher has no courses, there can be no enrolled students.
+        if (Array.isArray(profileData?.courses) && profileData.courses.length === 0) {
+          setStudentsList([]);
+          setFilteredStudents([]);
+          setSelectedStudent(null);
+          return;
+        }
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setStudentsList([]);
+          setFilteredStudents([]);
+          setSelectedStudent(null);
+          return;
+        }
+
+        const res = await axios.get("http://localhost:5000/api/chat/teacher/students", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const students = Array.isArray(res.data) ? res.data : [];
+
         setStudentsList(students);
         setFilteredStudents(students);
-        if (students.length > 0) setSelectedStudent(students[0]);
+        setSelectedStudent(students.length > 0 ? students[0] : null);
       } catch (err) {
         console.error(err);
         toast.error("Failed to fetch students");
       }
     };
     fetchStudents();
-  }, []);
+  }, [profileData, teacherId]);
 
   /* ====== Chat Socket + Conversation ====== */
   useEffect(() => {
@@ -134,7 +156,12 @@ export default function TeacherProfilePage() {
       const msgStudentId = msg.student || msg.studentId;
 
       // Skip messages sent by this client (optimistic UI)
-      if (msg.sender === "teacher" && msgTeacherId === msgTeacherId) return;
+      if (
+        msg.sender === "teacher" &&
+        String(msgTeacherId) === String(teacherId)
+      ) {
+        return;
+      }
 
       if (msgTeacherId === teacherId && msgStudentId === studentId) {
         setMessages((prev) => {

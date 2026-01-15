@@ -6,8 +6,10 @@ import {
   getStudentChats,
   markAsRead,
   getTeacherUnread,
-  getStudentUnread
+  getStudentUnread,
+  getTeacherEnrolledStudents
 } from "../controllers/chatController.js";
+import { protect, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -27,5 +29,13 @@ router.put("/read/:teacherId/:studentId", markAsRead);
 // NEW — unread counts
 router.get("/teacher/unread/:teacherId", getTeacherUnread);
 router.get("/student/unread/:studentId", getStudentUnread);
+
+// NEW — teacher chat students (only students enrolled in this teacher's courses)
+router.get(
+  "/teacher/students",
+  protect,
+  requireRole(["teacher", "admin"]),
+  getTeacherEnrolledStudents
+);
 
 export default router;
