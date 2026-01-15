@@ -1,7 +1,7 @@
 import React from "react"
-import { CalendarDays, Eye, Trash2, Upload, BookOpen , ChartColumnStacked } from "lucide-react"
+import { CalendarDays, Eye, Trash2, Upload, BookOpen , ChartColumnStacked, CheckCircle, XCircle } from "lucide-react"
 
-export default function CourseCard({ course, onView, onToggle, onDelete }) {
+export default function CourseCard({ course, onView, onApprove, onReject, onDelete }) {
   const createdDate = new Date(course.createdAt || Date.now()).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -18,13 +18,17 @@ export default function CourseCard({ course, onView, onToggle, onDelete }) {
           className="w-full h-full object-cover"
         />
         <span
-          className={`absolute top-2 right-2 px-2 py-1 text-xs rounded capitalize ${
-            course.status === "published"
+          className={`absolute top-2 right-2 px-2 py-1 text-xs font-semibold rounded capitalize ${
+            course.approvalStatus === "approved"
               ? "bg-green-600 text-white"
+              : course.approvalStatus === "pending"
+              ? "bg-orange-500 text-white"
+              : course.approvalStatus === "rejected"
+              ? "bg-red-600 text-white"
               : "bg-gray-600 text-gray-200"
           }`}
         >
-          {course.status}
+          {course.approvalStatus || "draft"}
         </span>
       </div>
 
@@ -75,18 +79,27 @@ export default function CourseCard({ course, onView, onToggle, onDelete }) {
             View
           </button>
 
-          {/* Publish / Unpublish */}
-          <button
-            onClick={onToggle}
-            className={`flex-1 flex items-center justify-center gap-1 border py-1 rounded-md font-medium transition ${
-              course.status === "published"
-                ? "border-green-600 text-green-600 hover:bg-green-600/10"
-                : "border-green-400 text-green-400 hover:bg-green-400/10"
-            }`}
-          >
-            <Upload size={15} />
-            {course.status === "published" ? "Unpublish" : "Publish"}
-          </button>
+          {/* Approve - Only show for pending courses */}
+          {course.approvalStatus === "pending" && (
+            <button
+              onClick={onApprove}
+              className="flex-1 flex items-center justify-center gap-1 border border-green-500 text-green-500 py-1 rounded-md font-medium hover:bg-green-500/10 transition"
+            >
+              <CheckCircle size={15} />
+              Approve
+            </button>
+          )}
+
+          {/* Reject - Only show for pending courses */}
+          {course.approvalStatus === "pending" && (
+            <button
+              onClick={onReject}
+              className="flex-1 flex items-center justify-center gap-1 border border-orange-500 text-orange-500 py-1 rounded-md font-medium hover:bg-orange-500/10 transition"
+            >
+              <XCircle size={15} />
+              Reject
+            </button>
+          )}
 
           {/* Delete */}
           <button

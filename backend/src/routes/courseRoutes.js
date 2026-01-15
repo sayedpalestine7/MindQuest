@@ -8,6 +8,9 @@ import {
   generateQuiz,
   importQuestions,
   togglePublishCourse,
+  submitCourseForReview,
+  approveCourse,
+  rejectCourse,
 } from "../controllers/courseController.js";
 import { protect, requireRole } from "../middleware/authMiddleware.js";
 
@@ -19,8 +22,15 @@ router.post("/", protect, requireRole(["teacher", "admin"]), createCourse);
 router.post("/:id/generate-quiz", protect, requireRole(["teacher", "admin"]), generateQuiz);
 // Import questions generated externally (n8n webhook)
 router.post("/:id/import-questions", protect, requireRole(["teacher", "admin"]), importQuestions);
-// Toggle publish status for a course
-router.patch("/:courseId/publish", protect, requireRole(["teacher", "admin"]), togglePublishCourse);
+
+// Course approval workflow
+router.patch("/:courseId/submit", protect, requireRole(["teacher", "admin"]), submitCourseForReview);
+router.patch("/:courseId/approve", protect, requireRole(["admin"]), approveCourse);
+router.patch("/:courseId/reject", protect, requireRole(["admin"]), rejectCourse);
+
+// Toggle publish status (admin only - kept for backward compatibility)
+router.patch("/:courseId/publish", protect, requireRole(["admin"]), togglePublishCourse);
+
 router.get("/", getCourses);
 router.get("/:id", getCourseById);
 router.put("/:id", protect, requireRole(["teacher", "admin"]), updateCourse);

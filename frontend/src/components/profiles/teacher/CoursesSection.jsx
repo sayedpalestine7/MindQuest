@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ChevronRight, BookOpen, Users, Plus, Search, Send, CheckCircle } from "lucide-react"
+import { ChevronRight, BookOpen, Users, Plus, Search, Send, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react"
 import { useNavigate } from "react-router"
 import { useState } from "react"
 import axios from "axios"
@@ -9,17 +9,23 @@ import axios from "axios"
 export default function CoursesSection({ courses = [], activeCourseId, onCourseSelect, onCourseUpdate }) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
-  const [publishingCourseId, setPublishingCourseId] = useState(null)
+  const [submittingCourseId, setSubmittingCourseId] = useState(null)
   
-  const handlePublish = async (e, courseId, currentlyPublished) => {
+  const handleSubmitForReview = async (e, courseId, approvalStatus) => {
     e.stopPropagation()
     
+    // Only allow submission for draft or rejected courses
+    if (approvalStatus !== "draft" && approvalStatus !== "rejected") {
+      alert(`Course is already ${approvalStatus}`)
+      return
+    }
+    
     try {
-      setPublishingCourseId(courseId)
+      setSubmittingCourseId(courseId)
       const token = localStorage.getItem("token")
       
       const response = await axios.patch(
-        `http://localhost:5000/api/courses/${courseId}/publish`,
+        `http://localhost:5000/api/courses/${courseId}/submit`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -30,12 +36,12 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
       }
       
       // Success feedback
-      console.log(response.data.message)
+      alert(response.data.message || "Course submitted for review successfully")
     } catch (error) {
-      console.error("Error toggling publish status:", error)
-      alert(error.response?.data?.message || "Failed to update publish status")
+      console.error("Error submitting course for review:", error)
+      alert(error.response?.data?.message || "Failed to submit course for review")
     } finally {
-      setPublishingCourseId(null)
+      setSubmittingCourseId(null)
     }
   }
   
@@ -168,8 +174,20 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
                   </motion.div>
                 )}
                 
-                {/* Published Badge */}
-                {course.published && (
+                {/* Approval Status Badge */}
+                {course.approvalStatus === "pending" && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md"
+                    style={{ backgroundColor: '#FFF3E0', color: '#F57C00' }}
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    <span className="text-xs font-semibold">Pending Review</span>
+                  </motion.div>
+                )}
+                
+                {course.approvalStatus === "approved" && (
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -177,31 +195,46 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
                     style={{ backgroundColor: '#E8F5E9', color: '#2E7D32' }}
                   >
                     <CheckCircle className="w-3.5 h-3.5" />
-                    <span className="text-xs font-semibold">Published</span>
+                    <span className="text-xs font-semibold">Approved</span>
                   </motion.div>
                 )}
                 
-                {/* Publish/Unpublish Button */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={(e) => handlePublish(e, cid, course.published)}
-                  disabled={publishingCourseId === cid}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ 
-                    backgroundColor: course.published ? '#757575' : '#26A69A', 
-                    color: '#FFFFFF' 
-                  }}
-                >
-                  {publishingCourseId === cid ? (
-                    <>Processing...</>
-                  ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" />
-                      {course.published ? 'Unpublish' : 'Publish'}
-                    </>
-                  )}
-                </motion.button>
+                {course.approvalStatus === "rejected" && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md"
+                    style={{ backgroundColor: '#FFEBEE', color: '#C62828' }}
+                    title={course.rejectionReason || "No reason provided"}
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span className="text-xs font-semibold">Rejected</span>
+                  </motion.div>
+                )}
+                
+                {/* Submit for Review Button - Only show for draft or rejected courses */}
+                {(course.approvalStatus === "draft" || course.approvalStatus === "rejected" || !course.approvalStatus) && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={(e) => handleSubmitForReview(e, cid, course.approvalStatus || "draft")}
+                    disabled={submittingCourseId === cid}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ 
+                      backgroundColor: '#26A69A', 
+                      color: '#FFFFFF' 
+                    }}
+                  >
+                    {submittingCourseId === cid ? (
+                      <>Processing...</>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        {course.approvalStatus === "rejected" ? "Resubmit" : "Submit for Review"}
+                      </>
+                    )}
+                  </motion.button>
+                )}
               </div>
             </div>
           </motion.div>
