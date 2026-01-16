@@ -3,11 +3,18 @@ import ProfileImageUpload from "../../signUp/ProfileImageUpload.jsx";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { useState } from "react";
+import { Plus, X } from "lucide-react";
 
 export default function EditProfileDialog({ open, onClose, profileData, setProfileData }) {
   if (!open) return null;
 
+  // Parse links from string to array
+  const initialLinks = profileData?.link 
+    ? String(profileData.link).split(/[,\s]+/).map(l => l.trim()).filter(Boolean)
+    : [""];
+
   const [form, setForm] = useState(profileData || {});
+  const [links, setLinks] = useState(initialLinks);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleChange = (e) => {
@@ -32,15 +39,48 @@ export default function EditProfileDialog({ open, onClose, profileData, setProfi
     setForm((prev) => ({ ...prev, avatar: "" }));
   };
 
+  const handleAddLink = () => {
+    setLinks([...links, ""]);
+  };
+
+  const handleRemoveLink = (index) => {
+    if (links.length === 1) {
+      setLinks([""]);
+    } else {
+      setLinks(links.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleLinkChange = (index, value) => {
+    const newLinks = [...links];
+    newLinks[index] = value;
+    setLinks(newLinks);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // Join non-empty links into a single comma-separated string
+      const linkString = links.filter(l => l.trim()).join(", ");
+
       const { data } = await axios.put(
         `http://localhost:5000/api/teacher/id/${form._id}`,
-        form
+        { ...form, link: linkString }
       );
 
-      setProfileData(data);
+      // Merge the updated data with existing profileData to preserve courses and stats
+      setProfileData((prevData) => ({
+        ...prevData,
+        ...data,
+        link: linkString,
+        // Preserve courses and calculated fields if backend doesn't return them
+        courses: data.courses || prevData.courses,
+        totalCourses: data.totalCourses || prevData.totalCourses,
+        totalEnrolledStudents: data.totalEnrolledStudents || prevData.totalEnrolledStudents,
+        rating: data.rating !== undefined ? data.rating : prevData.rating,
+        totalPoints: data.totalPoints !== undefined ? data.totalPoints : prevData.totalPoints,
+      }));
+      
       toast.success("Profile updated successfully ✅");
       onClose();
     } catch (err) {
@@ -53,24 +93,27 @@ export default function EditProfileDialog({ open, onClose, profileData, setProfi
 
   return (
     <motion.div
-      className="fixed inset-0 flex items-center justify-center z-50"
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-        <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md space-y-5">
-          <h3 className="text-2xl font-bold">Edit Profile</h3>
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-lg w-full max-w-md max-h-[90vh] flex flex-col">
+          <div className="p-6 border-b">
+            <h3 className="text-2xl font-bold">Edit Profile</h3>
+          </div>
 
-          <ProfileImageUpload
-            imagePreview={form.avatar}
-            handleImageChange={handleImageChange}
-            removeImage={removeImage}
-            isLoading={false}
-          />
+          <div className="overflow-y-auto flex-1 p-6 space-y-5">
+            <ProfileImageUpload
+              imagePreview={form.avatar}
+              handleImageChange={handleImageChange}
+              removeImage={removeImage}
+              isLoading={false}
+            />
 
-          <div className="space-y-3">
+            <div className="space-y-3">
             <input
               className="w-full border rounded-md px-3 py-2"
               name="name"
@@ -116,28 +159,54 @@ export default function EditProfileDialog({ open, onClose, profileData, setProfi
               onChange={handleChange}
               placeholder="Phone Number"
             />
-            <input
-              className="w-full border rounded-md px-3 py-2"
-              name="link"
-              value={form.link || ""}
-              onChange={handleChange}
-              placeholder="LinkedIn URL"
-            />
+
+            {/* Multi-link inputs */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Social Links</label>
+              {links.map((link, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    className="flex-1 border rounded-md px-3 py-2"
+                    value={link}
+                    onChange={(e) => handleLinkChange(index, e.target.value)}
+                    placeholder="https://linkedin.com/in/yourprofile"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveLink(index)}
+                    className="p-2 border rounded-md hover:bg-red-50 hover:border-red-300 text-red-600"
+                    title="Remove link"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={handleAddLink}
+                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+              >
+                <Plus size={16} /> Add another link
+              </button>
+            </div>
+            </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <button onClick={onClose} className="flex-1 border py-2 rounded-md hover:bg-gray-100">
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className={`flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 ${
-                isSaving ? "opacity-70 cursor-not-allowed" : ""
-              }`}
-              disabled={isSaving}
-            >
-              {isSaving ? "Saving..." : "Save Changes"}
-            </button>
+          <div className="p-6 border-t bg-gray-50">
+            <div className="flex gap-3">
+              <button onClick={onClose} className="flex-1 border py-2 rounded-md hover:bg-gray-100">
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className={`flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 ${
+                  isSaving ? "opacity-70 cursor-not-allowed" : ""
+                }`}
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
