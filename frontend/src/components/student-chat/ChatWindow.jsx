@@ -1,25 +1,42 @@
 import React from "react";
+import { motion } from "framer-motion";
 import ChatHeader from "./ChatHeader";
 import ChatMessages from "./ChatMessages";
 import MessageInput from "./MessageInput";
 
 export default function ChatWindow({ messages, onSend, selectedTeacher }) {
-  if (!selectedTeacher) return <div className="p-4 text-gray-500">Select a teacher to start chatting</div>;
+  if (!selectedTeacher) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-indigo-50 to-violet-50"
+      >
+        <div className="text-center">
+          <div className="text-6xl mb-4">💬</div>
+          <p className="text-xl font-semibold text-slate-800 mb-2">No conversation selected</p>
+          <p className="text-slate-500">Select a teacher from the list to start chatting</p>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex flex-col h-full min-h-0 bg-white"
+    >
       {/* Chat Header */}
       <ChatHeader teacher={selectedTeacher} />
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 bg-gradient-to-b from-slate-50 to-white">
         <ChatMessages messages={messages} />
       </div>
 
       {/* Message Input */}
-      <div className="border-t p-2 bg-white">
-        <MessageInput onSend={onSend} />
-      </div>
-    </div>
+      <MessageInput onSend={onSend} />
+    </motion.div>
   );
 }

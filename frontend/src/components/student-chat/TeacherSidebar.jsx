@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Search, Filter, Users } from "lucide-react";
 
 export default function TeacherSidebar({
   users = [],
@@ -8,6 +10,9 @@ export default function TeacherSidebar({
   onSearch,
   currentUserId,
   socket,
+  studentId,
+  unreadCount = {},
+  setUnreadCount,
 }) {
   const [filter, setFilter] = useState("all");
   const [courseFilter, setCourseFilter] = useState("");
@@ -17,34 +22,46 @@ export default function TeacherSidebar({
 
   const getUserId = (u) => u._id ?? u.id;
 
-  /* ================= SOCKET: HANDLE NEW MESSAGE ================= */
+  // Handle incoming messages
   useEffect(() => {
     if (!socket) return;
 
     const handleNewMessage = (msg) => {
-      const msgTeacherId = msg.teacher || msg.teacherId;
-      const msgStudentId = msg.student || msg.studentId;
-
-      // Only count unread for messages sent BY TEACHER
-      if (msg.sender !== "teacher") return;
-
-      // Only unread for THIS student
-      if (msgStudentId !== currentUserId) return;
-
-      // FIX: use setUsersList instead of setTeachersList
-      setUsersList((prev) =>
-        prev.map((t) =>
-          getUserId(t) === msgTeacherId
-            ? { ...t, unread: (t.unread || 0) + 1 }
-            : t
-        )
-      );
+      if (msg.sender === "teacher" && msg.teacherId && msg.studentId === studentId) {
+        if (setUnreadCount) {
+          setUnreadCount((prev) => ({
+            ...prev,
+            [msg.teacherId]: (prev[msg.teacherId] || 0) + 1,
+          }));
+        }
+      }
     };
 
     socket.on("new_message", handleNewMessage);
-    return () => socket.off("new_message", handleNewMessage);
-  }, [socket, currentUserId]);
+    return () => {
+      socket.off("new_message", handleNewMessage);
+    };
+  }, [socket, studentId, setUnreadCount]);
 
+  // Reset unread when teacher is selected
+  useEffect(() => {
+    if (!selectedUser) return;
+
+    const teacherId = getUserId(selectedUser);
+    const roomId = `${teacherId}_${studentId}`;
+    socket?.emit("join_room", { roomId });
+
+    if (setUnreadCount) {
+      setUnreadCount((prev) => ({
+        ...prev,
+        [teacherId]: 0,
+      }));
+    }
+
+    return () => {
+      socket?.emit("leave_room", { roomId });
+    };
+  }, [selectedUser, socket, studentId, setUnreadCount]);
 
   const courses = [...new Set(usersList.map((u) => u.subject).filter(Boolean))];
 
@@ -54,39 +71,64 @@ export default function TeacherSidebar({
       (u.subject || "").toLowerCase().includes((searchValue || "").toLowerCase());
 
     let matchesFilter = true;
-    if (filter === "unread") matchesFilter = u.unread && u.unread > 0;
+    if (filter === "unread") matchesFilter = (unreadCount[getUserId(u)] || 0) > 0;
     else if (filter === "course") matchesFilter = courseFilter ? u.subject === courseFilter : true;
 
     return matchesSearch && matchesFilter;
   });
 
   return (
-    <div className="w-80 border-r bg-gray-100 flex flex-col">
-      <div className="p-4 border-b space-y-3">
-        <input
-          type="text"
-          placeholder="Search teachers..."
-          className="input input-bordered w-full"
-          value={searchValue}
-          onChange={(e) => onSearch(e.target.value)}
-        />
+    <motion.div 
+      initial={{ x: -20, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      className="w-80 h-full min-h-0 flex flex-col"
+      style={{ borderRight: '1px solid #E0E0E0', backgroundColor: '#F5F7FA' }}
+    >
+      {/* Header */}
+      <div className="p-4 text-white" style={{ borderBottom: '1px solid #E0E0E0', background: 'linear-gradient(to right, #3F51B5, #5C6BC0)' }}>
+        <h3 className="font-bold text-lg flex items-center gap-2">
+          <Users className="w-5 h-5" /> Teachers ({filteredUsers.length})
+        </h3>
+      </div>
 
-        <div className="flex gap-2 flex-wrap mt-2">
+      {/* Search & Filters */}
+      <div className="p-4 space-y-3" style={{ borderBottom: '1px solid #E0E0E0', backgroundColor: '#FFFFFF' }}>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: '#607D8B' }} />
+          <input
+            type="text"
+            placeholder="Search teachers..."
+            className="w-full border rounded-lg pl-10 pr-3 py-2 focus:outline-none focus:ring-2"
+            style={{ borderColor: '#E0E0E0', color: '#263238' }}
+            value={searchValue}
+            onChange={(e) => onSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="flex gap-2 flex-wrap">
           {["all", "unread", "course"].map((f) => (
-            <button
+            <motion.button
               key={f}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setFilter(f)}
-              className={`btn btn-sm ${filter === f ? "btn-primary" : "btn-outline"}`}
+              className="px-3 py-1 rounded-full text-sm font-semibold transition"
+              style={{
+                backgroundColor: filter === f ? '#3F51B5' : '#E0E0E0',
+                color: filter === f ? '#FFFFFF' : '#607D8B'
+              }}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
+            </motion.button>
           ))}
         </div>
 
         {filter === "course" && (
           <div className="flex gap-2 flex-wrap mt-2">
             <button
-              className={`btn btn-sm ${courseFilter === "" ? "btn-primary" : "btn-outline"}`}
+              className={`px-3 py-1 rounded-full text-sm font-semibold transition ${
+                courseFilter === "" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+              }`}
               onClick={() => setCourseFilter("")}
             >
               All
@@ -94,7 +136,9 @@ export default function TeacherSidebar({
             {courses.map((c) => (
               <button
                 key={c}
-                className={`btn btn-sm ${courseFilter === c ? "btn-primary" : "btn-outline"}`}
+                className={`px-3 py-1 rounded-full text-sm font-semibold transition ${
+                  courseFilter === c ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+                }`}
                 onClick={() => setCourseFilter(c)}
               >
                 {c}
@@ -104,31 +148,36 @@ export default function TeacherSidebar({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      {/* Teacher List */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
         {filteredUsers.length > 0 ? (
-          filteredUsers.map((u) => {
+          filteredUsers.map((u, idx) => {
             const isSelected = selectedUser ? getUserId(selectedUser) === getUserId(u) : false;
+            const unread = unreadCount[getUserId(u)] || 0;
 
             return (
-              <button
+              <motion.button
                 key={getUserId(u)}
-                onClick={() => {
-                  onSelectUser(u);
-
-                  // FIX: reset unread count correctly
-                  setUsersList((prev) =>
-                    prev.map((uu) =>
-                      getUserId(uu) === getUserId(u) ? { ...uu, unread: 0 } : uu
-                    )
-                  );
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                whileHover={{ x: 4 }}
+                onClick={() => onSelectUser(u)}
+                className="w-full text-left p-3 flex items-center gap-3 transition-all"
+                style={{
+                  borderBottom: '1px solid #E0E0E0',
+                  backgroundColor: isSelected ? '#E8EAF6' : 'transparent',
+                  borderLeft: isSelected ? '4px solid #3F51B5' : 'none'
                 }}
-                className={`w-full text-left p-3 border-b flex items-center gap-3 transition-colors ${
-                  isSelected
-                    ? "!bg-blue-100 !text-black cursor-default"
-                    : "hover:!bg-gray-200 cursor-pointer"
-                }`}
+                onMouseEnter={(e) => {
+                  if (!isSelected) e.currentTarget.style.backgroundColor = '#F5F7FA';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
-                <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                {/* Avatar */}
+                <div className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden" style={{ border: '2px solid #E0E0E0' }}>
                   {u.avatar ? (
                     <img
                       src={u.avatar}
@@ -136,31 +185,48 @@ export default function TeacherSidebar({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-blue-100 text-gray-600 font-semibold">
+                    <div className="w-full h-full flex items-center justify-center text-white font-bold text-lg" style={{ background: 'linear-gradient(to bottom right, #3F51B5, #5C6BC0)' }}>
                       {u.name?.charAt(0) ?? "?"}
                     </div>
                   )}
                 </div>
 
+                {/* Teacher Info */}
                 <div className="flex-1 min-w-0">
-                  <p className={`font-semibold truncate ${isSelected ? "text-blue-700" : ""}`}>
+                  <p className="font-semibold truncate" style={{ color: isSelected ? '#3F51B5' : '#263238' }}>
                     {u.name}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">{u.subject || ""}</p>
+                  <p className="text-xs truncate" style={{ color: '#607D8B' }}>
+                    {u.subject || "Teacher"}
+                  </p>
                 </div>
 
-                {u.unread > 0 && (
-                  <div className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                    {u.unread}
-                  </div>
+                {/* Unread Badge */}
+                {unread > 0 && (
+                  <motion.div 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: '#E53935' }}
+                  >
+                    {Math.min(unread, 9)}+
+                  </motion.div>
                 )}
-              </button>
+              </motion.button>
             );
           })
         ) : (
-          <p className="text-center text-gray-500 p-4">No teachers found</p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center text-gray-500 p-8"
+          >
+            <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <p className="font-semibold">No teachers found</p>
+            <p className="text-sm">Try adjusting your filters</p>
+          </motion.div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

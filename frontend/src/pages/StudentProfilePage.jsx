@@ -6,13 +6,15 @@ import toast from "react-hot-toast";
 import axios from "axios";
 
 import { socket } from "../utils/socket.js";
+import DashboardLayout from "../components/profiles/teacher/DashboardLayout";
+import LeftPanel from "../components/profiles/teacher/LeftPanel";
+import StudentSummaryHeader from "../components/profiles/student/StudentSummaryHeader";
+import MainPanel from "../components/profiles/teacher/MainPanel";
+import StudentPerformancePanel from "../components/profiles/student/StudentPerformancePanel";
+import StudentStatsPanel from "../components/profiles/student/StudentStatsPanel";
+import StudentRightPanel from "../components/profiles/student/StudentRightPanel";
 import Header from "../components/profiles/student/Header";
-import ProfileHeader from "../components/profiles/student/ProfileHeader";
-import ProgressOverview from "../components/profiles/student/ProgressOverview";
-import EnrolledCourses from "../components/profiles/student/EnrolledCourses";
 import EditProfileModal from "../components/profiles/student/EditProfileModal";
-import TeacherSidebar from "../components/student-chat/TeacherSidebar";
-import ChatWindow from "../components/student-chat/ChatWindow";
 
 export default function StudentProfilePage() {
   // ---------------- PROFILE STATES ----------------
@@ -20,10 +22,9 @@ export default function StudentProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [enrolledCourses, setEnrolledCourses] = useState([])
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
 
   // ---------------- CHAT STATES ----------------
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [teachersList, setTeachersList] = useState([]);
   const [filteredTeachers, setFilteredTeachers] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
@@ -199,7 +200,6 @@ export default function StudentProfilePage() {
     if (!text.trim() || !socket || !selectedTeacher) return;
 
     const teacherId = selectedTeacher._id || selectedTeacher.id;
-    const studentId = localStorage.getItem("userId");
 
     // Optimistic UI: add message instantly
     const tempMessage = {
@@ -218,7 +218,8 @@ export default function StudentProfilePage() {
       studentId,
     });
   };
-  //------------- Fetch unread counts once and updte livae -------------
+
+  // ------------- Fetch unread counts once and update live -------------
   useEffect(() => {
     if (!studentId) return;
 
@@ -288,68 +289,61 @@ export default function StudentProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}>
-        <Header onLogout={handleLogout} />
-        <div className="container mx-auto p-6 space-y-8 max-w-7xl">
-          <ProfileHeader profileData={profileData} stats={stats} onEdit={() => setIsEditModalOpen(true)} />
-          <ProgressOverview stats={stats} />
-          <EnrolledCourses courses={enrolledCourses} />
-        </div>
-
-        {/* CHAT BUTTON */}
-        <motion.button
-          onClick={() => setIsChatOpen(true)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2"
-        >
-          💬 Messages
-        </motion.button>
-
-        {/* CHAT MODAL */}
-        {isChatOpen && (
-          <div className="modal modal-open">
-            <div className="modal-box p-0 w-[90vw] max-w-3xl h-[80vh] flex flex-col">
-              <div className="p-4 border-b bg-gray-100 flex justify-between items-center">
-                <h3 className="font-semibold text-lg">Student Messaging Center</h3>
-                <button className="btn btn-sm btn-error" onClick={() => setIsChatOpen(false)}>Close</button>
-              </div>
-              <div className="flex flex-1 overflow-hidden">
-                <TeacherSidebar
-                  users={filteredTeachers}
-                  selectedUser={selectedTeacher}
-                  onSelectUser={setSelectedTeacher}
-                  searchValue={teacherSearch}
-                  onSearch={handleSearchTeachers}
-                  currentUserId={studentId}
-                  socket={socket}         // ⬅ ADD THIS
-                  studentId={studentId}   // ⬅ ADD THIS
-                  unreadCount={unreadCount}          // 🟢 fix #1
-                  setUnreadCount={setUnreadCount}    // 🟢 fix #2
-                />
-                <div className="flex-1 border-l">
-                  <ChatWindow
-                    messages={messages}
-                    onSend={handleSendMessage}
-                    selectedTeacher={selectedTeacher}
-                  />
+    <>
+      <DashboardLayout
+        header={<Header onLogout={handleLogout} />}
+        leftPanel={
+          <LeftPanel
+            userSummary={
+              <StudentSummaryHeader
+                profileData={profileData}
+                stats={stats}
+                onEdit={() => setIsEditModalOpen(true)}
+              />
+            }
+            mainContent={
+              <MainPanel>
+                <div className="grid lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <StudentPerformancePanel stats={stats} />
+                  </div>
+                  <div>
+                    <StudentStatsPanel stats={stats} />
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="modal-backdrop" onClick={() => setIsChatOpen(false)}></div>
-          </div>
-        )}
-
-        {/* EDIT PROFILE MODAL */}
-        {isEditModalOpen && (
-          <EditProfileModal
-            profileData={profileData}
-            onClose={() => setIsEditModalOpen(false)}
-            onUpdate={handleProfileUpdate}
+              </MainPanel>
+            }
           />
-        )}
-      </motion.div>
-    </div>
+        }
+        rightPanel={
+          <StudentRightPanel
+            // Courses props
+            courses={enrolledCourses}
+            
+            // Chat props
+            teachers={filteredTeachers}
+            selectedTeacher={selectedTeacher}
+            onSelectTeacher={setSelectedTeacher}
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            teacherSearch={teacherSearch}
+            onSearchTeachers={handleSearchTeachers}
+            socket={socket}
+            studentId={studentId}
+            unreadCount={unreadCount}
+            setUnreadCount={setUnreadCount}
+          />
+        }
+      />
+      
+      {/* Edit Profile Modal */}
+      {isEditModalOpen && (
+        <EditProfileModal
+          profileData={profileData}
+          onClose={() => setIsEditModalOpen(false)}
+          onUpdate={handleProfileUpdate}
+        />
+      )}
+    </>
   );
 }
