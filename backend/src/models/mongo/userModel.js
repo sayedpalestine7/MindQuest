@@ -48,6 +48,7 @@ const userSchema = new mongoose.Schema(
                 return this.role === "teacher" ? "pending" : "active";
             }
         },
+        banReason: { type: String, default: "" },
 
         teacherData: teacherDataSchema,
         studentData: studentDataSchema,

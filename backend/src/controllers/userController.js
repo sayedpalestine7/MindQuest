@@ -1,5 +1,5 @@
 import User from "../models/mongo/userModel.js";
-import { sendTeacherApprovalEmail, sendTeacherRejectionEmail } from "../services/emailService.js";
+import { sendTeacherApprovalEmail, sendTeacherRejectionEmail, sendUserBannedEmail, sendUserUnbannedEmail } from "../services/emailService.js";
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -195,12 +195,21 @@ export const getPendingTeachers = async (req, res) => {
 export const toggleBanUser = async (req, res) => {
   try {
     const userId = req.params.id;
+    const { reason } = req.body;
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    user.status = user.status === "banned" ? "active" : "banned";
+    const isBanning = user.status !== "banned";
+    user.status = isBanning ? "banned" : "active";
+    user.banReason = isBanning ? (reason || "") : "";
     await user.save();
+
+    if (isBanning) {
+      await sendUserBannedEmail(user.email, user.name, user.role, reason);
+    } else {
+      await sendUserUnbannedEmail(user.email, user.name, user.role);
+    }
 
     res.json({ message: `User ${user.status}`, user });
   } catch (err) {

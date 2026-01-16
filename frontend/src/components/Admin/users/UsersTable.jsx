@@ -11,6 +11,7 @@ function UsersTable() {
   const [users, setUsers] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
@@ -19,7 +20,7 @@ function UsersTable() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userToBan, setUserToBan] = useState(null);
   const [page, setPage] = useState(1);
-  const pageSize = 20;
+  const pageSize = 10;
 
   useEffect(() => {
     setPage(1);
@@ -28,7 +29,7 @@ function UsersTable() {
   useEffect(() => {
     async function loadUsers() {
       try {
-        setLoading(true);
+        if (initialLoad) setLoading(true);
         const params = new URLSearchParams({
           page: String(page),
           limit: String(pageSize),
@@ -46,7 +47,8 @@ function UsersTable() {
       } catch (err) {
         console.error("Error fetching users:", err);
       } finally {
-        setLoading(false);
+        if (initialLoad) setLoading(false);
+        setInitialLoad(false);
       }
     }
 
@@ -62,7 +64,7 @@ function UsersTable() {
     }
   }
 
-  async function handleBanUser() {
+  async function handleBanUser(reason) {
     if (!userToBan) return;
 
     try {
@@ -72,6 +74,7 @@ function UsersTable() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
+        body: JSON.stringify({ reason: reason || "" }),
       });
 
       const data = await res.json();
