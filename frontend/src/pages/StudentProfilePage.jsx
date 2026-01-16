@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import axios from "axios";
 
@@ -35,6 +34,7 @@ export default function StudentProfilePage() {
 
   const studentId =
     typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  const getTeacherId = (teacher) => teacher?._id ?? teacher?.id;
 
   // ---------------- FETCH STUDENT PROFILE ----------------
   useEffect(() => {
@@ -66,25 +66,13 @@ export default function StudentProfilePage() {
           if (enrollRes.data && enrollRes.data.enrolledCourses) {
             console.log('Raw enrolled courses data:', enrollRes.data.enrolledCourses);
             
-            const formattedCourses = enrollRes.data.enrolledCourses.map(course => {
-              const totalLessons = course.lessonIds?.length || 0;
-              const completedLessons = course.completedLessons || 0;
-              
-              console.log('Course details:', {
-                id: course._id,
-                title: course.title,
-                lessonIds: course.lessonIds,
-                completedLessons,
-                totalLessons
-              });
-              
-              return {
-                ...course,
-                completedLessons,
-                totalLessons,
-                progress: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
-              };
-            });
+            // Backend now provides completedLessons, totalLessons, and progress
+            const formattedCourses = enrollRes.data.enrolledCourses.map(course => ({
+              ...course,
+              completedLessons: course.completedLessons || 0,
+              totalLessons: course.totalLessons || course.lessonIds?.length || 0,
+              progress: course.progress || 0
+            }));
             
             console.log('Formatted courses:', formattedCourses);
             setEnrolledCourses(formattedCourses);
@@ -104,23 +92,47 @@ export default function StudentProfilePage() {
     loadProfile();
   }, [studentId]);
 
-  // ---------------- FETCH TEACHERS ----------------
+  // ---------------- BUILD TEACHERS FROM ENROLLED COURSES ----------------
   useEffect(() => {
-    const fetchTeachers = async () => {
-      try {
-        const { data } = await axios.get("http://localhost:5000/api/admin/users");
-        const teachers = (data || []).filter((u) => u.userType === "teacher");
-        setTeachersList(teachers);
-        setFilteredTeachers(teachers);
-        if (teachers.length > 0) setSelectedTeacher(teachers[0]);
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to fetch teachers");
-      }
-    };
+    const teacherMap = new Map();
 
-    fetchTeachers();
-  }, []);
+    enrolledCourses.forEach((course) => {
+      const teacher = course.teacherId;
+      if (!teacher) return;
+
+      const teacherId = getTeacherId(teacher) || teacher;
+      if (!teacherId) return;
+
+      if (!teacherMap.has(teacherId)) {
+        teacherMap.set(teacherId, {
+          _id: teacherId,
+          name: teacher.name,
+          email: teacher.email,
+          avatar: teacher.profileImage || teacher.avatar,
+          courses: [],
+        });
+      }
+
+      const entry = teacherMap.get(teacherId);
+      const courseTitle = course.title || course.name;
+      if (courseTitle && !entry.courses.includes(courseTitle)) {
+        entry.courses.push(courseTitle);
+      }
+    });
+
+    const teacherList = Array.from(teacherMap.values());
+    setTeachersList(teacherList);
+    setFilteredTeachers(teacherList);
+
+    if (teacherList.length === 0) {
+      setSelectedTeacher(null);
+      return;
+    }
+
+    if (!selectedTeacher || !teacherList.some((t) => getTeacherId(t) === getTeacherId(selectedTeacher))) {
+      setSelectedTeacher(teacherList[0]);
+    }
+  }, [enrolledCourses, selectedTeacher]);
 
   // ---------------- HANDLE TEACHER SELECTION & SOCKET ----------------
   useEffect(() => {
@@ -245,8 +257,10 @@ export default function StudentProfilePage() {
   // ---------------- SEARCH TEACHERS ----------------
   const handleSearchTeachers = (value) => {
     setTeacherSearch(value);
+    const query = value.toLowerCase();
     const filtered = teachersList.filter((t) =>
-      t.name?.toLowerCase().includes(value.toLowerCase())
+      t.name?.toLowerCase().includes(query) ||
+      (t.courses || []).some((c) => c.toLowerCase().includes(query))
     );
     setFilteredTeachers(filtered);
     if (filtered.length > 0) setSelectedTeacher(filtered[0]);

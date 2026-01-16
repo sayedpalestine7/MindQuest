@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Filter, Users } from "lucide-react";
+import { Search, Users } from "lucide-react";
 
 export default function TeacherSidebar({
   users = [],
@@ -63,16 +63,26 @@ export default function TeacherSidebar({
     };
   }, [selectedUser, socket, studentId, setUnreadCount]);
 
-  const courses = [...new Set(usersList.map((u) => u.subject).filter(Boolean))];
+  const getTeacherCourses = (u) => Array.isArray(u.courses) ? u.courses : [];
+
+  const courses = [
+    ...new Set(
+      usersList.flatMap((u) => getTeacherCourses(u)).filter(Boolean)
+    )
+  ];
 
   const filteredUsers = usersList.filter((u) => {
     const matchesSearch =
       (u.name || "").toLowerCase().includes((searchValue || "").toLowerCase()) ||
-      (u.subject || "").toLowerCase().includes((searchValue || "").toLowerCase());
+      getTeacherCourses(u).some((c) =>
+        c.toLowerCase().includes((searchValue || "").toLowerCase())
+      );
 
     let matchesFilter = true;
     if (filter === "unread") matchesFilter = (unreadCount[getUserId(u)] || 0) > 0;
-    else if (filter === "course") matchesFilter = courseFilter ? u.subject === courseFilter : true;
+    else if (filter === "course") {
+      matchesFilter = courseFilter ? getTeacherCourses(u).includes(courseFilter) : true;
+    }
 
     return matchesSearch && matchesFilter;
   });
@@ -154,6 +164,9 @@ export default function TeacherSidebar({
           filteredUsers.map((u, idx) => {
             const isSelected = selectedUser ? getUserId(selectedUser) === getUserId(u) : false;
             const unread = unreadCount[getUserId(u)] || 0;
+            const courseTitles = getTeacherCourses(u);
+            const courseLabel = courseTitles.length > 0 ? courseTitles[0] : (u.subject || "Teacher");
+            const courseCountLabel = courseTitles.length > 1 ? ` +${courseTitles.length - 1}` : "";
 
             return (
               <motion.button
@@ -197,7 +210,7 @@ export default function TeacherSidebar({
                     {u.name}
                   </p>
                   <p className="text-xs truncate" style={{ color: '#607D8B' }}>
-                    {u.subject || "Teacher"}
+                    {courseLabel}{courseCountLabel}
                   </p>
                 </div>
 

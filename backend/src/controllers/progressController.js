@@ -1,6 +1,7 @@
 import Progress from "../models/mongo/progressModel.js";
 import Course from "../models/mongo/courseModel.js";
 import Lesson from "../models/mongo/lessonModel.js";
+import User from "../models/mongo/userModel.js";
 
 // 🧠 Create or update full progress manually
 export const saveProgress = async (req, res) => {
@@ -80,16 +81,33 @@ export const markLessonCompleted = async (req, res) => {
     const totalLessons = course.lessonIds.length;
     const completedCount = progress.completedLessons.length;
 
-    if (totalLessons > 0 && completedCount >= totalLessons) {
+    let courseJustCompleted = false;
+    if (totalLessons > 0 && completedCount >= totalLessons && progress.status !== "completed") {
       progress.status = "completed";
+      courseJustCompleted = true;
+      
+      // Award 10 points for completing the course
+      const student = await User.findById(studentId);
+      if (student && student.role === "student") {
+        if (!student.studentData) {
+          student.studentData = { score: 0, finishedCourses: 0, enrolledCourses: [], courseProgress: [] };
+        }
+        student.studentData.score = (student.studentData.score || 0) + 10;
+        student.studentData.finishedCourses = (student.studentData.finishedCourses || 0) + 1;
+        await student.save();
+      }
     }
 
     await progress.save();
 
     res.status(200).json({
-      message: "✅ Lesson marked as completed",
+      message: courseJustCompleted 
+        ? "✅ Course completed! +10 points awarded" 
+        : "✅ Lesson marked as completed",
       progress,
       lessonsCompleted: `${completedCount}/${totalLessons}`,
+      courseCompleted: courseJustCompleted,
+      pointsAwarded: courseJustCompleted ? 10 : 0,
     });
   } catch (err) {
     console.error("Lesson completion error:", err);

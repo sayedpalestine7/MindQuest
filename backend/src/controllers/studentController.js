@@ -17,6 +17,49 @@ export const getStudentByID = async (req, res) => {
 
     if (!student) return res.status(404).json({ message: "Student Not Found" });
 
+    // Ensure studentData exists
+    if (!student.studentData) {
+      student.studentData = {
+        enrolledCourses: [],
+        score: 0,
+        finishedCourses: 0,
+        courseProgress: [],
+      };
+    }
+
+    // Recalculate points based on completed courses (10 points per completed course)
+    // Use completedLessons vs total lessons to avoid relying on stale status
+    const progressList = await Progress.find({ studentId: student._id }).select(
+      "courseId completedLessons status"
+    );
+
+    const completionChecks = await Promise.all(
+      progressList.map(async (p) => {
+        if (!p.courseId) return false;
+        const course = await Course.findById(p.courseId).select("lessonIds");
+        const totalLessons = course?.lessonIds?.length || 0;
+        const completedLessonsCount = p.completedLessons?.length || 0;
+        return totalLessons > 0 && completedLessonsCount >= totalLessons;
+      })
+    );
+
+    const completedCount = completionChecks.filter(Boolean).length;
+    const calculatedScore = completedCount * 10;
+
+    await User.updateOne(
+      { _id: student._id },
+      {
+        $set: {
+          "studentData.score": calculatedScore,
+          "studentData.finishedCourses": completedCount,
+        },
+      }
+    );
+
+    // reflect in response
+    student.studentData.score = calculatedScore;
+    student.studentData.finishedCourses = completedCount;
+
     // profileImage is already stored as a string data URL (or undefined)
     res.json(student);
 
@@ -175,8 +218,43 @@ export const getEnrolledCourses = async (req, res) => {
       };
     }
 
+    // Fetch progress data from Progress collection
+    const progressData = await Progress.find({ studentId });
+    
+    // Create a map of courseId -> progress
+    const progressMap = {};
+    progressData.forEach(p => {
+      progressMap[p.courseId.toString()] = {
+        completedLessons: p.completedLessons || [],
+        completedLessonsCount: (p.completedLessons || []).length,
+        quizScore: p.quizScore || 0,
+        status: p.status || 'in-progress'
+      };
+    });
+
+    // Enrich enrolled courses with progress data
+    const enrichedCourses = (student.studentData.enrolledCourses || []).map(course => {
+      const courseObj = course.toObject ? course.toObject() : course;
+      const courseId = courseObj._id.toString();
+      const progress = progressMap[courseId];
+      
+      const totalLessons = courseObj.lessonIds?.length || 0;
+      const completedLessonsCount = progress?.completedLessonsCount || 0;
+      const progressPercent = totalLessons > 0 
+        ? Math.round((completedLessonsCount / totalLessons) * 100) 
+        : 0;
+
+      return {
+        ...courseObj,
+        completedLessons: completedLessonsCount,
+        totalLessons: totalLessons,
+        progress: progressPercent,
+        status: progress?.status || 'not-started'
+      };
+    });
+
     res.status(200).json({
-      enrolledCourses: student.studentData.enrolledCourses || [],
+      enrolledCourses: enrichedCourses,
     });
   } catch (err) {
     console.error("Error fetching enrolled courses:", err);
