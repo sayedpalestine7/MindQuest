@@ -22,11 +22,10 @@ function AdminForm() {
         const token = localStorage.getItem("token")
         const headers = token ? { Authorization: `Bearer ${token}` } : {}
         
-        // Fetch users
-        const usersRes = await axios.get("http://localhost:5000/api/admin/users", { headers })
-        const allUsers = usersRes.data || []
-        const totalUsers = allUsers.length
-        const activeStudents = allUsers.filter(u => u.role === "student").length
+        // Fetch users summary
+        const usersRes = await axios.get("http://localhost:5000/api/admin/users/summary", { headers })
+        const totalUsers = usersRes.data?.totalUsers || 0
+        const activeStudents = usersRes.data?.activeStudents || 0
         
         // Fetch courses
         const coursesRes = await axios.get("http://localhost:5000/api/courses", { headers })

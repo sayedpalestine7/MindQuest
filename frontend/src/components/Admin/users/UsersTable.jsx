@@ -3,12 +3,13 @@ import { FilterBar } from "./FilterBar.jsx";
 import { UserRow } from "./UserRow.jsx";
 import { UserProfileDialog } from "./UserProfileDialog.jsx";
 import { BanUserDialog } from "./BanUserDialog.jsx";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
 function UsersTable() {
   const [users, setUsers] = useState([]);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState("name");
@@ -17,14 +18,31 @@ function UsersTable() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedUser, setSelectedUser] = useState(null);
   const [userToBan, setUserToBan] = useState(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, userTypeFilter, statusFilter, sortField, sortOrder]);
 
   useEffect(() => {
     async function loadUsers() {
       try {
-        // fetch combined users from backend
-        const res = await fetch("http://localhost:5000/api/admin/users");
+        setLoading(true);
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(pageSize),
+          search: searchQuery,
+          userType: userTypeFilter,
+          status: statusFilter,
+          sortField,
+          sortOrder,
+        });
+
+        const res = await fetch(`http://localhost:5000/api/admin/users?${params.toString()}`);
         const data = await res.json();
-        setUsers(data);
+        setUsers(data.items || []);
+        setTotalUsers(data.total || 0);
       } catch (err) {
         console.error("Error fetching users:", err);
       } finally {
@@ -33,7 +51,7 @@ function UsersTable() {
     }
 
     loadUsers();
-  }, []);
+  }, [page, pageSize, searchQuery, userTypeFilter, statusFilter, sortField, sortOrder]);
 
   function handleSort(field) {
     if (sortField === field) {
@@ -44,52 +62,43 @@ function UsersTable() {
     }
   }
 
-async function handleBanUser() {
-  if (!userToBan) return;
+  async function handleBanUser() {
+    if (!userToBan) return;
 
-  try {
-    const res = await fetch(`http://localhost:5000/api/admin/ban-user/${userToBan.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to update user");
-
-    // Update state with the new status
-    setUsers(users.map(u => 
-      u.id === userToBan.id ? { ...u, status: data.user.status } : u
-    ));
-
-    setUserToBan(null);
-
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
-  }
-}
-
-  const filteredUsers = useMemo(() => {
-    return users
-      .filter((u) => {
-        const matchSearch =
-          u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          u.email.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchType = userTypeFilter === "all" || u.userType === userTypeFilter;
-        const matchStatus = statusFilter === "all" || u.status === statusFilter;
-        return matchSearch && matchType && matchStatus;
-      })
-      .sort((a, b) => {
-        const aVal =
-          typeof a[sortField] === "string" ? a[sortField].toLowerCase() : a[sortField] ?? 0;
-        const bVal =
-          typeof b[sortField] === "string" ? b[sortField].toLowerCase() : b[sortField] ?? 0;
-        return sortOrder === "asc" ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
+    try {
+      const res = await fetch(`http://localhost:5000/api/admin/ban-user/${userToBan.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
-  }, [users, searchQuery, sortField, sortOrder, userTypeFilter, statusFilter]);
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to update user");
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userToBan.id ? { ...u, status: data.user.status } : u))
+      );
+
+      setUserToBan(null);
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
+  }
+
+  const totalPages = Math.max(Math.ceil(totalUsers / pageSize), 1);
+
+  const pageNumbers = useMemo(() => {
+    const maxButtons = 5;
+    let start = Math.max(page - 2, 1);
+    let end = Math.min(start + maxButtons - 1, totalPages);
+    if (end - start + 1 < maxButtons) {
+      start = Math.max(end - maxButtons + 1, 1);
+    }
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }, [page, totalPages]);
 
   if (loading)
     return (
@@ -125,14 +134,14 @@ async function handleBanUser() {
           </tr>
         </thead>
         <tbody>
-          {filteredUsers.length === 0 ? (
+          {users.length === 0 ? (
             <tr>
               <td colSpan="7" className="text-center py-4 text-gray-500">
                 No users found
               </td>
             </tr>
           ) : (
-            filteredUsers.map((user, i) => (
+            users.map((user, i) => (
               <motion.tr
                 key={user.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -149,6 +158,39 @@ async function handleBanUser() {
           )}
         </tbody>
       </table>
+
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 text-sm text-gray-400">
+        <div>
+          Showing {users.length} of {totalUsers} users
+        </div>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              className="px-3 py-1 border border-gray-700 rounded disabled:opacity-50"
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              disabled={page === 1}
+            >
+              Prev
+            </button>
+            {pageNumbers.map((p) => (
+              <button
+                key={p}
+                className={`px-3 py-1 border border-gray-700 rounded ${p === page ? "bg-blue-500 text-white" : ""}`}
+                onClick={() => setPage(p)}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              className="px-3 py-1 border border-gray-700 rounded disabled:opacity-50"
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              disabled={page === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
 
       <UserProfileDialog user={selectedUser} onClose={() => setSelectedUser(null)} />
       <BanUserDialog

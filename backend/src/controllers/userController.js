@@ -1,32 +1,115 @@
 import User from "../models/mongo/userModel.js";
-import { Teacher } from "../models/mongo/teacherSchema.js";
+import { sendTeacherApprovalEmail, sendTeacherRejectionEmail } from "../services/emailService.js";
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({}, "-password");
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
+    const search = (req.query.search || "").trim();
+    const userType = req.query.userType || "all";
+    const status = req.query.status || "all";
+    const sortField = req.query.sortField || "name";
+    const sortOrder = req.query.sortOrder === "desc" ? -1 : 1;
 
-    const formatted = await Promise.all(
-      users.map(async (u) => {
-        let teacherData = null;
-        if (u.role === "teacher") {
-          teacherData = await Teacher.findOne({ userId: u._id });
-        }
+    const match = {};
+    if (userType !== "all") match.role = userType;
+    if (status !== "all") match.status = status;
 
-        return {
-          id: u._id,
-          name: teacherData?.name || u.name,
-          email: teacherData?.email || u.email,
-          userType: u.role,
-          avatar: teacherData?.avatar || u.profileImage,
-          points: u.role === "teacher" ? teacherData?.totalPoints || 0 : u.studentData?.score || 0,
-          status: u.status,
-        };
-      })
-    );
+    const searchRegex = search ? new RegExp(escapeRegex(search), "i") : null;
 
-    res.json(formatted);
+    const sortMap = {
+      name: "displayName",
+      email: "displayEmail",
+      points: "points",
+      status: "status",
+      userType: "role",
+    };
+    const sortKey = sortMap[sortField] || "displayName";
+
+    const pipeline = [
+      { $match: match },
+      {
+        $lookup: {
+          from: "teachers",
+          localField: "_id",
+          foreignField: "userId",
+          as: "teacherData",
+        },
+      },
+      { $unwind: { path: "$teacherData", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          displayName: { $ifNull: ["$teacherData.name", "$name"] },
+          displayEmail: { $ifNull: ["$teacherData.email", "$email"] },
+          displayAvatar: { $ifNull: ["$teacherData.avatar", "$profileImage"] },
+          points: {
+            $cond: [
+              { $eq: ["$role", "teacher"] },
+              { $ifNull: ["$teacherData.totalPoints", 0] },
+              { $ifNull: ["$studentData.score", 0] },
+            ],
+          },
+        },
+      },
+    ];
+
+    if (searchRegex) {
+      pipeline.push({
+        $match: {
+          $or: [{ displayName: searchRegex }, { displayEmail: searchRegex }],
+        },
+      });
+    }
+
+    pipeline.push({ $sort: { [sortKey]: sortOrder, _id: 1 } });
+    pipeline.push({
+      $facet: {
+        items: [
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+          {
+            $project: {
+              id: "$_id",
+              name: "$displayName",
+              email: "$displayEmail",
+              userType: "$role",
+              avatar: "$displayAvatar",
+              points: 1,
+              status: 1,
+            },
+          },
+        ],
+        total: [{ $count: "count" }],
+      },
+    });
+
+    const [result] = await User.aggregate(pipeline);
+    const total = result?.total?.[0]?.count || 0;
+
+    res.json({
+      items: result?.items || [],
+      total,
+      page,
+      pageSize: limit,
+    });
   } catch (err) {
     console.error("Error fetching users:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+export const getUsersSummary = async (req, res) => {
+  try {
+    const [totalUsers, activeStudents] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ role: "student" }),
+    ]);
+
+    res.json({ totalUsers, activeStudents });
+  } catch (err) {
+    console.error("Error fetching user summary:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -42,6 +125,9 @@ export const approveTeacher = async (req, res) => {
     );
 
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Send approval email
+    await sendTeacherApprovalEmail(user.email, user.name);
 
     res.json({
       message: "Teacher approved successfully",
@@ -70,6 +156,9 @@ export const rejectTeacher = async (req, res) => {
     }
 
     await user.save();
+
+    // Send rejection email with reason
+    await sendTeacherRejectionEmail(user.email, user.name, reason);
 
     res.json({
       message: "Teacher rejected successfully",
