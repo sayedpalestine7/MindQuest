@@ -53,7 +53,8 @@ export default function EnrolledCourses({ courses }) {
                 {course.progress}% Complete
               </span>
             </div>
-            <button 
+            <div className="buttons flex h-10 gap-2">
+              <button 
               onClick={() => handleContinueCourse(course._id)}
               className="w-full text-white py-2 rounded-md text-sm font-semibold transition-all shadow-sm"
               style={{ backgroundColor: '#3F51B5' }}
@@ -70,6 +71,13 @@ export default function EnrolledCourses({ courses }) {
             >
               {course.progress === 100 ? "Review Course" : "Continue Learning"}
             </button>
+            <button
+            className="w-2/12 text-white py-2 rounded-md text-sm font-semibold transition-all shadow-sm"
+            style={{ backgroundColor: '#3F51B5' }}
+            >
+              Rate
+            </button>
+            </div>
           </div>
         </motion.div>
       ))}
