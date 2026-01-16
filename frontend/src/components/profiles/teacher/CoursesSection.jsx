@@ -95,6 +95,16 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
               {courses.length}
             </span>
           </div>
+          <div className="buttons flex items-center gap-3">
+            <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate("/teacher/studio/:id")}
+            className="bg-white px-4 py-2 rounded-lg hover:opacity-90 transition font-semibold flex items-center gap-2"
+            style={{ color: '#3F51B5' }}
+          >
+            <Plus className="w-4 h-4" /> Animation Studio
+          </motion.button>
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -104,6 +114,7 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
           >
             <Plus className="w-4 h-4" /> New Course
           </motion.button>
+          </div>
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#3F51B5' }} />
