@@ -16,8 +16,8 @@ router.post("/", protect, requireRole(["student"]), createReview);
 // Get all reviews for a course (public)
 router.get("/course/:courseId", getReviewsByCourse);
 
-// Get all reviews for a teacher's courses
-router.get("/teacher/:teacherId", protect, requireRole(["teacher"]), getReviewsByTeacher);
+// Get all reviews for a teacher's courses (public - for teacher profile page)
+router.get("/teacher/:teacherId", getReviewsByTeacher);
 
 // Get a specific student's review for a course
 router.get("/student/:studentId/course/:courseId", getStudentReviewForCourse);

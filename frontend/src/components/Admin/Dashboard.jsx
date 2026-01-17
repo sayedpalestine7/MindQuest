@@ -1,5 +1,5 @@
     import React from "react";
-    import { BookOpen, User, FileText, Settings } from "lucide-react";
+    import { BookOpen, User, FileText, Settings, AlertTriangle } from "lucide-react";
     import { useNavigate } from "react-router";
     import { motion } from "framer-motion";
 
@@ -24,6 +24,12 @@
                 description: "Review and approve pending teacher applications",
                 icon: FileText,
                 route: "/admin/verification",
+            },
+            {
+                title: "Reported Comments",
+                description: "Review and moderate reported course reviews",
+                icon: AlertTriangle,
+                route: "/admin/reports",
             },
         ];
 

@@ -26,7 +26,7 @@ const getSocialIcon = (url) => {
   return { Icon: Globe, color: 'text-gray-600 hover:text-gray-700', name: 'Website' };
 };
 
-export default function TeacherHeader({ teacher }) {
+export default function TeacherHeader({ teacher, reviewsCount = 0 }) {
   if (!teacher) return <p className="">no teacher what that name</p>;
   return (
     <div className=" container mx-auto px-6 py-8 max-w-7xl ">
@@ -95,7 +95,7 @@ export default function TeacherHeader({ teacher }) {
               <div className="text-sm text-gray-500">Students</div>
             </div>
             <div className="p-4 bg-gray-100 rounded text-center">
-              <div className="text-xl font-bold">{teacher.courses.length}</div>
+              <div className="text-xl font-bold">{teacher.courses?.length || 0}</div>
               <div className="text-sm text-gray-500">Courses</div>
             </div>
             <div className="p-4 bg-gray-100 rounded text-center">
@@ -103,7 +103,7 @@ export default function TeacherHeader({ teacher }) {
               <div className="text-sm text-gray-500">Rating</div>
             </div>
             <div className="p-4 bg-gray-100 rounded text-center">
-              <div className="text-xl font-bold">{teacher.reviews.length}</div>
+              <div className="text-xl font-bold">{reviewsCount}</div>
 
               <div className="text-sm text-gray-500">Reviews</div>
             </div>

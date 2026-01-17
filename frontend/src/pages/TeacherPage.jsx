@@ -16,10 +16,12 @@ export default function TeacherPage() {
   const { user } = useAuth();
   const [teacher, setTeacher] = useState(null);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [activeTab, setActiveTab] = useState("courses");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [studentId, setStudentId] = useState(null);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   // Get student ID from auth or localStorage
   useEffect(() => {
@@ -54,7 +56,6 @@ export default function TeacherPage() {
           ...data,
           // ensure arrays for components
           courses: normalizedCourses,
-          reviews: data.reviews || [],
           expertise: data.expertise || (data.specialization ? [data.specialization] : []),
           totalStudents: totalStudents,
           rating: data.rating || 0,
@@ -88,6 +89,31 @@ export default function TeacherPage() {
     };
     fetchEnrolledCourses();
   }, [studentId]);
+
+  // Fetch reviews for the teacher
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!id) return;
+      try {
+        setReviewsLoading(true);
+        const token = localStorage.getItem("token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        const res = await axios.get(
+          `http://localhost:5000/api/reviews/teacher/${id}`,
+          { headers }
+        );
+        setReviews(res.data || []);
+      } catch (err) {
+        console.error("Error fetching reviews:", err);
+        setReviews([]);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, [id]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (error || !teacher) return <div className="min-h-screen flex items-center justify-center text-red-500">{error || "Teacher Not Found"}</div>;
@@ -133,7 +159,7 @@ export default function TeacherPage() {
 
         <div className="container mx-auto p-6 space-y-8 max-w-7xl">
           <div className="bg-white rounded-xl shadow p-6 gap-6">
-            <TeacherHeader teacher={teacher} />
+            <TeacherHeader teacher={teacher} reviewsCount={reviews.length} />
             <div className="mt-6 pt-6 border-t border-border">
               <ExpertiseTags skills={teacher.expertise} />
             </div>
@@ -172,7 +198,7 @@ export default function TeacherPage() {
             )}
 
             {activeTab === "reviews" && (
-              <ReviewsList reviews={teacher.reviews} />
+              <ReviewsList reviews={reviews} loading={reviewsLoading} />
             )}
           </AnimatePresence>
         </div>

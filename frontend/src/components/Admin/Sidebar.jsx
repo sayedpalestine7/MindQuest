@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router"
-import { LayoutDashboard, BookOpen, Users, FileQuestion, Settings } from "lucide-react"
+import { LayoutDashboard, BookOpen, Users, FileQuestion, Settings, AlertTriangle } from "lucide-react"
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Manage Courses", href: "/admin/courses", icon: BookOpen },
   { name: "Manage Users", href: "/admin/users", icon: Users },
   { name: "Teacher Verification", href: "/admin/verification", icon: FileQuestion },
+  { name: "Reported Comments", href: "/admin/reports", icon: AlertTriangle },
   // { name: "Settings", href: "/admin/settings", icon: Settings },
 ]
 

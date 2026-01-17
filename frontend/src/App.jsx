@@ -5,6 +5,7 @@ import AdminForm from "./pages/AdminForm";
 import ManageCourses from "./components/Admin/ManageCourses";
 import ManageVerification from "./components/Admin/ManageVerification";
 import ManageUsers from "./components/Admin/ManageUsers";
+import ManageReports from "./components/Admin/ManageReports";
 import Settings from "./components/Admin/Settings";
 import TeacherSignUp from "./pages/TeacherSignUp";
 import HomePage from "./pages/HomePage";
@@ -32,6 +33,7 @@ function App() {
           <Route path="/admin/courses" element={<ManageCourses />} />
           <Route path="/admin/users" element={<ManageUsers />} />
           <Route path="/admin/verification" element={<ManageVerification />} />
+          <Route path="/admin/reports" element={<ManageReports />} />
           <Route path="/admin/Settings" element={<Settings />}/>
 
           <Route path="/login" element={<LoginForm />} />
