@@ -11,7 +11,7 @@ import DashboardLayout from "../components/profiles/teacher/DashboardLayout";
 import LeftPanel from "../components/profiles/teacher/LeftPanel";
 import UserSummaryHeader from "../components/profiles/teacher/UserSummaryHeader";
 import MainPanel from "../components/profiles/teacher/MainPanel";
-import PerformancePanel from "../components/profiles/teacher/PerformancePanel";
+import CommentsPanel from "../components/profiles/teacher/CommentsPanel";
 import StatsPanel from "../components/profiles/teacher/StatsPanel";
 import RightPanel from "../components/profiles/teacher/RightPanel";
 import Header from "../components/profiles/teacher/Header";
@@ -315,7 +315,7 @@ export default function TeacherProfilePage() {
             <MainPanel>
               <div className="grid lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                  <PerformancePanel stats={stats} />
+                  <CommentsPanel teacherId={teacherId} />
                 </div>
                 <div>
                   <StatsPanel stats={stats} />

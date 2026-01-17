@@ -117,6 +117,33 @@ export const deleteReview = async (req, res) => {
   }
 };
 
+// Get all reviews for a teacher's courses
+export const getReviewsByTeacher = async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+
+    // Find all courses by this teacher
+    const courses = await Course.find({ teacherId });
+    
+    if (!courses || courses.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    const courseIds = courses.map(c => c._id);
+
+    // Find all reviews for these courses
+    const reviews = await Review.find({ courseId: { $in: courseIds } })
+      .populate("studentId", "name profileImage")
+      .populate("courseId", "title thumbnail")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(reviews);
+  } catch (err) {
+    console.error("Error fetching teacher reviews:", err);
+    res.status(500).json({ message: "Failed to fetch reviews", error: err.message });
+  }
+};
+
 // Helper function to update course average rating
 async function updateCourseRating(courseId) {
   try {
