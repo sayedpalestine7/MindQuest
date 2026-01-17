@@ -136,6 +136,29 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit, onAnswerChange
         </div>
       )
 
+    case "table":
+      const tableData = field.content || { rows: 0, columns: 0, data: [] }
+      return (
+        <div className="overflow-x-auto">
+          <table className="w-full border-2 border-gray-300">
+            <tbody>
+              {tableData.data && tableData.data.map((row, rowIndex) => (
+                <tr key={rowIndex}>
+                  {row && row.map((cell, colIndex) => (
+                    <td 
+                      key={colIndex} 
+                      className="border border-gray-300 px-4 py-2 text-gray-800"
+                    >
+                      {cell || ""}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+
     case "question":
       return (
         <div className="p-6 rounded-xl border-2 space-y-3">

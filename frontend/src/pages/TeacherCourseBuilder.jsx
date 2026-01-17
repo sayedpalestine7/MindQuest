@@ -8,7 +8,7 @@ import LeftPanel from "../components/courseBuilder/LeftPanel"
 import CourseInfo from "../components/courseBuilder/CourseInfo"
 import LessonEditor from "../components/courseBuilder/LessonEditor"
 import QuizEditor from "../components/courseBuilder/QuizEditor"
-import PreviewModal from "../components/courseBuilder/PreviewModal"
+import PreviewModalRefactored from "../components/courseBuilder/PreviewModalRefactored"
 import AIGenerateModal from "../components/courseBuilder/AIGenerateModal"
 import { ProgressBar } from "../components/courseBuilder/ProgressBar"
 import { ErrorBanner } from "../components/courseBuilder/ErrorBanner"
@@ -529,7 +529,7 @@ export default function TeacherCourseBuilder() {
 
       {/* Preview Modal */}
       {courseBuilder.isPreviewOpen && (
-        <PreviewModal
+        <PreviewModalRefactored
           course={courseBuilder.course}
           lessons={courseBuilder.lessons}
           onClose={() => courseBuilder.setIsPreviewOpen(false)}

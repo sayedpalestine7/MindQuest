@@ -104,6 +104,20 @@ export const validateField = (field) => {
         errors.push("Answer is required");
       }
       break;
+    case "table":
+      // Short-circuit if data is missing or empty
+      if (!field.content || !Array.isArray(field.content.data) || field.content.data.length === 0) {
+        errors.push("Table must have at least one row");
+        break;
+      }
+      // Check if table has any content (with safe guards)
+      const hasContent = field.content.data.some(row => 
+        Array.isArray(row) && row.some(cell => cell != null && String(cell).trim() !== "")
+      );
+      if (!hasContent) {
+        errors.push("Table must have at least one cell with content");
+      }
+      break;
     default:
       break;
   }
@@ -237,6 +251,8 @@ export const sanitizeFieldForAPI = (field) => {
       return { ...base, content: field.content };
     case "animation":
       return { ...base, content: field.content, animationId: field.animationId };
+    case "table":
+      return { ...base, content: field.content };
     default:
       return base;
   }

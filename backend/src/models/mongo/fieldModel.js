@@ -5,7 +5,7 @@ const fieldSchema = new mongoose.Schema(
         lessonId: { type: mongoose.Schema.Types.ObjectId, ref: "Lesson", required: true },
         type: {
             type: String,
-            enum: ["paragraph", "image", "youtube", "html", "minigame", "question", "code", "animation"],
+            enum: ["paragraph", "image", "youtube", "html", "minigame", "question", "code", "animation", "table"],
             required: true,
         },
         content: mongoose.Schema.Types.Mixed, // can be string, object, or URL

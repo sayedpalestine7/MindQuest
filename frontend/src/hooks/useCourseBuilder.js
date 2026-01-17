@@ -89,21 +89,33 @@ export const useCourseBuilder = (courseId) => {
         const newLessons = result.data.lessonIds.map((lesson) => ({
           id: lesson._id,
           title: lesson.title,
-          fields: (lesson.fieldIds || []).map((f) => ({
-            id: f._id || f.id,
-            type: f.type,
-            content: f.content,
-            questionId: f.questionId || null,
-            questionType: f.questionType || null,
-            options: Array.isArray(f.options) ? f.options : [],
-            correctAnswer: f.correctAnswer ?? f.answer ?? "",
-            correctAnswerIndex: f.correctAnswerIndex !== undefined ? f.correctAnswerIndex : null,
-            points: f.points ?? 1,
-            explanation: f.explanation ?? "",
-            migratedFromQuestionId: f.migratedFromQuestionId ?? null,
-            animationId: f.animationId || null,
-            order: f.order ?? 0,
-          })),
+          fields: (lesson.fieldIds || []).map((f) => {
+            // Initialize content for table fields if missing
+            let content = f.content;
+            if (f.type === "table" && (!content || typeof content !== "object" || !content.data)) {
+              content = {
+                rows: 3,
+                columns: 3,
+                data: Array(3).fill(null).map(() => Array(3).fill(""))
+              };
+            }
+            
+            return {
+              id: f._id || f.id,
+              type: f.type,
+              content: content,
+              questionId: f.questionId || null,
+              questionType: f.questionType || null,
+              options: Array.isArray(f.options) ? f.options : [],
+              correctAnswer: f.correctAnswer ?? f.answer ?? "",
+              correctAnswerIndex: f.correctAnswerIndex !== undefined ? f.correctAnswerIndex : null,
+              points: f.points ?? 1,
+              explanation: f.explanation ?? "",
+              migratedFromQuestionId: f.migratedFromQuestionId ?? null,
+              animationId: f.animationId || null,
+              order: f.order ?? 0,
+            };
+          }),
         }));
         setLessons(newLessons);
         // Reset selected lesson to first lesson of loaded course
@@ -152,7 +164,17 @@ export const useCourseBuilder = (courseId) => {
       toast.error("Please select a lesson first");
       return;
     }
-    const newField = { id: generateId(), type, content: "" };
+    // Initialize content based on field type
+    let content = "";
+    if (type === "table") {
+      content = {
+        rows: 3,
+        columns: 3,
+        data: Array(3).fill(null).map(() => Array(3).fill(""))
+      };
+    }
+    
+    const newField = { id: generateId(), type, content };
     setLessons(
       lessons.map((l) =>
         l.id === selectedLessonId ? { ...l, fields: [...l.fields, newField] } : l

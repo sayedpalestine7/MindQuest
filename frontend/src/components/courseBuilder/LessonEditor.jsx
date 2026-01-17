@@ -13,6 +13,7 @@ import {
   Trash2,
   GripVertical,
   ChevronRight,
+  Table as TableIcon,
 } from "lucide-react"
 import { Button, Input, Textarea, Select, Card } from "./UI"
 import AnimationSelector from "./AnimationSelector"
@@ -71,6 +72,7 @@ export default function LessonEditor({
             <FieldButton icon={<ImageIcon className="w-4 h-4 text-purple-600" />} label="Image" onClick={() => addField("image")} type={"imageBtn"} />
             <FieldButton icon={<Youtube className="w-4 h-4 text-pink-600" />} label="YouTube" onClick={() => addField("youtube")} type={"youtubeBtn"} />
             <FieldButton icon={<Code2 className="w-4 h-4 text-green-600" />} label="Code" onClick={() => addField("code")} type={"codeBtn"} />
+            <FieldButton icon={<TableIcon className="w-4 h-4 text-teal-600" />} label="Table" onClick={() => addField("table")} type={"tableBtn"} />
             <FieldButton icon={<HelpCircle className="w-4 h-4 text-orange-600" />} label="Question" onClick={() => addField("question")} type={"questionBtn"} />
             <FieldButton icon={<Gamepad2 className="w-4 h-4 text-purple-600" />} label="Mini-game" onClick={() => addField("minigame")} type={"gameBtn"} />
             <FieldButton icon={<Sparkles className="w-4 h-4 text-blue-600" />} label="Animation" onClick={() => addField("animation")} type={"animationBtn"} />
@@ -175,6 +177,7 @@ function getFieldIcon(type) {
     image: <ImageIcon className="w-5 h-5 text-purple-600" />,
     youtube: <Youtube className="w-5 h-5 text-pink-600" />,
     code: <Code2 className="w-5 h-5 text-green-600" />,
+    table: <TableIcon className="w-5 h-5 text-teal-600" />,
     question: <HelpCircle className="w-5 h-5 text-orange-600" />,
     minigame: <Gamepad2 className="w-5 h-5 text-purple-600" />,
     animation: <Sparkles className="w-5 h-5 text-blue-600" />,
@@ -275,6 +278,9 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
         </div>
       )
 
+    case "table":
+      return <TableEditor field={field} updateField={updateField} />
+
     case "question":
       return (
         <div className="space-y-3">
@@ -357,4 +363,139 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
     default:
       return null
   }
+}
+
+/* --- Table Editor Component --- */
+function TableEditor({ field, updateField }) {
+  // Derive table data without mutation
+  const tableData = React.useMemo(() => {
+    const content = field.content || { rows: 3, columns: 3, data: [] }
+    
+    // Initialize empty data array if needed (non-mutating)
+    if (!content.data || content.data.length === 0) {
+      const rows = content.rows || 3
+      const columns = content.columns || 3
+      return {
+        ...content,
+        rows,
+        columns,
+        data: Array(rows).fill(null).map(() => Array(columns).fill(""))
+      }
+    }
+    
+    return content
+  }, [field.content])
+
+  const handleRowsChange = (newRows) => {
+    const rows = Math.max(1, Math.min(20, parseInt(newRows) || 3))
+    const currentData = tableData.data || []
+    
+    // Adjust data array
+    let newData = [...currentData]
+    if (rows > currentData.length) {
+      // Add new rows
+      for (let i = currentData.length; i < rows; i++) {
+        newData.push(Array(tableData.columns || 3).fill(""))
+      }
+    } else {
+      // Remove rows
+      newData = newData.slice(0, rows)
+    }
+    
+    updateField(field.id, {
+      content: { ...tableData, rows, data: newData }
+    })
+  }
+
+  const handleColumnsChange = (newColumns) => {
+    const columns = Math.max(1, Math.min(10, parseInt(newColumns) || 3))
+    const currentData = tableData.data || []
+    
+    // Adjust data array
+    const newData = currentData.map(row => {
+      const newRow = [...(row || [])]
+      if (columns > newRow.length) {
+        // Add new columns
+        return [...newRow, ...Array(columns - newRow.length).fill("")]
+      } else {
+        // Remove columns
+        return newRow.slice(0, columns)
+      }
+    })
+    
+    updateField(field.id, {
+      content: { ...tableData, columns, data: newData }
+    })
+  }
+
+  const handleCellChange = (rowIndex, colIndex, value) => {
+    // Deep clone to avoid mutating nested rows
+    const newData = (tableData.data || []).map(row => [...(row || [])])
+    if (!newData[rowIndex]) {
+      newData[rowIndex] = []
+    }
+    // Clone the specific row before modifying
+    newData[rowIndex] = [...(newData[rowIndex] || [])]
+    newData[rowIndex][colIndex] = value
+    
+    updateField(field.id, {
+      content: { ...tableData, data: newData }
+    })
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Table size controls */}
+      <div className="flex gap-4 items-center">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Rows
+          </label>
+          <Input
+            type="number"
+            min="1"
+            max="20"
+            value={tableData.rows || 3}
+            onChange={(e) => handleRowsChange(e.target.value)}
+            className="w-24 border-2 border-gray-300"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Columns
+          </label>
+          <Input
+            type="number"
+            min="1"
+            max="10"
+            value={tableData.columns || 3}
+            onChange={(e) => handleColumnsChange(e.target.value)}
+            className="w-24 border-2 border-gray-300"
+          />
+        </div>
+      </div>
+
+      {/* Table editor */}
+      <div className="overflow-x-auto">
+        <table className="w-full border-2 border-gray-300">
+          <tbody>
+            {tableData.data && tableData.data.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row && row.map((cell, colIndex) => (
+                  <td key={colIndex} className="border border-gray-300 p-0">
+                    <Input
+                      value={cell || ""}
+                      onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                      placeholder={`R${rowIndex + 1}C${colIndex + 1}`}
+                      className="border-0 rounded-none w-full min-w-[100px]"
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
 }
