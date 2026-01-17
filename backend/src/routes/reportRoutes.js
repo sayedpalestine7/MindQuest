@@ -10,8 +10,8 @@ import { protect, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Create a report (students only, authenticated)
-router.post("/", protect, requireRole(["student"]), createReport);
+// Create a report (students and teachers, authenticated)
+router.post("/", protect, requireRole(["student", "teacher"]), createReport);
 
 // Check if user has reported a review
 router.get("/check/:reviewId", protect, checkUserReport);

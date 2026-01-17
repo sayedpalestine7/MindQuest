@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { MoreVertical } from "lucide-react";
+import ReportModal from "../../shared/ReportModal";
 
 /**
  * CommentsPanel - Displays all reviews/comments for teacher's courses
@@ -11,6 +13,11 @@ export default function CommentsPanel({ teacherId }) {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState("all");
+  const [showMenu, setShowMenu] = useState(null); // Track which review menu is open
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [selectedReviewId, setSelectedReviewId] = useState(null);
+  const [reportedReviews, setReportedReviews] = useState({}); // Track reported status
+  const menuRefs = useRef({});
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -46,6 +53,52 @@ export default function CommentsPanel({ teacherId }) {
 
     fetchReviews();
   }, [teacherId]);
+
+  const handleReportSuccess = (reviewId) => {
+    setReportedReviews(prev => ({ ...prev, [reviewId]: true }));
+    setShowMenu(null);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMenu && menuRefs.current[showMenu] && !menuRefs.current[showMenu].contains(event.target)) {
+        setShowMenu(null);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMenu]);
+
+  // Check reported status for reviews
+  useEffect(() => {
+    const checkReportedStatus = async () => {
+      const token = localStorage.getItem("token");
+      if (!token || reviews.length === 0) return;
+
+      const statusMap = {};
+      for (const review of reviews) {
+        try {
+          const res = await axios.get(
+            `http://localhost:5000/api/reports/check/${review._id}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          statusMap[review._id] = res.data.hasReported;
+        } catch (err) {
+          statusMap[review._id] = false;
+        }
+      }
+      setReportedReviews(statusMap);
+    };
+
+    checkReportedStatus();
+  }, [reviews]);
 
   // Get unique courses for filtering
   const courses = Array.from(
@@ -188,14 +241,48 @@ export default function CommentsPanel({ teacherId }) {
                           {review.courseId?.title || "Unknown Course"}
                         </p>
                       </div>
-                      <div className="flex flex-col items-end">
-                        {renderStars(review.rating)}
-                        <span
-                          className="text-xs mt-1"
-                          style={{ color: "#9E9E9E" }}
-                        >
-                          {new Date(review.createdAt).toLocaleDateString()}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex flex-col items-end">
+                          {renderStars(review.rating)}
+                          <span
+                            className="text-xs mt-1"
+                            style={{ color: "#9E9E9E" }}
+                          >
+                            {new Date(review.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        
+                        {/* Three-dot menu */}
+                        <div className="relative" ref={(el) => menuRefs.current[review._id] = el}>
+                          <button
+                            onClick={() => setShowMenu(showMenu === review._id ? null : review._id)}
+                            className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                            title="More options"
+                          >
+                            <MoreVertical className="w-4 h-4 text-gray-500" />
+                          </button>
+
+                          {/* Dropdown Menu */}
+                          {showMenu === review._id && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                              <button
+                                onClick={() => {
+                                  setSelectedReviewId(review._id);
+                                  setIsReportModalOpen(true);
+                                  setShowMenu(null);
+                                }}
+                                disabled={reportedReviews[review._id]}
+                                className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                                  reportedReviews[review._id]
+                                    ? "text-gray-400 cursor-not-allowed"
+                                    : "text-red-600 hover:bg-red-50"
+                                }`}
+                              >
+                                {reportedReviews[review._id] ? "Already Reported" : "Report"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -252,6 +339,14 @@ export default function CommentsPanel({ teacherId }) {
           </div>
         </div>
       )}
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        reviewId={selectedReviewId}
+        onSuccess={() => handleReportSuccess(selectedReviewId)}
+      />
     </div>
   );
 }
