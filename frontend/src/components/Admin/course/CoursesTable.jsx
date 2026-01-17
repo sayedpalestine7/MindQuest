@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from "framer-motion"
 import SearchBar from "./SearchBar"
 import FiltersBar from "./FiltersBar"
 import CourseCard from "./CourseCard"
-import CourseDialog from "./CourseDialog"
+import PreviewModalRefactored from "../../courseBuilder/PreviewModalRefactored"
 import { Loader2, BookOpen, Users, GraduationCap, TrendingUp } from "lucide-react"
 import axios from "axios"
+import { courseService } from "../../../services/courseService"
 
 export default function CoursesTable() {
   const [courses, setCourses] = useState([])
@@ -16,6 +17,9 @@ export default function CoursesTable() {
   const [teacherFilter, setTeacherFilter] = useState("all")
   const [sortBy, setSortBy] = useState("date")
   const [selectedCourse, setSelectedCourse] = useState(null)
+  const [previewCourse, setPreviewCourse] = useState(null)
+  const [previewLessons, setPreviewLessons] = useState([])
+  const [loadingPreview, setLoadingPreview] = useState(false)
 
   // Fetch courses from database based on approval status
   useEffect(() => {
@@ -137,6 +141,87 @@ export default function CoursesTable() {
     }
   }
 
+  const handleViewCourse = async (course) => {
+    setLoadingPreview(true)
+    try {
+      // Fetch full course data with lessons using courseService
+      const result = await courseService.getCourseById(course.id)
+      
+      if (result.success && result.data) {
+        const fullCourse = result.data
+        
+        // Transform quiz data if exists
+        let finalQuizData = null
+        if (fullCourse.quizId && fullCourse.quizId.questionIds && Array.isArray(fullCourse.quizId.questionIds)) {
+          finalQuizData = {
+            questions: fullCourse.quizId.questionIds.map((q) => ({
+              id: q._id || q.id,
+              type: q.type || 'mcq',
+              question: q.text || q.question || '',
+              options: Array.isArray(q.options) ? q.options : [],
+              correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : null,
+              correctAnswer: q.correctAnswer || '',
+              points: q.points || 1,
+              explanation: q.explanation || '',
+            })),
+            passingScore: fullCourse.quizId.passingScore || 70,
+            points: fullCourse.quizId.points || 100,
+          }
+        }
+        
+        // Transform lessons with fields
+        const transformedLessons = (fullCourse.lessonIds || []).map((lesson) => ({
+          id: lesson._id,
+          title: lesson.title,
+          fields: (lesson.fieldIds || []).map((f) => {
+            let content = f.content
+            if (f.type === "table" && (!content || typeof content !== "object" || !content.data)) {
+              content = {
+                rows: 3,
+                columns: 3,
+                data: Array(3).fill(null).map(() => Array(3).fill(""))
+              }
+            }
+            return {
+              id: f._id,
+              type: f.type,
+              content: content,
+              language: f.language,
+              animationId: f.animationId,
+              htmlContent: f.htmlContent,
+              correctAnswer: f.correctAnswer,
+              answer: f.answer,
+              explanation: f.explanation,
+            }
+          }),
+        }))
+        
+        // Set preview data
+        setPreviewCourse({
+          id: fullCourse._id,
+          title: fullCourse.title,
+          description: fullCourse.description,
+          difficulty: fullCourse.difficulty,
+          thumbnail: fullCourse.thumbnail,
+          finalQuiz: finalQuizData,
+        })
+        setPreviewLessons(transformedLessons)
+      } else {
+        alert("Failed to load course preview: " + (result.error || "Unknown error"))
+      }
+    } catch (err) {
+      console.error("Failed to load course for preview", err)
+      alert("Failed to load course preview")
+    } finally {
+      setLoadingPreview(false)
+    }
+  }
+
+  const handleClosePreview = () => {
+    setPreviewCourse(null)
+    setPreviewLessons([])
+  }
+
   const categories = useMemo(() => [...new Set(courses.map((c) => c.category))], [courses])
 
   const teachers = useMemo(() => {
@@ -252,7 +337,7 @@ export default function CoursesTable() {
             >
               <CourseCard
                 course={course}
-                onView={() => setSelectedCourse(course)}
+                onView={() => handleViewCourse(course)}
                 onApprove={() => approveCourse(course.id)}
                 onReject={() => rejectCourse(course.id)}
               />
@@ -265,8 +350,22 @@ export default function CoursesTable() {
         <p className="text-center text-gray-500 py-12">No courses found.</p>
       )}
 
-      {selectedCourse && (
-        <CourseDialog course={selectedCourse} onClose={() => setSelectedCourse(null)} />
+      {previewCourse && (
+        <PreviewModalRefactored 
+          course={previewCourse} 
+          lessons={previewLessons} 
+          onClose={handleClosePreview}
+          hideHeader={true}
+        />
+      )}
+
+      {loadingPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg p-6 flex items-center gap-3">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span>Loading preview...</span>
+          </div>
+        </div>
       )}
     </div>
   )

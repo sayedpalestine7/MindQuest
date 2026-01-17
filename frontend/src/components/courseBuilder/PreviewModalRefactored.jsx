@@ -16,7 +16,7 @@ import React from "react"
 import { X } from "lucide-react"
 import StudentCoursePageWrapper from "../coursePage/StudentCoursePageWrapper"
 
-export default function PreviewModalRefactored({ course, lessons, onClose }) {
+export default function PreviewModalRefactored({ course, lessons, onClose, hideHeader = false }) {
   if (!course) return null
 
   // Transform quiz data for preview if it exists
@@ -34,8 +34,18 @@ export default function PreviewModalRefactored({ course, lessons, onClose }) {
     avatar: null,
   }
 
+  // Handle click on backdrop (outside content)
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 animate-fadeIn">
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 animate-fadeIn"
+      onClick={handleBackdropClick}
+    >
       {/* Close Button - Floating top-right */}
       <button
         onClick={onClose}
@@ -46,7 +56,7 @@ export default function PreviewModalRefactored({ course, lessons, onClose }) {
       </button>
 
       {/* Preview Content - Full screen with scroll */}
-      <div className="w-full h-full overflow-y-auto">
+      <div className="w-full h-full overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <StudentCoursePageWrapper
           mode="preview"
           previewCourse={{
@@ -60,6 +70,7 @@ export default function PreviewModalRefactored({ course, lessons, onClose }) {
           previewQuiz={previewQuiz}
           previewUser={mockTeacherUser}
           onPreviewClose={onClose}
+          hideHeader={hideHeader}
         />
       </div>
     </div>

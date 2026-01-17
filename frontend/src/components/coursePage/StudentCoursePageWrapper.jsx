@@ -31,6 +31,7 @@ export default function StudentCoursePageWrapper({
   previewQuiz = null,
   previewUser = null,
   onPreviewClose = null,
+  hideHeader = false,
   
   // Student-specific props (from route params)
   courseIdProp = null,
@@ -503,14 +504,16 @@ export default function StudentCoursePageWrapper({
   
   return (
     <div className="min-h-screen bg-black-20 transition-colors">
-      <StudentHeader
-        courseTitle={course?.title}
-        progress={progress}
-        onRestart={handleRestartCourse}
-        userAvatar={effectiveUser?.profileImage || effectiveUser?.avatar}
-        userName={effectiveUser?.name}
-        userId={effectiveUser?._id}
-      />
+      {!hideHeader && (
+        <StudentHeader
+          courseTitle={course?.title}
+          progress={progress}
+          onRestart={handleRestartCourse}
+          userAvatar={effectiveUser?.profileImage || effectiveUser?.avatar}
+          userName={effectiveUser?.name}
+          userId={effectiveUser?._id}
+        />
+      )}
       
       <div className="container mx-auto px-6 py-8">
         <div className="flex gap-6">
