@@ -37,6 +37,9 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
       
       // Success feedback
       alert(response.data.message || "Course submitted for review successfully")
+      
+      // Refresh the page to show updated status
+      window.location.reload()
     } catch (error) {
       console.error("Error submitting course for review:", error)
       alert(error.response?.data?.message || "Failed to submit course for review")

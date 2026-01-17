@@ -13,8 +13,14 @@ export default function EditProfileDialog({ open, onClose, profileData, setProfi
     ? String(profileData.link).split(/[,\s]+/).map(l => l.trim()).filter(Boolean)
     : [""];
 
+  // Parse specializations from string to array
+  const initialSpecializations = profileData?.specialization
+    ? String(profileData.specialization).split(/[,\s]+/).map(s => s.trim()).filter(Boolean)
+    : [""];
+
   const [form, setForm] = useState(profileData || {});
   const [links, setLinks] = useState(initialLinks);
+  const [specializations, setSpecializations] = useState(initialSpecializations);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleChange = (e) => {
@@ -57,15 +63,35 @@ export default function EditProfileDialog({ open, onClose, profileData, setProfi
     setLinks(newLinks);
   };
 
+  const handleAddSpecialization = () => {
+    setSpecializations([...specializations, ""]);
+  };
+
+  const handleRemoveSpecialization = (index) => {
+    if (specializations.length === 1) {
+      setSpecializations([""]);
+    } else {
+      setSpecializations(specializations.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleSpecializationChange = (index, value) => {
+    const newSpecializations = [...specializations];
+    newSpecializations[index] = value;
+    setSpecializations(newSpecializations);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
       // Join non-empty links into a single comma-separated string
       const linkString = links.filter(l => l.trim()).join(", ");
+      // Join non-empty specializations into a single comma-separated string
+      const specializationString = specializations.filter(s => s.trim()).join(", ");
 
       const { data } = await axios.put(
         `http://localhost:5000/api/teacher/id/${form._id}`,
-        { ...form, link: linkString }
+        { ...form, link: linkString, specialization: specializationString }
       );
 
       // Merge the updated data with existing profileData to preserve courses and stats
@@ -73,6 +99,7 @@ export default function EditProfileDialog({ open, onClose, profileData, setProfi
         ...prevData,
         ...data,
         link: linkString,
+        specialization: specializationString,
         // Preserve courses and calculated fields if backend doesn't return them
         courses: data.courses || prevData.courses,
         totalCourses: data.totalCourses || prevData.totalCourses,
@@ -129,13 +156,37 @@ export default function EditProfileDialog({ open, onClose, profileData, setProfi
               onChange={handleChange}
               placeholder="Email"
             />
-            <input
-              className="w-full border rounded-md px-3 py-2"
-              name="specialization"
-              value={form.specialization || ""}
-              onChange={handleChange}
-              placeholder="Specialization (e.g. AI, Web Dev)"
-            />
+
+            {/* Multi-specialization inputs */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Specializations</label>
+              {specializations.map((spec, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    className="flex-1 border rounded-md px-3 py-2"
+                    value={spec}
+                    onChange={(e) => handleSpecializationChange(index, e.target.value)}
+                    placeholder="e.g., AI, Web Development, Data Science"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSpecialization(index)}
+                    className="p-2 border rounded-md hover:bg-red-50 hover:border-red-300 text-red-600"
+                    title="Remove specialization"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={handleAddSpecialization}
+                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+              >
+                <Plus size={16} /> Add another specialization
+              </button>
+            </div>
+
             <input
               className="w-full border rounded-md px-3 py-2"
               type="number"

@@ -19,10 +19,21 @@ export const getTeacherByID = async (req, res) => {
     // Fetch courses for this teacher
     const courses = await Course.find({ teacherId: teacher.userId || teacher._id }).lean();
 
-    // Return teacher with courses
+    // Calculate average rating from all courses
+    let averageRating = 0;
+    if (courses && courses.length > 0) {
+      const coursesWithRatings = courses.filter(c => c.rating && c.rating > 0);
+      if (coursesWithRatings.length > 0) {
+        const totalRating = coursesWithRatings.reduce((sum, c) => sum + (c.rating || 0), 0);
+        averageRating = Math.round((totalRating / coursesWithRatings.length) * 10) / 10;
+      }
+    }
+
+    // Return teacher with courses and calculated rating
     res.json({
       ...teacher,
       courses: courses || [],
+      rating: averageRating,
     });
   } catch (err) {
     console.error("Error getting teacher:", err);
