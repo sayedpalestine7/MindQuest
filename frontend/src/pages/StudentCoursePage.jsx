@@ -159,7 +159,12 @@ export default function StudentCoursePage() {
             const progress = localStorage.getItem(storageKey)
             if (progress) {
               const { completedLessons: c, currentLessonId: cId } = JSON.parse(progress)
-              setCompletedLessons((c || []).map((id) => String(id)))
+              if (Array.isArray(c) && c.length > 0) {
+                const normalized = Array.from(new Set(c.map((id) => String(id))))
+                // keep only ids that exist in the loaded lessons
+                const valid = normalized.filter((id) => lessonsData.some((l) => String(l.id) === id))
+                setCompletedLessons(valid)
+              }
               // validate restored currentLessonId exists in lessons
               if (cId && lessonsData.some(l => l.id === String(cId))) setCurrentLessonId(String(cId))
             }
@@ -205,9 +210,10 @@ export default function StudentCoursePage() {
         if (progressRes.success && progressRes.data) {
           const { completedLessons: dbCompletedLessons, currentLessonId: dbCurrentLessonId } = progressRes.data
 
-          // Normalize DB ids to strings to match lesson ids
+          // Normalize DB ids to strings, dedupe, and only keep valid lesson ids
           if (dbCompletedLessons && Array.isArray(dbCompletedLessons) && dbCompletedLessons.length > 0) {
-            setCompletedLessons(dbCompletedLessons.map((id) => String(id)))
+            const normalized = Array.from(new Set(dbCompletedLessons.map((id) => String(id))))
+            setCompletedLessons(normalized)
           }
 
           if (dbCurrentLessonId && lessons.some(l => l.id === String(dbCurrentLessonId))) {
@@ -254,13 +260,16 @@ export default function StudentCoursePage() {
         if (result && result.success && result.data) {
           const { completedLessons: dbCompletedLessons, currentLessonId: dbCurrentLessonId } = result.data
           if (Array.isArray(dbCompletedLessons)) {
-            const localSet = new Set(completedLessons)
-            const dbSet = new Set(dbCompletedLessons)
+            const localSet = new Set((completedLessons || []).map(String))
+            const dbNormalized = Array.from(new Set(dbCompletedLessons.map(String)))
+            // Only keep ids that exist in the current lessons list
+            const dbValid = dbNormalized.filter((id) => lessons.some((l) => String(l.id) === id))
+            const dbSet = new Set(dbValid)
             const equal = localSet.size === dbSet.size && [...localSet].every(x => dbSet.has(x))
-            if (!equal) setCompletedLessons(dbCompletedLessons)
+            if (!equal) setCompletedLessons([...dbSet])
           }
-          if (dbCurrentLessonId && dbCurrentLessonId !== currentLessonId) {
-            setCurrentLessonId(dbCurrentLessonId)
+          if (dbCurrentLessonId && String(dbCurrentLessonId) !== String(currentLessonId)) {
+            setCurrentLessonId(String(dbCurrentLessonId))
           }
         }
       } catch (error) {
@@ -276,18 +285,23 @@ export default function StudentCoursePage() {
 
   /* -------------------- HELPERS -------------------- */
   const currentLesson = lessons.find((l) => l.id === currentLessonId)
+  // Count only unique, valid completed lesson ids (normalized)
+  const completedSet = new Set((completedLessons || []).map(String))
+  const uniqueCompletedCount = lessons.length
+    ? lessons.filter((l) => completedSet.has(String(l.id))).length
+    : 0
   const progress = lessons.length
-    ? Math.round((completedLessons.length / lessons.length) * 100)
+    ? Math.min(100, Math.round((uniqueCompletedCount / lessons.length) * 100))
     : 0
 
-  // Determine whether all lessons are completed by normalizing ids to strings
-  const isAllLessonsCompleted = lessons.length > 0 && lessons.every((l) => completedLessons.map(String).includes(String(l.id)))
+  // Determine whether all lessons are completed
+  const isAllLessonsCompleted = lessons.length > 0 && uniqueCompletedCount === lessons.length
 
   const handleLessonComplete = async () => {
     if (!currentLessonId || !courseId) return
 
-    const prev = [...completedLessons]
-    const updated = Array.from(new Set([...prev, currentLessonId]))
+    const prev = (completedLessons || []).map(String)
+    const updated = Array.from(new Set([...prev, String(currentLessonId)]))
     // Optimistic update so UI responds immediately
     setCompletedLessons(updated)
 
@@ -512,7 +526,7 @@ export default function StudentCoursePage() {
           <main className={`flex-1 space-y-6 transition-all duration-300 ${isAIPanelOpen ? "mr-96" : ""}`}>
             <LessonContent
               lesson={currentLesson}
-              completed={completedLessons.includes(currentLessonId)}
+              completed={completedSet.has(String(currentLessonId))}
               onCompleteLesson={handleLessonComplete}
             />
           </main>
