@@ -20,6 +20,7 @@ import studentRoutes from "./routes/studentRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
 
 // -------------------- CONFIG --------------------
 dotenv.config();
@@ -152,6 +153,7 @@ app.use("/api/student", studentRoutes);
 app.use("/api/admin", userRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // Serve uploads folder
 app.use("/uploads", express.static("uploads"));
