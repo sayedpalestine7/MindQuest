@@ -159,7 +159,8 @@ export const enrollCourse = async (req, res) => {
     // Add course to enrolled courses
     student.studentData.enrolledCourses.push(courseId);
     
-    // Increment the students count in the course
+    // Increment enrollment count (new field) and legacy students field
+    course.enrollmentCount = (course.enrollmentCount || 0) + 1;
     course.students = (course.students || 0) + 1;
     
     await Promise.all([student.save(), course.save()]);

@@ -28,10 +28,16 @@ export default function CoursesTable() {
         let url = "http://localhost:5000/api/courses"
         const params = []
         
+        // Add limit=all for admin to get all courses without pagination
+        params.push("limit=all")
+        
         if (statusFilter === "pending" || statusFilter === "approved" || statusFilter === "rejected") {
           params.push(`approvalStatus=${statusFilter}`)
         } else if (statusFilter === "draft") {
           params.push("approvalStatus=draft")
+        } else if (statusFilter === "all") {
+          // Explicitly pass 'all' to get courses regardless of approval status
+          params.push("approvalStatus=all")
         }
         
         if (params.length > 0) {
@@ -42,8 +48,11 @@ export default function CoursesTable() {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         })
         
+        // Backend returns array directly when limit=all, otherwise returns { courses, pagination }
+        const coursesData = Array.isArray(res.data) ? res.data : res.data.courses || []
+        
         // Transform data to match expected format
-        const transformedCourses = res.data.map((course) => ({
+        const transformedCourses = coursesData.map((course) => ({
           id: course._id,
           title: course.title || "",
           description: course.description || "",

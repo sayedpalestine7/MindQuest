@@ -27,9 +27,9 @@ function AdminForm() {
         const totalUsers = usersRes.data?.totalUsers || 0
         const activeStudents = usersRes.data?.activeStudents || 0
         
-        // Fetch courses
-        const coursesRes = await axios.get("http://localhost:5000/api/courses", { headers })
-        const allCourses = coursesRes.data || []
+        // Fetch courses with limit=all to get all courses without pagination
+        const coursesRes = await axios.get("http://localhost:5000/api/courses?limit=all", { headers })
+        const allCourses = Array.isArray(coursesRes.data) ? coursesRes.data : coursesRes.data.courses || []
         const totalCourses = allCourses.length
         const approvedCourses = allCourses.filter(c => c.approvalStatus === "approved").length
         

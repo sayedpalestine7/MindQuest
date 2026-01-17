@@ -46,7 +46,7 @@ function useConfetti(trigger) {
   return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-40" />
 }
 
-export default function QuizModal({ quiz, onClose, courseId }) {
+export default function QuizModal({ quiz, onClose, courseId, previewMode = false }) {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState({})
   const [showResults, setShowResults] = useState(false)
@@ -69,6 +69,19 @@ export default function QuizModal({ quiz, onClose, courseId }) {
   // Initialize: load saved progress or create new session
   useEffect(() => {
     const init = async () => {
+      // In preview mode, never read saved progress or call backend; use provided quiz data only
+      if (previewMode) {
+        const providedQuestions = quiz.questions || []
+        if (providedQuestions.length > 0) {
+          const questions = providedQuestions.map((q, idx) => ({ ...q, originalIndex: idx }))
+          const shuffled = questions.sort(() => Math.random() - 0.5)
+          setShuffledQuestions(shuffled)
+        }
+        const timeLimit = quiz.timeLimit || null
+        if (timeLimit) setTimeLeft(timeLimit * 60)
+        return
+      }
+
       const savedProgress = courseId ? localStorage.getItem(`quiz-progress-${courseId}`) : null
 
       if (savedProgress) {
@@ -189,27 +202,28 @@ export default function QuizModal({ quiz, onClose, courseId }) {
     setShowResults(true)
     if (percent >= (quiz.passingScore || 70)) setConfetti(true)
     
-    // Clear saved progress
-    if (courseId) {
-      localStorage.removeItem(`quiz-progress-${courseId}`)
-    }
-    // Attempt to notify backend that quiz was completed
-    (async () => {
-      try {
-        const studentId = localStorage.getItem("userId")
-        if (studentId && courseId) {
-          const resp = await courseService.markQuizCompleted(studentId, courseId, correct, total)
-          if (resp.success) {
-            setQuizMarked(true)
-            toast.success("Quiz progress saved")
-          } else {
-            toast.error(resp.error || "Failed saving quiz progress")
-          }
-        }
-      } catch (err) {
-        console.error("Failed to mark quiz complete:", err)
+    // Clear saved progress and notify backend only in student mode
+    if (!previewMode) {
+      if (courseId) {
+        localStorage.removeItem(`quiz-progress-${courseId}`)
       }
-    })()
+      ;(async () => {
+        try {
+          const studentId = localStorage.getItem("userId")
+          if (studentId && courseId) {
+            const resp = await courseService.markQuizCompleted(studentId, courseId, correct, total)
+            if (resp.success) {
+              setQuizMarked(true)
+              toast.success("Quiz progress saved")
+            } else {
+              toast.error(resp.error || "Failed saving quiz progress")
+            }
+          }
+        } catch (err) {
+          console.error("Failed to mark quiz complete:", err)
+        }
+      })()
+    }
   }
 
   const handleNext = () => {
@@ -227,7 +241,7 @@ export default function QuizModal({ quiz, onClose, courseId }) {
     setScore(0)
     setConfetti(false)
     setQuestionResults([])
-    if (courseId) {
+    if (!previewMode && courseId) {
       localStorage.removeItem(`quiz-progress-${courseId}`)
     }
     // Reshuffle questions
@@ -259,6 +273,7 @@ export default function QuizModal({ quiz, onClose, courseId }) {
   }, [currentQuestion, isAnswered, total, showResults, isPaused, handleNext])
 
   useEffect(() => {
+    if (previewMode) return
     if (!showResults && courseId) {
       const progress = {
         currentQuestion,
@@ -348,6 +363,10 @@ export default function QuizModal({ quiz, onClose, courseId }) {
                   <div className="flex justify-center gap-2">
                     <Button
                       onClick={async () => {
+                        if (previewMode) {
+                          toast("Preview mode: questions are embedded and cannot be refreshed")
+                          return
+                        }
                         try {
                           const qRes = await courseService.getQuizzesByCourse(courseId)
                           if (qRes.success && Array.isArray(qRes.data) && qRes.data.length > 0) {
@@ -643,17 +662,21 @@ export default function QuizModal({ quiz, onClose, courseId }) {
                     <Button
                       onClick={async () => {
                         try {
-                          const studentId = localStorage.getItem("userId")
-                          if (studentId && courseId && !quizMarked) {
-                            await courseService.markQuizCompleted(studentId, courseId, Math.round((questionResults.filter(r => r.isCorrect).length)), total)
+                          if (!previewMode) {
+                            const studentId = localStorage.getItem("userId")
+                            if (studentId && courseId && !quizMarked) {
+                              await courseService.markQuizCompleted(studentId, courseId, Math.round((questionResults.filter(r => r.isCorrect).length)), total)
+                            }
                           }
                         } catch (err) {
                           console.error(err)
                         }
                         toast.success("Course completed! Redirecting...")
                         onClose()
-                        const sid = localStorage.getItem("userId")
-                        if (sid) navigate(`/student/${sid}`)
+                        if (!previewMode) {
+                          const sid = localStorage.getItem("userId")
+                          if (sid) navigate(`/student/${sid}`)
+                        }
                       }}
                       className="gap-2 bg-green-600 hover:bg-green-700 text-white"
                     >

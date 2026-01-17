@@ -179,43 +179,127 @@ export const createCourse = async (req, res) => {
   }
 };
 
-// 📚 GET all courses
+// 📚 GET all courses with pagination and filtering
 export const getCourses = async (req, res) => {
   try {
-    // Support filtering by published status: /api/courses?published=true
-    // Support filtering by approval status: /api/courses?approvalStatus=pending
+    // Pagination - support "all" for admin views
+    const page = parseInt(req.query.page) || 1;
+    const limitParam = req.query.limit;
+    const limit = limitParam === "all" ? null : (parseInt(limitParam) || 12);
+    const skip = limit ? (page - 1) * limit : 0;
+
+    // Build filter
     const filter = {};
     
-    if (req.query.published !== undefined) {
-      const publishedValue = req.query.published === 'true';
-      // Include legacy courses where published is missing/null (treat as false)
-      filter.$or = [
-        { published: publishedValue },
-        ...(publishedValue ? [] : [{ published: { $in: [null, undefined] } }])
-      ];
-    }
-    
+    // Handle approval status filtering
     if (req.query.approvalStatus !== undefined) {
       const statusValue = req.query.approvalStatus;
-      // Include legacy courses where approvalStatus is missing (treat as draft)
-      if (statusValue === 'draft') {
+      if (statusValue === 'all') {
+        // Don't filter by approval status - show all courses
+        // (used by admin to see all courses)
+      } else if (statusValue === 'draft') {
         filter.$or = [
-          ...(filter.$or || []),
           { approvalStatus: 'draft' },
           { approvalStatus: { $in: [null, undefined] } }
         ];
       } else {
         filter.approvalStatus = statusValue;
       }
+    } else {
+      // Default: only approved courses (for public browse)
+      filter.approvalStatus = 'approved';
     }
-    
-    const courses = await Course.find(filter)
+
+    // Category filter
+    if (req.query.category && req.query.category !== 'all') {
+      filter.category = req.query.category;
+    }
+
+    // Difficulty filter
+    if (req.query.difficulty && req.query.difficulty !== 'all') {
+      filter.difficulty = req.query.difficulty;
+    }
+
+    // Price filter
+    if (req.query.price === 'free') {
+      filter.$or = [
+        { price: 0 },
+        { price: 'Free' },
+        { price: null }
+      ];
+    } else if (req.query.price === 'paid') {
+      filter.price = { $nin: [0, 'Free', null] };
+    }
+
+    // Search filter
+    if (req.query.search) {
+      const searchRegex = { $regex: req.query.search, $options: 'i' };
+      filter.$or = [
+        { title: searchRegex },
+        { description: searchRegex },
+        { tags: searchRegex }
+      ];
+    }
+
+    // Published filter (for admin/teacher views)
+    if (req.query.published !== undefined) {
+      const publishedValue = req.query.published === 'true';
+      filter.published = publishedValue;
+    }
+
+    // Sorting
+    let sortOption = { createdAt: -1 }; // Default: newest first
+    if (req.query.sortBy === 'popular') {
+      sortOption = { enrollmentCount: -1 };
+    } else if (req.query.sortBy === 'rating') {
+      sortOption = { averageRating: -1 };
+    } else if (req.query.sortBy === 'title') {
+      sortOption = { title: 1 };
+    }
+
+    // Execute query with pagination (or all results if limit=all)
+    const query = Course.find(filter)
       .populate("teacherId", "name email profileImage avatar")
       .select("-__v")
-      .sort({ createdAt: -1 });
-    res.status(200).json(courses);
+      .sort(sortOption);
+    
+    if (limit) {
+      query.skip(skip).limit(limit);
+    }
+    
+    const [courses, total] = await Promise.all([
+      query.lean(),
+      Course.countDocuments(filter)
+    ]);
+
+    // Return different format based on whether pagination is used
+    if (limit) {
+      res.status(200).json({
+        courses,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasMore: page < Math.ceil(total / limit)
+        }
+      });
+    } else {
+      // No pagination - return array directly for backward compatibility
+      res.status(200).json(courses);
+    }
   } catch (err) {
     res.status(500).json({ message: "❌ Error fetching courses", error: err.message });
+  }
+};
+
+// 📂 GET unique course categories
+export const getCourseCategories = async (req, res) => {
+  try {
+    const categories = await Course.distinct('category', { approvalStatus: 'approved' });
+    res.status(200).json(['all', ...categories.filter(Boolean).sort()]);
+  } catch (err) {
+    res.status(500).json({ message: "❌ Error fetching categories", error: err.message });
   }
 };
 

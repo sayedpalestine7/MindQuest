@@ -17,6 +17,11 @@ const courseSchema = new mongoose.Schema(
       enum: ["Beginner", "Intermediate", "Advanced"],
       default: "Beginner",
     },
+    // 📊 Real engagement metrics
+    enrollmentCount: { type: Number, default: 0 },
+    averageRating: { type: Number, default: 0, min: 0, max: 5 },
+    ratingCount: { type: Number, default: 0 },
+    // Legacy fields (deprecated, use enrollmentCount/averageRating instead)
     rating: { type: Number, default: 0 },
     students: { type: Number, default: 0 },
     duration: { type: String, default: "4 weeks" },

@@ -11,6 +11,7 @@ import {
   submitCourseForReview,
   approveCourse,
   rejectCourse,
+  getCourseCategories,
 } from "../controllers/courseController.js";
 import { protect, requireRole } from "../middleware/authMiddleware.js";
 
@@ -32,6 +33,7 @@ router.patch("/:courseId/reject", protect, requireRole(["teacher", "admin"]), re
 router.patch("/:courseId/publish", protect, requireRole(["admin"]), togglePublishCourse);
 
 router.get("/", getCourses);
+router.get("/categories", getCourseCategories);
 router.get("/:id", getCourseById);
 router.put("/:id", protect, requireRole(["teacher", "admin"]), updateCourse);
 router.delete("/:id", protect, requireRole(["teacher", "admin"]), deleteCourse);
