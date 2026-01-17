@@ -47,8 +47,9 @@ export default function StudentSidebar({
             {/* Lesson List */}
             <div className="space-y-2">
               {lessons.map((lesson, idx) => {
-                const isCompleted = completedLessons.includes(lesson.id)
-                const isActive = currentLessonId === lesson.id
+                const completedSet = new Set((completedLessons || []).map(String))
+                const isCompleted = completedSet.has(String(lesson.id))
+                const isActive = String(currentLessonId) === String(lesson.id)
                 return (
                   <Button
                     key={lesson.id}
@@ -167,8 +168,9 @@ export default function StudentSidebar({
             {/* Collapsed Lesson Icons */}
             <div className="space-y-2">
               {lessons.map((lesson, idx) => {
-                const isCompleted = completedLessons.includes(lesson.id)
-                const isActive = currentLessonId === lesson.id
+                const completedSet = new Set((completedLessons || []).map(String))
+                const isCompleted = completedSet.has(String(lesson.id))
+                const isActive = String(currentLessonId) === String(lesson.id)
                 return (
                   <button
                     key={lesson.id}
