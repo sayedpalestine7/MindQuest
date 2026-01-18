@@ -18,6 +18,9 @@ export default function LessonContent({
   lesson,
   onCompleteLesson,
   completed,
+  isEnrolled = true,
+  isPreviewMode = false,
+  onEnroll,
 }) {
   const [answers, setAnswers] = useState({})
   const [feedback, setFeedback] = useState({})
@@ -42,6 +45,25 @@ export default function LessonContent({
       <h2 className="text-2xl font-bold text-gray-900 mb-4">
         {lesson.title}
       </h2>
+      
+      {/* Preview Badge */}
+      {lesson.isPreview && !isPreviewMode && (
+        <div className="bg-green-50 border-2 border-green-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-green-800">
+            <span className="font-semibold">Free Preview</span> - This lesson is available to everyone
+          </p>
+        </div>
+      )}
+      
+      {/* Preview Mode Indicator for Teacher */}
+      {isPreviewMode && (
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-blue-800">
+            <span className="font-semibold">Preview Mode</span> - This is how students will see this lesson
+            {!lesson.isPreview && " (locked for non-enrolled students)"}
+          </p>
+        </div>
+      )}
 
       {lesson.fields.length === 0 ? (
         <p className="text-sm text-gray-500 italic">
@@ -61,9 +83,27 @@ export default function LessonContent({
           ))}
         </div>
       )}
+      
+      {/* Enrollment CTA for non-enrolled users viewing preview lesson (not in preview mode) */}
+      {!isPreviewMode && !isEnrolled && lesson.isPreview && (
+        <div className="mt-8 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-lg">
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
+            Want to continue learning?
+          </h3>
+          <p className="text-gray-700 mb-4">
+            Enroll now to access all lessons, quizzes, and earn your certificate!
+          </p>
+          <Button
+            onClick={onEnroll}
+            className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+          >
+            Enroll in This Course
+          </Button>
+        </div>
+      )}
 
-      {/* Mark Complete Button */}
-      {!completed && (
+      {/* Mark Complete Button - only for enrolled users in student mode */}
+      {!isPreviewMode && isEnrolled && !completed && (
         <div className="pt-6 border-t border-gray-200 text-center">
           <Button
             onClick={onCompleteLesson}
@@ -74,7 +114,7 @@ export default function LessonContent({
           </Button>
         </div>
       )}
-      {completed && (
+      {!isPreviewMode && isEnrolled && completed && (
         <div className="pt-6 border-t border-gray-200 text-center text-green-600 font-semibold flex items-center justify-center gap-2">
           <CheckCircle2 className="w-5 h-5" />
           Completed

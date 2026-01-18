@@ -150,6 +150,8 @@ async function updateCourseRating(courseId) {
     const reviews = await Review.find({ courseId });
 
     let averageRating = 0;
+    const ratingCount = reviews.length;
+    
     if (reviews.length > 0) {
       const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
       averageRating = totalRating / reviews.length;
@@ -157,7 +159,12 @@ async function updateCourseRating(courseId) {
       averageRating = Math.round(averageRating * 10) / 10;
     }
 
-    await Course.findByIdAndUpdate(courseId, { rating: averageRating });
+    // Update both new fields (averageRating, ratingCount) and legacy field (rating)
+    await Course.findByIdAndUpdate(courseId, { 
+      averageRating: averageRating,
+      ratingCount: ratingCount,
+      rating: averageRating // Keep legacy field for backward compatibility
+    });
   } catch (err) {
     console.error("Error updating course rating:", err);
   }

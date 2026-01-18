@@ -15,6 +15,7 @@ export default function LeftPanel({
     addLesson,
     deleteLesson,
     updateLessonTitle,
+    updateLessonPreview,
     handleDragStart,
     handleDragOver,
     handleDrop,
@@ -75,6 +76,7 @@ export default function LeftPanel({
                             addLesson={addLesson}
                             deleteLesson={deleteLesson}
                             updateLessonTitle={updateLessonTitle}
+                            updateLessonPreview={updateLessonPreview}
                             handleDragStart={handleDragStart}
                             handleDragOver={handleDragOver}
                             handleDrop={handleDrop}

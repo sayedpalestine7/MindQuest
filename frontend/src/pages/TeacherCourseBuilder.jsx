@@ -458,6 +458,7 @@ export default function TeacherCourseBuilder() {
                   addLesson={courseBuilder.addLesson}
                   deleteLesson={courseBuilder.deleteLesson}
                 updateLessonTitle={courseBuilder.updateLessonTitle}
+                updateLessonPreview={courseBuilder.updateLessonPreview}
                 handleDragStart={courseBuilder.handleDragStart}
                 handleDragOver={courseBuilder.handleDragOver}
                 handleDrop={courseBuilder.handleDrop}

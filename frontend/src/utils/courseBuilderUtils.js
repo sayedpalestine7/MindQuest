@@ -208,9 +208,10 @@ export const sanitizeCourseForAPI = (course) => {
  * Sanitize lesson data for API
  */
 export const sanitizeLessonForAPI = (lesson) => {
-  const { title, fields } = lesson;
+  const { title, fields, isPreview } = lesson;
   return {
     title,
+    isPreview: isPreview || false,
     fields: fields.map((f) => sanitizeFieldForAPI(f)),
   };
 };

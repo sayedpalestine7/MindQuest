@@ -9,6 +9,8 @@ export default function StudentSidebar({
   completedLessons,
   onSelectLesson,
   progress,
+  isEnrolled = true,
+  isPreviewMode = false,
   finalQuiz,
   onOpenQuiz,
   isAllLessonsCompleted,
@@ -50,19 +52,31 @@ export default function StudentSidebar({
                 const completedSet = new Set((completedLessons || []).map(String))
                 const isCompleted = completedSet.has(String(lesson.id))
                 const isActive = String(currentLessonId) === String(lesson.id)
+                
+                // In preview mode, lock lessons that aren't marked as preview
+                // In student mode, lock lessons if not enrolled
+                const isLocked = isPreviewMode 
+                  ? !lesson.isPreview 
+                  : (!isEnrolled && !lesson.isPreview)
+                
                 return (
                   <Button
                     key={lesson.id}
-                    onClick={() => onSelectLesson(lesson.id)}
+                    onClick={() => !isLocked && onSelectLesson(lesson.id)}
                     variant="outline"
+                    disabled={isLocked}
                     className={`w-full justify-start text-left border-2 transition-all duration-150 ${
-                      isActive
+                      isLocked
+                        ? "border-gray-300 bg-gray-100 opacity-60 cursor-not-allowed"
+                        : isActive
                         ? "border-blue-600 bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100"
                         : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"
                     }`}
                   >
                     <div className="flex items-center gap-3 w-full">
-                      {isCompleted ? (
+                      {isLocked ? (
+                        <Lock className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      ) : isCompleted ? (
                         <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
                       ) : (
                         <PlayCircle className="w-5 h-5 text-gray-400 flex-shrink-0" />
@@ -70,6 +84,11 @@ export default function StudentSidebar({
                       <span className="font-medium text-sm text-gray-900 truncate">
                         {idx + 1}. {lesson.title}
                       </span>
+                      {lesson.isPreview && (
+                        <span className="ml-auto text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">
+                          {isPreviewMode ? "Unlocked" : "Free"}
+                        </span>
+                      )}
                     </div>
                   </Button>
                 )

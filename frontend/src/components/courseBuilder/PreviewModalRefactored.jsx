@@ -19,6 +19,35 @@ import StudentCoursePageWrapper from "../coursePage/StudentCoursePageWrapper"
 export default function PreviewModalRefactored({ course, lessons, onClose, hideHeader = false }) {
   if (!course) return null
 
+  // Format lessons for preview - ensure all required fields are present
+  const formattedLessons = (lessons || []).map((lesson) => ({
+    id: String(lesson.id),
+    title: lesson.title || "Untitled Lesson",
+    isPreview: lesson.isPreview || false,
+    fields: (lesson.fields || []).map((field) => {
+      let content = field.content
+      if (field.type === "table" && (!content || typeof content !== "object" || !content.data)) {
+        content = {
+          rows: 3,
+          columns: 3,
+          data: Array(3).fill(null).map(() => Array(3).fill(""))
+        }
+      }
+      return {
+        id: String(field.id),
+        type: field.type,
+        content: content,
+        animationId: field.animationId || null,
+        correctAnswer: field.correctAnswer || field.answer || "",
+        questionType: field.questionType || null,
+        options: field.options || [],
+        correctAnswerIndex: field.correctAnswerIndex,
+        points: field.points || 1,
+        explanation: field.explanation || "",
+      }
+    }),
+  }))
+
   // Transform quiz data for preview if it exists
   const previewQuiz = course.finalQuiz ? {
     ...course.finalQuiz,
@@ -66,7 +95,7 @@ export default function PreviewModalRefactored({ course, lessons, onClose, hideH
             difficulty: course.difficulty || "beginner",
             finalQuiz: previewQuiz,
           }}
-          previewLessons={lessons}
+          previewLessons={formattedLessons}
           previewQuiz={previewQuiz}
           previewUser={mockTeacherUser}
           onPreviewClose={onClose}

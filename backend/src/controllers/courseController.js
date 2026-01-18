@@ -44,7 +44,11 @@ export const createCourse = async (req, res) => {
       // Create lessons and their fields properly (Fields are separate documents)
       const createdLessonIds = [];
       for (const lesson of sanitizedLessons) {
-        const createdLesson = await Lesson.create({ title: lesson.title, courseId: course._id });
+        const createdLesson = await Lesson.create({ 
+          title: lesson.title, 
+          courseId: course._id,
+          isPreview: lesson.isPreview || false
+        });
 
         // If the lesson contains fields, create Field documents and attach their ids
         let fieldIds = [];
@@ -311,7 +315,7 @@ export const getCourseById = async (req, res) => {
       .populate({
         path: "lessonIds",
         model: "Lesson",
-        select: "title fieldIds",
+        select: "title fieldIds isPreview",
         populate: {
           path: "fieldIds",
           model: "Field",
@@ -399,7 +403,11 @@ export const updateCourse = async (req, res) => {
       if (sanitizedLessons.length > 0) {
         const createdLessonIds = [];
         for (const lesson of sanitizedLessons) {
-          const createdLesson = await Lesson.create({ title: lesson.title, courseId: req.params.id });
+          const createdLesson = await Lesson.create({ 
+            title: lesson.title, 
+            courseId: req.params.id,
+            isPreview: lesson.isPreview || false
+          });
 
           let fieldIds = [];
           if (lesson.fields && Array.isArray(lesson.fields) && lesson.fields.length > 0) {

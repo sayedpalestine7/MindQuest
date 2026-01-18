@@ -70,7 +70,7 @@ export default function StudentCoursePageWrapper({
   })
   
   const [enrolledCourseIds, setEnrolledCourseIds] = useState([])
-  const [isEnrolled, setIsEnrolled] = useState(isPreviewMode ? true : true)
+  const [isEnrolled, setIsEnrolled] = useState(isPreviewMode ? true : false)
   
   // Effective courseId
   const courseId = isPreviewMode ? previewCourse?.id : courseIdProp
@@ -84,9 +84,13 @@ export default function StudentCoursePageWrapper({
   /* -------------------- LOAD COURSE DATA (Student mode only) -------------------- */
   useEffect(() => {
     if (isPreviewMode) {
-      // Preview mode: data is already injected, just set initial lesson
-      if (previewLessons && previewLessons.length > 0 && !currentLessonId) {
-        setCurrentLessonId(previewLessons[0].id)
+      // Preview mode: data is already injected via props
+      // Ensure lessons state is synced with previewLessons prop
+      if (previewLessons && previewLessons.length > 0) {
+        setLessons(previewLessons)
+        if (!currentLessonId) {
+          setCurrentLessonId(previewLessons[0].id)
+        }
       }
       setLoading(false)
       return
@@ -103,6 +107,7 @@ export default function StudentCoursePageWrapper({
           const lessonsData = (full.lessonIds || []).map((l) => ({
             id: String(l._id),
             title: l.title,
+            isPreview: l.isPreview || false,
             fields: (l.fieldIds || []).map((f) => {
               let content = f.content
               if (f.type === "table" && (!content || typeof content !== "object" || !content.data)) {
@@ -436,22 +441,36 @@ export default function StudentCoursePageWrapper({
   // Enrollment checks only apply in student mode
   if (!isPreviewMode) {
     if (course && !isEnrolled) {
-      return (
-        <div className="min-h-screen flex items-center justify-center text-gray-600">
-          <div className="max-w-4xl w-full p-6">
-            <h2 className="text-2xl font-bold mb-4">{course.title}</h2>
-            <p className="text-sm text-gray-600">{course.description}</p>
-            <div className="mt-4">
+      // Find preview lessons
+      const previewLessons = lessons.filter(l => l.isPreview)
+      
+      // If there are preview lessons, allow access to them
+      if (previewLessons.length > 0) {
+        // Redirect to first preview lesson if current lesson is not a preview
+        if (!currentLessonId || !previewLessons.find(l => l.id === currentLessonId)) {
+          if (currentLessonId !== previewLessons[0].id) {
+            setCurrentLessonId(previewLessons[0].id)
+          }
+        }
+        // Continue to render with limited access (handled in StudentSidebar and LessonContent)
+      } else {
+        // No preview lessons available - show enrollment gate
+        return (
+          <div className="min-h-screen flex items-center justify-center text-gray-600">
+            <div className="max-w-4xl w-full p-6">
+              <h2 className="text-2xl font-bold mb-4">{course.title}</h2>
+              <p className="text-sm text-gray-600 mb-4">{course.description}</p>
+              <p className="text-gray-500 mb-4">This course requires enrollment to access.</p>
               <button
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
                 onClick={() => handleEnrollCourse(course.id)}
               >
-                Enroll to continue
+                Enroll Now
               </button>
             </div>
           </div>
-        </div>
-      )
+        )
+      }
     }
     
     if (!course) {
@@ -502,6 +521,9 @@ export default function StudentCoursePageWrapper({
   // Get effective user for header
   const effectiveUser = isPreviewMode ? previewUser : user
   
+  // In preview mode, treat as enrolled for UI purposes but respect lesson locks
+  const effectiveEnrollment = isPreviewMode ? true : isEnrolled
+  
   return (
     <div className="min-h-screen bg-black-20 transition-colors">
       {!hideHeader && (
@@ -523,6 +545,8 @@ export default function StudentCoursePageWrapper({
             completedLessons={completedLessons}
             onSelectLesson={setCurrentLessonId}
             progress={progress}
+            isEnrolled={effectiveEnrollment}
+            isPreviewMode={isPreviewMode}
             finalQuiz={course?.finalQuiz || previewQuiz}
             onOpenQuiz={async () => {
               if (course?.finalQuiz && Array.isArray(course.finalQuiz.questions) && course.finalQuiz.questions.length > 0) {
@@ -579,6 +603,9 @@ export default function StudentCoursePageWrapper({
               lesson={currentLesson}
               completed={completedSet.has(String(currentLessonId))}
               onCompleteLesson={handleLessonComplete}
+              isEnrolled={effectiveEnrollment}
+              isPreviewMode={isPreviewMode}
+              onEnroll={() => handleEnrollCourse(course?.id)}
             />
           </main>
           
