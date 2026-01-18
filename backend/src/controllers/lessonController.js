@@ -6,7 +6,7 @@ export const createLesson = async (req, res) => {
   try {
     // debug: log incoming body and courseId
     console.debug('[createLesson] req.body =', JSON.stringify(req.body));
-    const { title } = req.body;
+    const { title, isPreview } = req.body;
 
     console.debug('[createLesson] req.body.courseId =', req.body.courseId);
     const course = await Course.findById(req.body.courseId);
@@ -15,7 +15,12 @@ export const createLesson = async (req, res) => {
       return res.status(404).json({ message: "Course not found" });
     }
 
-    const createPayload = { title, courseId: course._id, fieldIds: [] };
+    const createPayload = { 
+      title, 
+      courseId: course._id, 
+      fieldIds: [],
+      isPreview: isPreview || false
+    };
     console.debug('[createLesson] createPayload =', JSON.stringify(createPayload));
 
     const lesson = await Lesson.create(createPayload);
@@ -57,8 +62,12 @@ export const getLessonById = async (req, res) => {
 // 🧠 Update lesson title
 export const updateLesson = async (req, res) => {
   try {
-    const { title } = req.body;
-    const updated = await Lesson.findByIdAndUpdate(req.params.id, { title }, { new: true });
+    const { title, isPreview } = req.body;
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (isPreview !== undefined) updateData.isPreview = isPreview;
+    
+    const updated = await Lesson.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!updated) return res.status(404).json({ message: "Lesson not found" });
     res.status(200).json({ message: "✅ Lesson updated successfully", lesson: updated });
   } catch (err) {

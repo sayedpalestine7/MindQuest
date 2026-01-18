@@ -97,7 +97,7 @@ export default function BrowseCoursesPage() {
         // Build query params
         const params = new URLSearchParams({
           page: currentPage,
-          limit: 12,
+          limit: 6,
           sortBy: sortBy,
         })
 

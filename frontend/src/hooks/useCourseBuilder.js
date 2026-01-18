@@ -19,7 +19,7 @@ export const useCourseBuilder = (courseId) => {
 
   // UI state
   const [lessons, setLessons] = useState([
-    { id: generateId(), title: "Lesson 1", fields: [] },
+    { id: generateId(), title: "Lesson 1", fields: [], isPreview: false },
   ]);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
   const [isQuizSectionOpen, setIsQuizSectionOpen] = useState(false);
@@ -89,6 +89,7 @@ export const useCourseBuilder = (courseId) => {
         const newLessons = result.data.lessonIds.map((lesson) => ({
           id: lesson._id,
           title: lesson.title,
+          isPreview: lesson.isPreview || false,
           fields: (lesson.fieldIds || []).map((f) => {
             // Initialize content for table fields if missing
             let content = f.content;
@@ -137,6 +138,7 @@ export const useCourseBuilder = (courseId) => {
       id: generateId(),
       title: `Lesson ${lessons.length + 1}`,
       fields: [],
+      isPreview: false,
     };
     setLessons([...lessons, newLesson]);
     setSelectedLessonId(newLesson.id);
@@ -156,6 +158,26 @@ export const useCourseBuilder = (courseId) => {
 
   const updateLessonTitle = (id, title) => {
     setLessons(lessons.map((l) => (l.id === id ? { ...l, title } : l)));
+  };
+
+  const updateLessonPreview = (id, isPreview) => {
+    // Only allow one preview lesson at a time
+    setLessons(lessons.map((l) => {
+      if (l.id === id) {
+        return { ...l, isPreview };
+      }
+      // Clear preview flag from other lessons if enabling preview on this lesson
+      if (isPreview && l.isPreview) {
+        return { ...l, isPreview: false };
+      }
+      return l;
+    }));
+    
+    if (isPreview) {
+      toast.success("Preview lesson set - non-enrolled users can view this lesson");
+    } else {
+      toast.success("Preview access removed");
+    }
   };
 
   // FIELD HANDLERS
@@ -479,6 +501,7 @@ export const useCourseBuilder = (courseId) => {
     addLesson,
     deleteLesson,
     updateLessonTitle,
+    updateLessonPreview,
     addField,
     deleteField,
     updateField,

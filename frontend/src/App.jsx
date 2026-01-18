@@ -10,7 +10,7 @@ import Settings from "./components/Admin/Settings";
 import TeacherSignUp from "./pages/TeacherSignUp";
 import HomePage from "./pages/HomePage";
 import TeacherCourseBuilder from "./pages/TeacherCourseBuilder";
-import StudentCoursePage from "./pages/StudentCoursePage";
+import StudentCoursePage from "./pages/StudentCoursePageRefactored";
 import StudentProfilePage from './pages/StudentProfilePage.jsx'
 import BrowseCoursesPage from './pages/BrowseCoursesPage.jsx';
 import TeacherProfilePage from "./pages/TeacherProfilePage.jsx";

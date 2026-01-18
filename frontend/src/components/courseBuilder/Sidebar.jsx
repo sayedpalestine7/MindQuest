@@ -1,6 +1,6 @@
 // /src/components/Sidebar.jsx
 import React from "react"
-import { Plus, Trash2, GripVertical } from "lucide-react"
+import { Plus, Trash2, GripVertical, Eye, EyeOff } from "lucide-react"
 import { Button, Input } from "./UI"
 import { motion } from "framer-motion"
 
@@ -11,6 +11,7 @@ export default function Sidebar({
   addLesson,
   deleteLesson,
   updateLessonTitle,
+  updateLessonPreview,
   handleDragStart,
   handleDragOver,
   handleDrop,
@@ -60,8 +61,15 @@ export default function Sidebar({
 
                 {/* Lesson number and content */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-gray-500 mb-1">
-                    Lesson {index + 1}
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="text-xs font-semibold text-gray-500">
+                      Lesson {index + 1}
+                    </div>
+                    {lesson.isPreview && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                        Preview
+                      </span>
+                    )}
                   </div>
                   <Input
                     value={lesson.title}
@@ -76,6 +84,30 @@ export default function Sidebar({
                     placeholder="Untitled lesson"
                   />
                 </div>
+
+                {/* Preview toggle button */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (updateLessonPreview) {
+                      updateLessonPreview(lesson.id, !lesson.isPreview)
+                    }
+                  }}
+                  className={`opacity-0 group-hover/item:opacity-100 transition-opacity h-7 w-7 p-0 flex-shrink-0 ${
+                    lesson.isPreview 
+                      ? 'bg-green-50 hover:bg-green-100 opacity-100' 
+                      : 'hover:bg-gray-100'
+                  }`}
+                  title={lesson.isPreview ? "Remove preview access" : "Make this lesson free to preview"}
+                >
+                  {lesson.isPreview ? (
+                    <Eye className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <EyeOff className="w-4 h-4 text-gray-500" />
+                  )}
+                </Button>
 
                 {/* Delete button */}
                 {lessons.length > 1 && (
