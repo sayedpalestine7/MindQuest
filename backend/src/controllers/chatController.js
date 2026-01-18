@@ -21,20 +21,60 @@ export const sendMessage = async (req, res) => {
   }
 };
 
-// -------------------- GET CONVERSATION --------------------
+// -------------------- GET CONVERSATION (CURSOR-BASED PAGINATION) --------------------
+/**
+ * Fetch messages for a conversation with cursor-based pagination
+ * Query params:
+ *   - limit: Number of messages to return (default 50)
+ *   - before: Cursor (ISO timestamp) to fetch messages older than this
+ * Returns:
+ *   - messages: Array of messages in descending order (newest first)
+ *   - hasMore: Boolean indicating if more messages exist
+ *   - oldestCursor: Cursor for next page (createdAt of oldest message)
+ */
 export const getConversation = async (req, res) => {
   try {
     const { teacherId, studentId } = req.params;
+    const { limit = 50, before } = req.query;
 
-    const messages = await Message.find({
-      $or: [
-        { teacher: teacherId, student: studentId },
-        { teacher: teacherId, student: studentId } // You may only need one if stored consistently
-      ]
-    }).sort({ createdAt: 1 });
+    const parsedLimit = Math.min(parseInt(limit, 10) || 50, 100); // Max 100 messages per request
 
-    res.json(messages);
+    // Build query
+    const query = {
+      teacher: teacherId,
+      student: studentId
+    };
+
+    // If 'before' cursor provided, fetch messages older than that timestamp
+    if (before) {
+      query.createdAt = { $lt: new Date(before) };
+    }
+
+    // Fetch messages in descending order (newest first)
+    // Fetch limit + 1 to determine if more messages exist
+    const messages = await Message.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parsedLimit + 1)
+      .lean();
+
+    // Determine if more messages exist
+    const hasMore = messages.length > parsedLimit;
+    
+    // Remove the extra message used for hasMore check
+    const resultMessages = hasMore ? messages.slice(0, parsedLimit) : messages;
+
+    // Get oldest cursor for next pagination request
+    const oldestCursor = resultMessages.length > 0 
+      ? resultMessages[resultMessages.length - 1].createdAt.toISOString()
+      : null;
+
+    res.json({
+      messages: resultMessages,
+      hasMore,
+      oldestCursor
+    });
   } catch (err) {
+    console.error('getConversation error:', err);
     res.status(500).json({ error: err.message });
   }
 };

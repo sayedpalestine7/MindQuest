@@ -24,6 +24,12 @@ export default function StudentRightPanel({
   studentId,
   unreadCount,
   setUnreadCount,
+  
+  // Pagination props
+  onLoadMoreMessages,
+  hasMoreMessages,
+  isLoadingMoreMessages,
+  isInitialLoad,
 }) {
   const [activeTab, setActiveTab] = useState("courses");
 
@@ -128,6 +134,10 @@ export default function StudentRightPanel({
                     messages={messages}
                     onSend={onSendMessage}
                     selectedTeacher={selectedTeacher}
+                    onLoadMore={onLoadMoreMessages}
+                    hasMore={hasMoreMessages}
+                    isLoadingMore={isLoadingMoreMessages}
+                    isInitialLoad={isInitialLoad}
                   />
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-slate-500 bg-gradient-to-br from-slate-50 to-white">

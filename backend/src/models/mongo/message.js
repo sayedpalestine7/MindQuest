@@ -11,4 +11,8 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Compound index for efficient cursor-based pagination
+// Supports queries filtering by teacher+student and sorting by createdAt descending
+messageSchema.index({ teacher: 1, student: 1, createdAt: -1 });
+
 export default mongoose.models.Message || mongoose.model("Message", messageSchema);

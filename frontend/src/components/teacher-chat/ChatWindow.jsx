@@ -4,7 +4,15 @@ import ChatHeader from "./ChatHeader";
 import ChatMessages from "./ChatMessages";
 import MessageInput from "./MessageInput";
 
-export default function ChatWindow({ messages, onSend, selectedStudent }) {
+export default function ChatWindow({ 
+  messages, 
+  onSend, 
+  selectedStudent,
+  onLoadMore,
+  hasMore,
+  isLoadingMore,
+  isInitialLoad
+}) {
   if (!selectedStudent) {
     return (
       <motion.div 
@@ -30,9 +38,15 @@ export default function ChatWindow({ messages, onSend, selectedStudent }) {
       {/* Chat Header */}
       <ChatHeader student={selectedStudent} />
 
-      {/* Chat Messages */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 bg-gradient-to-b from-slate-50 to-white">
-        <ChatMessages messages={messages} />
+      {/* Chat Messages with reverse infinite scroll */}
+      <div className="flex-1 min-h-0 overflow-hidden p-3 bg-gradient-to-b from-slate-50 to-white">
+        <ChatMessages 
+          messages={messages} 
+          onLoadMore={onLoadMore}
+          hasMore={hasMore}
+          isLoadingMore={isLoadingMore}
+          isInitialLoad={isInitialLoad}
+        />
       </div>
 
       {/* Message Input */}

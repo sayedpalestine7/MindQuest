@@ -30,6 +30,12 @@ export default function StudentProfilePage() {
   const [messages, setMessages] = useState([]);
   const [teacherSearch, setTeacherSearch] = useState("");
   const [unreadCount, setUnreadCount] = useState({});  // { teacherId: count }
+  
+  // Pagination states for cursor-based loading
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [oldestCursor, setOldestCursor] = useState(null);
+  const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
 
   const studentId =
@@ -124,15 +130,11 @@ export default function StudentProfilePage() {
     setTeachersList(teacherList);
     setFilteredTeachers(teacherList);
 
+    // Don't auto-select first teacher - let student choose
     if (teacherList.length === 0) {
       setSelectedTeacher(null);
-      return;
     }
-
-    if (!selectedTeacher || !teacherList.some((t) => getTeacherId(t) === getTeacherId(selectedTeacher))) {
-      setSelectedTeacher(teacherList[0]);
-    }
-  }, [enrolledCourses, selectedTeacher]);
+  }, [enrolledCourses]);
 
   // ---------------- HANDLE TEACHER SELECTION & SOCKET ----------------
   useEffect(() => {
@@ -142,17 +144,29 @@ export default function StudentProfilePage() {
     const roomId = `${teacherId}_${studentId}`;
     console.log("Joining room:", roomId);
 
-    setMessages([]); // clear previous messages
+    // Clear old messages and reset pagination state
+    setMessages([]);
+    setHasMoreMessages(false);
+    setOldestCursor(null);
+    setIsInitialLoad(true);
+
     socket.emit("join_room", { teacherId, studentId });
 
-    // Load conversation
+    // Load latest messages with cursor pagination
     const fetchConversation = async () => {
       try {
+        setIsInitialLoad(true);
         const { data } = await axios.get(
-          `http://localhost:5000/api/chat/conversation/${teacherId}/${studentId}`
+          `http://localhost:5000/api/chat/conversation/${teacherId}/${studentId}`,
+          {
+            params: { limit: 50 } // Load latest 50 messages
+          }
         );
 
-        const msgs = (data || []).map((m) => ({
+        const { messages: fetchedMessages, hasMore, oldestCursor: cursor } = data;
+
+        // Backend returns descending (newest first), so reverse for display (oldest first)
+        const msgs = (fetchedMessages || []).reverse().map((m) => ({
           id: m._id,
           sender: m.sender,
           content: m.content,
@@ -163,9 +177,16 @@ export default function StudentProfilePage() {
         }));
 
         setMessages(msgs);
+        setHasMoreMessages(hasMore);
+        setOldestCursor(cursor);
+        
+        // After initial load, allow auto-scroll for new messages
+        // Wait 600ms to ensure all scroll attempts complete (100ms, 350ms, 500ms)
+        setTimeout(() => setIsInitialLoad(false), 600);
       } catch (err) {
         console.error(err);
         toast.error("Failed to load messages");
+        setIsInitialLoad(false);
       }
     };
 
@@ -206,6 +227,50 @@ export default function StudentProfilePage() {
       socket.off("new_message", handleNewMessage);
     };
   }, [selectedTeacher, studentId]);
+
+  // ---------------- LOAD MORE MESSAGES (REVERSE INFINITE SCROLL) ----------------
+  const handleLoadMoreMessages = async () => {
+    if (!selectedTeacher || !studentId || !oldestCursor || isLoadingMoreMessages) return;
+
+    const teacherId = selectedTeacher._id || selectedTeacher.id;
+    
+    try {
+      setIsLoadingMoreMessages(true);
+      
+      const { data } = await axios.get(
+        `http://localhost:5000/api/chat/conversation/${teacherId}/${studentId}`,
+        {
+          params: { 
+            limit: 50,
+            before: oldestCursor // Fetch messages older than current oldest
+          }
+        }
+      );
+      
+      const { messages: fetchedMessages, hasMore, oldestCursor: cursor } = data;
+      
+      // Backend returns descending, reverse for display
+      const olderMsgs = (fetchedMessages || []).reverse().map((m) => ({
+        id: m._id,
+        sender: m.sender,
+        content: m.content,
+        timestamp: new Date(m.createdAt || m.timestamp).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }));
+      
+      // Prepend older messages
+      setMessages((prev) => [...olderMsgs, ...prev]);
+      setHasMoreMessages(hasMore);
+      setOldestCursor(cursor);
+    } catch (err) {
+      console.error('Failed to load more messages:', err);
+      toast.error("Failed to load older messages");
+    } finally {
+      setIsLoadingMoreMessages(false);
+    }
+  };
 
   // ---------------- SEND MESSAGE ----------------
   const handleSendMessage = (text) => {
@@ -346,6 +411,10 @@ export default function StudentProfilePage() {
             studentId={studentId}
             unreadCount={unreadCount}
             setUnreadCount={setUnreadCount}
+            onLoadMoreMessages={handleLoadMoreMessages}
+            hasMoreMessages={hasMoreMessages}
+            isLoadingMoreMessages={isLoadingMoreMessages}
+            isInitialLoad={isInitialLoad}
           />
         }
       />
