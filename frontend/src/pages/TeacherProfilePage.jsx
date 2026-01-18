@@ -218,17 +218,6 @@ export default function TeacherProfilePage() {
       socket.off("new_message", handleNewMessage);
     };
   }, [selectedStudent, teacherId]);
-  // ------------- Refresh profile when page becomes visible (user returns) -------------
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        setRefreshTrigger(prev => prev + 1);
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, []);
 
   // ------------- Fetch unread counts once and update live -------------
   useEffect(() => {
