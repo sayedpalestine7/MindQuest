@@ -15,8 +15,19 @@ export const protect = async (req, res, next) => {
 };
 
 export const requireRole = (roles) => (req, res, next) => {
+  console.log(`[requireRole] User role: ${req.user?.role}, Required roles: ${roles.join(', ')}`);
+  
+  // Bypass role check for admin users
+  if (req.user.role === "admin") {
+    console.log('[requireRole] Admin user detected - bypassing role check');
+    return next();
+  }
+  
   if (!roles.includes(req.user.role)) {
+    console.log('[requireRole] Access denied - role not in allowed list');
     return res.status(403).json({ message: "Access denied" });
   }
+  
+  console.log('[requireRole] Role check passed');
   next();
 };

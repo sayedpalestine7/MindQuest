@@ -20,6 +20,16 @@ export const validateCourse = (course) => {
   if (!course.difficulty) {
     errors.push("Course difficulty is required");
   }
+  
+  // Price validation
+  const price = Number(course.price);
+  if (isNaN(price)) {
+    errors.push("Price must be a valid number");
+  } else if (price < 0) {
+    errors.push("Price cannot be negative");
+  } else if (price > 0 && price < 1) {
+    errors.push("Paid courses must have a price of at least $1");
+  }
 
   return {
     isValid: errors.length === 0,
@@ -183,7 +193,7 @@ export const validateQuiz = (quiz) => {
  * Sanitize course data for API (remove client-only fields)
  */
 export const sanitizeCourseForAPI = (course) => {
-  const { title, description, difficulty, category, thumbnail, scoreOnFinish } = course;
+  const { title, description, difficulty, category, thumbnail, scoreOnFinish, price } = course;
   // Map frontend difficulty values to backend enum values (capitalize)
   const mapDifficulty = (d) => {
     if (!d) return "Beginner";
@@ -202,6 +212,7 @@ export const sanitizeCourseForAPI = (course) => {
     category: category || "General",
     thumbnail,
     scoreOnFinish: scoreOnFinish || 0,
+    price: Number(price) || 0,
   };
 };
 

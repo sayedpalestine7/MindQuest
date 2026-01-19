@@ -177,6 +177,65 @@ export default function CourseInfo({ course, setCourse, handleImageUpload }) {
                   </Select>
                 </div>
               </div>
+
+              {/* Pricing Section */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Pricing <span className="text-red-500">*</span>
+                </label>
+                <div className="space-y-3">
+                  {/* Free/Paid Radio Options */}
+                  <div className="flex items-center gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="pricing"
+                        value="free"
+                        checked={Number(course.price) === 0}
+                        onChange={() => setCourse({ ...course, price: 0 })}
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Free</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="pricing"
+                        value="paid"
+                        checked={Number(course.price) > 0}
+                        onChange={() => setCourse({ ...course, price: course.price > 0 ? course.price : 1 })}
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Paid</span>
+                    </label>
+                  </div>
+
+                  {/* Price Input - Only shown when Paid is selected */}
+                  {Number(course.price) > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-semibold text-gray-700">$</span>
+                      <Input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={course.price}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setCourse({ ...course, price: val >= 0 ? val : 0 });
+                        }}
+                        placeholder="29"
+                        className="border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all w-32"
+                      />
+                      <span className="text-sm text-gray-500">USD</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    {Number(course.price) === 0
+                      ? "This course will be free for all students"
+                      : `Students will pay $${Number(course.price)} to enroll`}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

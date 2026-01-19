@@ -296,7 +296,7 @@ export default function BrowseCoursesPage() {
                     lessonTitles: course.lessonTitles || [],
                     difficulty: course.difficulty,
                     category: course.category || "General",
-                    price: course.price || "Free",
+                    price: course.price > 0 ? `$${course.price}` : "Free",
                     tags: course.tags || [],
                   }}
                   index={index}

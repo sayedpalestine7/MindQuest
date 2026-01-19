@@ -93,6 +93,7 @@ export default function PreviewModalRefactored({ course, lessons, onClose, hideH
             title: course.title || "Untitled Course",
             description: course.description || "No description",
             difficulty: course.difficulty || "beginner",
+            price: course.price ?? 0,
             finalQuiz: previewQuiz,
           }}
           previewLessons={formattedLessons}

@@ -273,7 +273,7 @@ export default function HomePage() {
                       lessons: course.lessonIds?.length || 0,
                       difficulty: course.difficulty,
                       category: course.category || "General",
-                      price: course.price || "Free",
+                      price: course.price > 0 ? `$${course.price}` : "Free",
                       tags: course.tags || [],
                     }}
                     index={index}
