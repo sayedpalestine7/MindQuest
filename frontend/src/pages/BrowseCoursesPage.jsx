@@ -5,7 +5,7 @@ import { useNavigate } from "react-router"
 import { motion } from "framer-motion"
 import axios from "axios"
 import toast, { Toaster } from "react-hot-toast"
-import Header from "../components/courseBrowse/Header.jsx"
+import AppHeader from "../components/shared/AppHeader"
 import SearchFilters from "../components/courseBrowse/SearchFilters.jsx"
 import CourseCard from "../components/courseBrowse/CourseCard.jsx"
 import CourseCardSkeleton from "../components/courseBrowse/CourseCardSkeleton.jsx"
@@ -208,7 +208,7 @@ export default function BrowseCoursesPage() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <Toaster position="top-right" />
-      <Header />
+      <AppHeader subtitle="Browse Courses" />
 
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         {/* Hero Section */}

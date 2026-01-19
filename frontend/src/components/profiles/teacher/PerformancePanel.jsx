@@ -7,8 +7,8 @@ import PerformanceSection from "./PerformanceSection";
  */
 export default function PerformancePanel({ stats }) {
   return (
-    <div className="rounded-lg shadow-sm p-4 h-full flex flex-col" style={{ backgroundColor: '#FFFFFF', borderColor: '#E0E0E0', borderWidth: '1px', borderStyle: 'solid' }}>
-      <h2 className="text-lg font-bold mb-3" style={{ color: '#263238' }}>
+    <div className="mq-card p-4 h-full flex flex-col">
+      <h2 className="text-lg font-bold mb-3 text-slate-800">
         Performance Overview
       </h2>
       <div className="flex-1">

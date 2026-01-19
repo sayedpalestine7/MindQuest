@@ -19,13 +19,15 @@ import AnimationStudio from "./pages/AnimationStudio.jsx"
 import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary.jsx"
 import TeacherPage from "./pages/TeacherPage.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx"
+import { NotificationsProvider } from "./context/NotificationsContext.jsx"
 
 function App() {
 
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Routes>
+        <NotificationsProvider>
+          <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/navigates" element={<UserNavigates />} />
 
@@ -50,7 +52,8 @@ function App() {
           
           <Route path="/courses" element={<BrowseCoursesPage />} />
           <Route path="/studio" element={<AnimationStudio />} />
-        </Routes>
+          </Routes>
+        </NotificationsProvider>
       </AuthProvider>
     </ErrorBoundary>
   )

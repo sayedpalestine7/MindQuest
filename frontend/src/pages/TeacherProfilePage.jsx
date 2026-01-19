@@ -14,7 +14,7 @@ import MainPanel from "../components/profiles/teacher/MainPanel";
 import CommentsPanel from "../components/profiles/teacher/CommentsPanel";
 import StatsPanel from "../components/profiles/teacher/StatsPanel";
 import RightPanel from "../components/profiles/teacher/RightPanel";
-import Header from "../components/profiles/teacher/Header";
+import AppHeader from "../components/shared/AppHeader";
 import EditProfileDialog from "../components/profiles/teacher/EditProfileDialog";
 
 export default function TeacherProfilePage() {
@@ -319,12 +319,6 @@ export default function TeacherProfilePage() {
   };
 
   /* ====== Logout ====== */
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    toast.success("Logged out successfully");
-    window.location.href = "/login";
-  };
 
   /* ====== Course Selection (for inter-panel communication) ====== */
   const handleCourseSelect = (courseId) => {
@@ -390,7 +384,7 @@ export default function TeacherProfilePage() {
   return (
     <>
     <DashboardLayout
-      header={<Header onLogout={handleLogout} teacherId={teacherId} />}
+      header={<AppHeader subtitle="Teacher Dashboard" />}
       leftPanel={
         <LeftPanel
           userSummary={

@@ -109,13 +109,13 @@ export default function Hero() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <button 
               onClick={handleGetStarted}
-              className="flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
+              className="mq-btn-primary px-8 py-3"
             >
               Start Learning Free <ArrowRight className="w-4 h-4" />
             </button>
             <button 
               onClick={handleBrowseCourses}
-              className="flex items-center justify-center gap-2 px-8 py-3 border-2 border-gray-300 rounded-md hover:bg-gray-50 transition"
+              className="mq-btn-outline px-8 py-3"
             >
               Browse Courses
             </button>
@@ -129,7 +129,7 @@ export default function Hero() {
               { icon: <GraduationCap className="w-5 h-5" />, label: "Teachers", value: stats.teachers, suffix: "+" },
               { icon: <TrendingUp className="w-5 h-5" />, label: "Enrollments", value: stats.enrollments, suffix: "+" }
             ].map((stat, idx) => (
-              <div key={idx} className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+              <div key={idx} className="mq-card bg-white/70 backdrop-blur-sm p-4">
                 <div className="flex items-center justify-center gap-2 text-blue-600 mb-2">
                   {stat.icon}
                 </div>

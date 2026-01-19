@@ -13,7 +13,7 @@ import MainPanel from "../components/profiles/teacher/MainPanel";
 import StudentContinueLearningCard from "../components/profiles/student/StudentContinueLearningCard";
 import StudentStatsPanel from "../components/profiles/student/StudentStatsPanel";
 import StudentRightPanel from "../components/profiles/student/StudentRightPanel";
-import Header from "../components/profiles/student/Header";
+import AppHeader from "../components/shared/AppHeader";
 import EditProfileModal from "../components/profiles/student/EditProfileModal";
 
 export default function StudentProfilePage() {
@@ -346,14 +346,6 @@ export default function StudentProfilePage() {
     if (filtered.length > 0) setSelectedTeacher(filtered[0]);
   };
 
-  // ---------------- LOGOUT ----------------
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    toast.success("Logged out successfully");
-    window.location.href = "/login";
-  };
-
   // ---------------- PROFILE UPDATE ----------------
   const handleProfileUpdate = (updated) => {
     setProfileData({
@@ -548,7 +540,7 @@ export default function StudentProfilePage() {
   return (
     <>
       <DashboardLayout
-        header={<Header onLogout={handleLogout} />}
+        header={<AppHeader subtitle="Student Profile" />}
         leftPanel={
           <LeftPanel
             userSummary={

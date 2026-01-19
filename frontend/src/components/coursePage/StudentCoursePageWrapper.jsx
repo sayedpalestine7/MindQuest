@@ -15,6 +15,7 @@
 import React, { useEffect, useState, useRef } from "react"
 import { useNavigate } from "react-router"
 import StudentHeader from "./StudentHeader"
+import AppHeader from "../shared/AppHeader"
 import StudentSidebar from "./StudentSidebar"
 import LessonContent from "./LessonContent"
 import QuizModal from "./QuizModal"
@@ -541,14 +542,17 @@ export default function StudentCoursePageWrapper({
   return (
     <div className="min-h-screen bg-black-20 transition-colors">
       {!hideHeader && (
-        <StudentHeader
-          courseTitle={course?.title}
-          progress={progress}
-          onRestart={handleRestartCourse}
-          userAvatar={effectiveUser?.profileImage || effectiveUser?.avatar}
-          userName={effectiveUser?.name}
-          userId={effectiveUser?._id}
-        />
+        <>
+          <AppHeader subtitle={course?.title || "Course"} />
+          <StudentHeader
+            courseTitle={course?.title}
+            progress={progress}
+            onRestart={handleRestartCourse}
+            userAvatar={effectiveUser?.profileImage || effectiveUser?.avatar}
+            userName={effectiveUser?.name}
+            userId={effectiveUser?._id}
+          />
+        </>
       )}
       
       <div className="container mx-auto px-6 py-8">

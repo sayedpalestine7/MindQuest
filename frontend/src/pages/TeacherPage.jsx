@@ -11,7 +11,7 @@ import TeacherHeader from "../components/profiles/treacherInfo/TeacherHeader";
 import ExpertiseTags from "../components/profiles/treacherInfo/ExpertiseTags";
 import CoursesList from "../components/profiles/treacherInfo/CoursesList";
 import ReviewsList from "../components/profiles/treacherInfo/ReviewsList";
-import Header from "../components/profiles/treacherInfo/Header";
+import AppHeader from "../components/shared/AppHeader";
 
 export default function TeacherPage() {
   const { id } = useParams();
@@ -159,7 +159,7 @@ export default function TeacherPage() {
     <>
       <Toaster position="top-right" />
       <DashboardLayout
-        header={<Header />}
+        header={<AppHeader subtitle="Teacher Profile" />}
         leftPanel={
           <LeftPanel
             header={

@@ -200,7 +200,7 @@ function SignUp() {
   };
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="card card-bordered max-w-md w-full shadow-md">
+      <div className="mq-card max-w-md w-full">
         <div className="card-body">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

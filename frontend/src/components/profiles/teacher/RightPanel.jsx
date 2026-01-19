@@ -43,19 +43,14 @@ export default function RightPanel({
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Tab Navigation */}
-      <div className="flex bg-white sticky top-0 z-20" style={{ borderBottom: '2px solid #E0E0E0' }}>
+      <div className="flex bg-white sticky top-0 z-20 border-b-2 border-slate-200">
         <button
           onClick={() => setActiveTab("courses")}
-          className={`flex-1 py-4 px-6 font-semibold transition-all ${
+          className={`flex-1 py-4 px-6 font-semibold transition-all border-b-2 ${
             activeTab === "courses"
-              ? "border-b-2"
-              : ""
+              ? "border-indigo-600 text-indigo-600 bg-slate-50"
+              : "border-transparent text-slate-500"
           }`}
-          style={{
-            color: activeTab === "courses" ? "#3F51B5" : "#607D8B",
-            borderBottomColor: activeTab === "courses" ? "#3F51B5" : "transparent",
-            backgroundColor: activeTab === "courses" ? "#F5F7FA" : "transparent"
-          }}
         >
           <span className="flex items-center justify-center gap-2">
             Courses
@@ -63,16 +58,11 @@ export default function RightPanel({
         </button>
         <button
           onClick={() => setActiveTab("chat")}
-          className={`flex-1 py-4 px-6 font-semibold transition-all relative ${
+          className={`flex-1 py-4 px-6 font-semibold transition-all relative border-b-2 ${
             activeTab === "chat"
-              ? "border-b-2"
-              : ""
+              ? "border-indigo-600 text-indigo-600 bg-slate-50"
+              : "border-transparent text-slate-500"
           }`}
-          style={{
-            color: activeTab === "chat" ? "#3F51B5" : "#607D8B",
-            borderBottomColor: activeTab === "chat" ? "#3F51B5" : "transparent",
-            backgroundColor: activeTab === "chat" ? "#F5F7FA" : "transparent"
-          }}
         >
           <span className="flex items-center justify-center gap-2">
             Chat

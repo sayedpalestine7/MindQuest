@@ -70,18 +70,18 @@ export default function StudentHeader({
   }, [avatarSrcState, userId])
 
   return (
-    <header className="sticky top-0 z-20 border-b-2 border-gray-200 bg-white/80 backdrop-blur-md">
+    <div className="mq-header">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         {/* Left: Course Info */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl mq-header-logo flex items-center justify-center">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">
+            <h1 className="text-lg font-bold mq-header-title">
               {courseTitle || "Course"}
             </h1>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs mq-header-subtitle">
               Progress: {progress}%
             </p>
           </div>
@@ -124,6 +124,6 @@ export default function StudentHeader({
           </button>
         </div>
       </div>
-    </header>
+    </div>
   )
 }

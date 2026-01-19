@@ -34,13 +34,13 @@ export default function CTA() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button 
               onClick={handleGetStarted}
-              className="flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
+              className="mq-btn-primary px-8 py-3"
             >
               Get Started Free <ArrowRight className="w-4 h-4" />
             </button>
             <button 
               onClick={handleViewCourses}
-              className="px-8 py-3 border-2 border-gray-300 rounded-md hover:bg-white transition"
+              className="mq-btn-outline px-8 py-3"
             >
               View All Courses
             </button>

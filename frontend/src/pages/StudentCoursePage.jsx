@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react"
 import { useParams, useNavigate, useLocation } from "react-router"
 import StudentHeader from "../components/coursePage/StudentHeader"
+import AppHeader from "../components/shared/AppHeader"
 import StudentSidebar from "../components/coursePage/StudentSidebar"
 import LessonContent from "../components/coursePage/LessonContent"
 import QuizModal from "../components/coursePage/QuizModal"
@@ -489,6 +490,7 @@ export default function StudentCoursePage() {
 
   return (
     <div className="min-h-screen bg-black-20 transition-colors">
+      <AppHeader subtitle={course?.title || "Course"} />
       <StudentHeader
         courseTitle={course.title}
         progress={progress}

@@ -11,7 +11,7 @@ export default function Header({
   onToggleSidebar,
 }) {
   return (
-    <header className="border-b-2 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+    <div className="mq-header">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         {/* Left Section: Logo + Title + Sidebar Toggle */}
         <div className="flex items-center gap-3">
@@ -31,12 +31,12 @@ export default function Header({
           </Button>
 
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl mq-header-logo flex items-center justify-center">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">MindQuest</h1>
-              <p className="text-sm text-gray-500">Course Builder</p>
+              <h1 className="text-xl font-bold mq-header-title">MindQuest</h1>
+              <p className="text-sm mq-header-subtitle">Course Builder</p>
             </div>
           </div>
         </div>
@@ -91,6 +91,6 @@ export default function Header({
           </Button>
         </div>
       </div>
-    </header>
+    </div>
   )
 }

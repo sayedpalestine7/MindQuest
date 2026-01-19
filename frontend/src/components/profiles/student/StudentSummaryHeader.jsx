@@ -15,12 +15,11 @@ export default function StudentSummaryHeader({ profileData, stats, onEdit }) {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
       className="p-4"
-      style={{ backgroundColor: '#FFFFFF' }}
     >
       <div className="flex flex-col sm:flex-row items-center gap-4">
         {/* Profile Image */}
         <div className="relative">
-          <div className="w-20 h-20 rounded-full overflow-hidden shadow-lg" style={{ borderWidth: '3px', borderStyle: 'solid', borderColor: '#E0E0E0' }}>
+          <div className="w-20 h-20 rounded-full overflow-hidden shadow-lg border-2 border-slate-200">
             <img
               src={avatarSrc}
               alt={name}
@@ -35,11 +34,10 @@ export default function StudentSummaryHeader({ profileData, stats, onEdit }) {
         {/* User Info */}
         <div className="flex-1 text-center sm:text-left">
           <div className="flex items-center gap-2 justify-center sm:justify-start mb-1">
-            <h1 className="text-2xl font-bold" style={{ color: '#263238' }}>{name}</h1>
+            <h1 className="text-2xl font-bold text-slate-800">{name}</h1>
             <button
               onClick={onEdit}
-              className="btn btn-sm btn-ghost btn-circle"
-              style={{ color: '#26A69A' }}
+              className="btn btn-sm btn-ghost btn-circle text-emerald-600"
               aria-label="Edit profile"
             >
               <svg
@@ -58,8 +56,8 @@ export default function StudentSummaryHeader({ profileData, stats, onEdit }) {
               </svg>
             </button>
           </div>
-          <p style={{ color: '#607D8B' }} className="mb-1">{email}</p>
-          <span className="inline-block text-sm px-3 py-1 rounded-full font-medium mt-2" style={{ backgroundColor: '#E8EAF6', color: '#3F51B5' }}>
+          <p className="mb-1 text-slate-500">{email}</p>
+          <span className="inline-block text-sm px-3 py-1 rounded-full font-medium mt-2 bg-indigo-50 text-indigo-600">
             Student
           </span>
         </div>

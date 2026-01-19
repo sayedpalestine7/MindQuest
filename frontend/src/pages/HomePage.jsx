@@ -3,7 +3,7 @@ import { useNavigate } from "react-router"
 import { motion } from "framer-motion"
 import axios from "axios"
 import toast, { Toaster } from "react-hot-toast"
-import Navbar from "../components/homePage/Navbar.jsx"
+import AppHeader from "../components/shared/AppHeader"
 import Hero from "../components/homePage/Hero.jsx"
 import Features from "../components/homePage/Features.jsx"
 import AnimationShowcase from "../components/homePage/AnimationShowcase.jsx"
@@ -196,7 +196,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <Toaster position="top-right" />
-      <Navbar />
+      <AppHeader subtitle="Welcome" />
       <Hero />
       <Features />
       <AnimationShowcase />

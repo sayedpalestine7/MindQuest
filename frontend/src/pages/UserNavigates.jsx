@@ -80,7 +80,7 @@ export default function UserNavigates() {
           {/* Student Card */}
           <motion.div 
             onClick={handleStudentEvent} 
-            className="border border-gray-200 rounded-lg shadow-lg bg-white hover:border-blue-500 hover:shadow-xl transition-all duration-300 cursor-pointer"
+            className="mq-card mq-card-hover hover:border-blue-500 transition-all duration-300 cursor-pointer"
             variants={cardVariants}
             whileHover="hover"
             whileTap="tap"
@@ -136,7 +136,7 @@ export default function UserNavigates() {
           {/* Teacher Card */}
           <motion.div 
             onClick={handleTeacherEvent} 
-            className="border border-gray-200 rounded-lg shadow-lg bg-white hover:border-green-500 hover:shadow-xl transition-all duration-300 cursor-pointer"
+            className="mq-card mq-card-hover hover:border-green-500 transition-all duration-300 cursor-pointer"
             variants={cardVariants}
             whileHover="hover"
             whileTap="tap"

@@ -51,16 +51,15 @@ export default function StudentStatsSection({ stats }) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 * i }}
           whileHover={{ scale: 1.02 }}
-          className="rounded-lg shadow-sm p-4 relative"
-          style={{ backgroundColor: '#FFFFFF', borderColor: '#E0E0E0', borderWidth: '1px', borderStyle: 'solid' }}
+          className="mq-card p-4 relative"
         >
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg" style={{ backgroundColor: stat.iconBg }}>
               <stat.icon className="w-5 h-5" style={{ color: stat.iconColor }} />
             </div>
             <div className="flex-1">
-              <p className="text-xs font-medium" style={{ color: '#607D8B' }}>{stat.title}</p>
-              <p className="text-2xl font-bold" style={{ color: '#263238' }}>{stat.value}</p>
+              <p className="text-xs font-medium text-slate-500">{stat.title}</p>
+              <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
             </div>
           </div>
         </motion.div>

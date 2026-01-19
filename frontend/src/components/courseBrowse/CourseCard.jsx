@@ -23,7 +23,7 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}
-      className="bg-white rounded-xl overflow-hidden border hover:shadow-lg transition flex flex-col h-full"
+      className="mq-card mq-card-hover overflow-hidden flex flex-col h-full"
     >
       <div className="relative h-48 overflow-hidden">
         <img 
@@ -129,7 +129,7 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
           {enrolledCourses.includes(courseId) ? (
             <button
               onClick={() => navigate(`/student/coursePage/${courseId}`)}
-              className="flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
+              className="mq-btn-primary px-8 py-3"
             >
               <CheckCircle2 className="w-4 h-4" />
               Continue
@@ -137,7 +137,7 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
           ) : (
             <button
               onClick={() => navigate(`/student/coursePage/${courseId}`)}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
+              className="mq-btn-primary px-4 py-3"
             >
               <Eye className="w-4 h-4" />
               View Course

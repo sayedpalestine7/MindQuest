@@ -145,7 +145,7 @@ function TeacherSignUp() {
     }
     return (
         <div className="flex items-center justify-center min-h-screen ">
-            <div className="card card-bordered max-w-2xl w-full shadow-md ">
+            <div className="mq-card max-w-2xl w-full">
                 <div className="card-body">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}

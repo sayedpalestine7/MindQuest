@@ -139,26 +139,17 @@ export default function CommentsPanel({ teacherId }) {
   };
 
   return (
-    <div
-      className="rounded-lg shadow-sm p-4 h-full flex flex-col"
-      style={{
-        backgroundColor: "#FFFFFF",
-        borderColor: "#E0E0E0",
-        borderWidth: "1px",
-        borderStyle: "solid",
-      }}
-    >
+    <div className="mq-card p-4 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold" style={{ color: "#263238" }}>
+        <h2 className="text-lg font-bold text-slate-800">
           Course Reviews
         </h2>
         {courses.length > 0 && (
           <select
             value={selectedCourse}
             onChange={(e) => setSelectedCourse(e.target.value)}
-            className="px-3 py-1 text-sm border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            style={{ borderColor: "#E0E0E0" }}
+            className="px-3 py-1 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           >
             <option value="all">All Courses ({reviews.length})</option>
             {courses.map((course) => (
@@ -178,10 +169,7 @@ export default function CommentsPanel({ teacherId }) {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
           </div>
         ) : filteredReviews.length === 0 ? (
-          <div
-            className="flex flex-col items-center justify-center h-32 text-center"
-            style={{ color: "#9E9E9E" }}
-          >
+          <div className="flex flex-col items-center justify-center h-32 text-center text-slate-400">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-12 w-12 mb-2"
@@ -209,11 +197,7 @@ export default function CommentsPanel({ teacherId }) {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="p-3 rounded-lg border"
-                style={{
-                  backgroundColor: "#F5F7FA",
-                  borderColor: "#E0E0E0",
-                }}
+                className="mq-card p-3 bg-slate-50 border-slate-200"
               >
                 {/* Student & Course Info */}
                 <div className="flex items-start gap-3 mb-2">
@@ -228,26 +212,17 @@ export default function CommentsPanel({ teacherId }) {
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4
-                          className="font-semibold text-sm"
-                          style={{ color: "#263238" }}
-                        >
+                        <h4 className="font-semibold text-sm text-slate-800">
                           {review.studentId?.name || "Anonymous"}
                         </h4>
-                        <p
-                          className="text-xs"
-                          style={{ color: "#607D8B" }}
-                        >
+                        <p className="text-xs text-slate-500">
                           {review.courseId?.title || "Unknown Course"}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="flex flex-col items-end">
                           {renderStars(review.rating)}
-                          <span
-                            className="text-xs mt-1"
-                            style={{ color: "#9E9E9E" }}
-                          >
+                          <span className="text-xs mt-1 text-slate-400">
                             {new Date(review.createdAt).toLocaleDateString()}
                           </span>
                         </div>
@@ -290,10 +265,7 @@ export default function CommentsPanel({ teacherId }) {
 
                 {/* Comment */}
                 {review.comment && (
-                  <p
-                    className="text-sm mt-2 pl-13"
-                    style={{ color: "#455A64" }}
-                  >
+                  <p className="text-sm mt-2 pl-13 text-slate-600">
                     {review.comment}
                   </p>
                 )}

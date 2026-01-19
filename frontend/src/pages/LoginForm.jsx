@@ -147,7 +147,7 @@ const handleGoogleSignIn = async () => {
   return (
     <div className="flex items-center justify-center min-h-screen">
 
-      <div className="card card-bordered max-w-md w-full shadow-md">
+      <div className="mq-card max-w-md w-full">
 
         <div className="card-body">
           <motion.div

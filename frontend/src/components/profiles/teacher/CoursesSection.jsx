@@ -117,23 +117,21 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
       <>
         <Toaster position="top-right" />
         <motion.div
-          className="rounded-lg p-6 border-2 border-dashed"
-          style={{ backgroundColor: '#E8EAF6', borderColor: '#C5CAE9' }}
+          className="mq-card p-6 border-2 border-dashed bg-indigo-50 border-indigo-200"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
           <div className="flex items-center justify-center gap-4 mb-4">
-            <BookOpen className="w-10 h-10" style={{ color: '#3F51B5' }} />
-            <h3 className="text-2xl font-semibold" style={{ color: '#263238' }}>No Courses Yet</h3>
+            <BookOpen className="w-10 h-10 text-indigo-600" />
+            <h3 className="text-2xl font-semibold text-slate-800">No Courses Yet</h3>
           </div>
-          <p className="text-center mb-6" style={{ color: '#607D8B' }}>Start creating your first course to engage with students</p>
+          <p className="text-center mb-6 text-slate-500">Start creating your first course to engage with students</p>
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate("/teacher/courseBuilder")}
-            className="w-full text-white px-6 py-3 rounded-lg hover:shadow-lg transition flex items-center justify-center gap-2 font-semibold"
-            style={{ background: 'linear-gradient(to right, #3F51B5, #5C6BC0)' }}
+            className="mq-btn-primary w-full px-6 py-3"
           >
             <Plus className="w-5 h-5" /> Create Your First Course
           </motion.button>
@@ -146,18 +144,17 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
     <>
       <Toaster position="top" />
       <motion.div
-        className="shadow-lg overflow-hidden"
-        style={{ backgroundColor: '#FFFFFF' }}
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3 }}
-    >
-      <div className="p-4" style={{ background: 'linear-gradient(to right, #3F51B5, #5C6BC0)' }}>
+        className="mq-card overflow-hidden"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+      <div className="p-4 bg-gradient-to-r from-indigo-600 to-indigo-500">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <BookOpen className="w-7 h-7 text-white" />
             <h3 className="text-2xl font-bold text-white">Your Courses</h3>
-            <span className="text-white px-3 py-1 rounded-full text-sm font-semibold" style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
+            <span className="text-white px-3 py-1 rounded-full text-sm font-semibold bg-white/20">
               {courses.length}
             </span>
           </div>
@@ -166,8 +163,7 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate("/teacher/studio/:id")}
-            className="bg-white px-4 py-2 rounded-lg hover:opacity-90 transition font-semibold flex items-center gap-2"
-            style={{ color: '#3F51B5' }}
+            className="mq-btn-outline bg-white text-indigo-600 px-4 py-2"
           >
             <Plus className="w-4 h-4" /> Animation Studio
           </motion.button>
@@ -175,22 +171,20 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate("/teacher/courseBuilder")}
-            className="bg-white px-4 py-2 rounded-lg hover:opacity-90 transition font-semibold flex items-center gap-2"
-            style={{ color: '#3F51B5' }}
+            className="mq-btn-outline bg-white text-indigo-600 px-4 py-2"
           >
             <Plus className="w-4 h-4" /> New Course
           </motion.button>
           </div>
         </div>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#3F51B5' }} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-600" />
           <input
             type="text"
             placeholder="Search courses..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-lg bg-white placeholder-slate-500 focus:outline-none focus:ring-2"
-            style={{ color: '#263238', '--tw-ring-color': 'rgba(63, 81, 181, 0.3)' }}
+            className="w-full pl-10 pr-4 py-2 rounded-lg bg-white placeholder-slate-500 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-300"
           />
         </div>
       </div>
@@ -199,144 +193,111 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
         {filteredCourses.map((course, i) => {
           const cid = course._id || course.id;
           const isActive = activeCourseId === cid;
-          
-          return (
-          <motion.div
-            key={cid || i}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.05 * i }}
-            className="p-4 transition-all duration-200 group cursor-pointer"
-            style={{
-              backgroundColor: isActive ? '#E8EAF6' : 'transparent',
-              borderLeft: isActive ? '4px solid #3F51B5' : 'none'
-            }}
-            whileHover={{ paddingRight: 24 }}
-            onMouseEnter={(e) => {
-              if (!isActive) e.currentTarget.style.backgroundColor = '#F5F7FA';
-            }}
-            onMouseLeave={(e) => {
-              if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-            onClick={() => {
-              if (onCourseSelect) {
-                onCourseSelect(cid);
-              }
-              navigate(`/teacher/courseBuilder/${cid}`)
-            }}
-          >
-            <div className="flex justify-between items-start md:items-center gap-4">
-              <div className="flex-1">
-                <h4 className="text-lg font-bold mb-2 group-hover:transition" style={{ color: '#263238' }}>
-                  {course.title || course.name || "Untitled"}
-                </h4>
-                {course.description && (
-                  <p className="text-sm line-clamp-2" style={{ color: '#607D8B' }}>
-                    {course.description}
-                  </p>
-                )}
-              </div>
 
-              <div className="flex items-center gap-3 flex-shrink-0">
-                {course.studentCount !== undefined && (
-                  <motion.div 
-                    whileHover={{ scale: 1.1 }}
-                    className="text-center"
-                  >
-                    <div className="flex items-center justify-center gap-1" style={{ color: '#3F51B5' }}>
-                      <Users className="w-4 h-4" />
-                      <span className="font-bold text-lg">{course.studentCount}</span>
-                    </div>
-                    <p className="text-xs mt-1" style={{ color: '#607D8B' }}>Students</p>
-                  </motion.div>
-                )}
-                
-                {/* Approval Status Badge */}
-                {course.approvalStatus === "pending" && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md"
-                    style={{ backgroundColor: '#FFF3E0', color: '#F57C00' }}
-                  >
-                    <Clock className="w-3.5 h-3.5" />
-                    <span className="text-xs font-semibold">Pending Review</span>
-                  </motion.div>
-                )}
-                
-                {course.approvalStatus === "approved" && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md"
-                    style={{ backgroundColor: '#E8F5E9', color: '#2E7D32' }}
-                  >
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    <span className="text-xs font-semibold">Approved</span>
-                  </motion.div>
-                )}
-                
-                {course.approvalStatus === "rejected" && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md"
-                    style={{ backgroundColor: '#FFEBEE', color: '#C62828' }}
-                    title={course.rejectionReason || "No reason provided"}
-                  >
-                    <XCircle className="w-3.5 h-3.5" />
-                    <span className="text-xs font-semibold">Rejected</span>
-                  </motion.div>
-                )}
-                
-                {/* Submit for Review Button - Only show for draft or rejected courses */}
-                {(course.approvalStatus === "draft" || course.approvalStatus === "rejected" || !course.approvalStatus) && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={(e) => handleSubmitForReview(e, cid, course.approvalStatus || "draft")}
-                    disabled={submittingCourseId === cid}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ 
-                      backgroundColor: '#26A69A', 
-                      color: '#FFFFFF' 
-                    }}
-                  >
-                    {submittingCourseId === cid ? (
-                      <>Processing...</>
-                    ) : (
-                      <>
-                        <Send className="w-3.5 h-3.5" />
-                        {course.approvalStatus === "rejected" ? "Resubmit" : "Submit for Review"}
-                      </>
-                    )}
-                  </motion.button>
-                )}
-                
-                {/* Kebab Menu (3-dot menu) */}
-                <div className="relative">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
+          return (
+            <motion.div
+              key={cid || i}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.05 * i }}
+              className={`p-4 transition-all duration-200 group cursor-pointer border-l-4 ${
+                isActive ? "bg-indigo-50 border-indigo-600" : "border-transparent hover:bg-slate-50"
+              }`}
+              whileHover={{ paddingRight: 24 }}
+              onClick={() => {
+                if (onCourseSelect) {
+                  onCourseSelect(cid);
+                }
+                navigate(`/teacher/courseBuilder/${cid}`);
+              }}
+            >
+              <div className="flex justify-between items-start md:items-center gap-4">
+                <div className="flex-1">
+                  <h4 className="text-lg font-bold mb-2 text-slate-800">
+                    {course.title || course.name || "Untitled"}
+                  </h4>
+                  {course.description && (
+                    <p className="text-sm line-clamp-2 text-slate-500">
+                      {course.description}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 flex-shrink-0 relative">
+                  {course.studentCount !== undefined && (
+                    <motion.div whileHover={{ scale: 1.1 }} className="text-center">
+                      <div className="flex items-center justify-center gap-1 text-indigo-600">
+                        <Users className="w-4 h-4" />
+                        <span className="font-bold text-lg">{course.studentCount}</span>
+                      </div>
+                      <p className="text-xs mt-1 text-slate-500">Students</p>
+                    </motion.div>
+                  )}
+
+                  {course.approvalStatus === "pending" && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-50 text-amber-700"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span className="text-xs font-semibold">Pending Review</span>
+                    </motion.div>
+                  )}
+
+                  {course.approvalStatus === "approved" && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span className="text-xs font-semibold">Approved</span>
+                    </motion.div>
+                  )}
+
+                  {course.approvalStatus === "rejected" && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md bg-red-50 text-red-700"
+                      title={course.rejectionReason || "No reason provided"}
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      <span className="text-xs font-semibold">Rejected</span>
+                    </motion.div>
+                  )}
+
+                  {(course.approvalStatus === "draft" || course.approvalStatus === "rejected" || !course.approvalStatus) && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => handleSubmitForReview(e, cid, course.approvalStatus || "draft")}
+                      disabled={submittingCourseId === cid}
+                      className="mq-btn-primary px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {submittingCourseId === cid ? "Processing..." : "Submit for Review"}
+                    </motion.button>
+                  )}
+
+                  <button
                     onClick={(e) => handleToggleMenu(e, cid)}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition"
-                    style={{ color: '#607D8B' }}
+                    className="p-2 rounded-full hover:bg-slate-100 transition"
+                    aria-label="Course actions"
                   >
-                    <MoreVertical className="w-5 h-5" />
-                  </motion.button>
-                  
-                  {/* Dropdown Menu */}
+                    <MoreVertical className="w-4 h-4 text-slate-500" />
+                  </button>
+
                   {openMenuId === cid && (
                     <>
-                      {/* Backdrop to close menu on outside click */}
-                      <div 
-                        className="fixed inset-0 z-10" 
+                      <div
+                        className="fixed inset-0 z-10"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          setOpenMenuId(null)
+                          e.stopPropagation();
+                          setOpenMenuId(null);
                         }}
                       />
-                      
+
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: -10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -345,8 +306,7 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
                       >
                         <button
                           onClick={(e) => handleDeleteClick(e, cid)}
-                          className="w-full px-4 py-2 text-left text-sm font-medium hover:bg-red-50 transition flex items-center gap-2"
-                          style={{ color: '#C62828' }}
+                          className="w-full px-4 py-2 text-left text-sm font-medium hover:bg-red-50 transition flex items-center gap-2 text-red-600"
                         >
                           <Trash2 className="w-4 h-4" />
                           Delete course
@@ -356,9 +316,9 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
                   )}
                 </div>
               </div>
-            </div>
-          </motion.div>
-        )})}
+            </motion.div>
+          );
+        })}
       </div>
 
     </motion.div>
