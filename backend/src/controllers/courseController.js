@@ -11,7 +11,7 @@ import { sanitizeLessons } from "../services/sanitizationService.js";
 // 🧠 CREATE a new course
 export const createCourse = async (req, res) => {
   try {
-    const { title, description, difficulty, category, thumbnail, teacherId, scoreOnFinish, lessons, quiz } = req.body;
+    const { title, description, difficulty, category, thumbnail, teacherId, scoreOnFinish, price, lessons, quiz } = req.body;
 
     try {
       console.log('createCourse payload lessons (full):', JSON.stringify(lessons, null, 2))
@@ -34,6 +34,7 @@ export const createCourse = async (req, res) => {
       thumbnail,
       teacherId,
       scoreOnFinish: scoreOnFinish || 0,
+      price: price !== undefined ? Number(price) : 0,
     });
 
     // Create lessons if provided
@@ -401,7 +402,7 @@ export const getCourseById = async (req, res) => {
 // 🧱 UPDATE course
 export const updateCourse = async (req, res) => {
   try {
-    const { title, description, difficulty, category, thumbnail, scoreOnFinish, quizId, lessons, quiz } = req.body;
+    const { title, description, difficulty, category, thumbnail, scoreOnFinish, price, quizId, lessons, quiz } = req.body;
 
     try {
       console.log('updateCourse payload lessons (full):', JSON.stringify(lessons, null, 2))
@@ -585,6 +586,7 @@ export const updateCourse = async (req, res) => {
         category: category || "General",
         thumbnail,
         scoreOnFinish,
+        price: price !== undefined ? Number(price) : 0,
         quizId: newQuizId,
         lessonIds,
         lessonsCount: lessonIds.length,

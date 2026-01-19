@@ -137,6 +137,7 @@ export default function StudentCoursePage() {
             title: full.title,
             description: full.description,
             difficulty: full.difficulty,
+            price: full.price ?? 0,
             finalQuiz: quizData,
           }
 

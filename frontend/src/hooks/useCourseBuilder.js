@@ -15,6 +15,7 @@ export const useCourseBuilder = (courseId) => {
     difficulty: "beginner",
     category: "General",
     thumbnail: "",
+    price: 0,
     finalQuiz: { questions: [], passingScore: 70, points: 100 },
   });
 
@@ -84,6 +85,7 @@ export const useCourseBuilder = (courseId) => {
         difficulty: result.data.difficulty,
         category: result.data.category || "General",
         thumbnail: result.data.thumbnail,
+        price: result.data.price ?? 0,
         finalQuiz: finalQuizData,
       });
 

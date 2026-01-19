@@ -26,7 +26,7 @@ const courseSchema = new mongoose.Schema(
     students: { type: Number, default: 0 },
     duration: { type: String, default: "4 weeks" },
     lessonsCount: { type: Number, default: 0 },
-    price: { type: String, default: "Free" },
+    price: { type: Number, default: 0 },
     tags: [{ type: String }],
     scoreOnFinish: { type: Number, default: 0 },
     published: { type: Boolean, default: false },

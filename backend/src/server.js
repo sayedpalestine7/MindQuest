@@ -4,6 +4,7 @@ import http from "http";
 import { Server } from "socket.io";
 import { connectMongoDB } from "./db/mongoConnect.js";
 import cors from 'cors';
+import Stripe from 'stripe';
 
 // Models
 import Message from "./models/mongo/message.js";
@@ -22,10 +23,15 @@ import chatRoutes from "./routes/chatRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 // -------------------- CONFIG --------------------
 dotenv.config();
 connectMongoDB();
+
+// Initialize Stripe with secret key from environment
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+export { stripe }; // Export for use in payment controller
 
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 const app = express();
@@ -156,6 +162,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Serve uploads folder
 app.use("/uploads", express.static("uploads"));

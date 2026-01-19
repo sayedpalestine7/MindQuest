@@ -19,8 +19,11 @@ import StudentSidebar from "./StudentSidebar"
 import LessonContent from "./LessonContent"
 import QuizModal from "./QuizModal"
 import CourseReviewsSection from "./CourseReviewsSection"
+import PaymentModal from "./PaymentModal"
 import courseService from "../../services/courseService"
+import paymentService from "../../services/paymentService"
 import { useAuth } from "../../context/AuthContext"
+import toast from "react-hot-toast"
 
 export default function StudentCoursePageWrapper({
   // Mode control
@@ -48,6 +51,13 @@ export default function StudentCoursePageWrapper({
   /* -------------------- STATE -------------------- */
   const [course, setCourse] = useState(isPreviewMode ? previewCourse : null)
   const [lessons, setLessons] = useState(isPreviewMode ? previewLessons : [])
+  
+  // Payment state
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const [paymentClientSecret, setPaymentClientSecret] = useState(null)
+  const [paymentAmount, setPaymentAmount] = useState(0)
+  const [paymentCourseTitle, setPaymentCourseTitle] = useState("")
+  const [pendingEnrollCourseId, setPendingEnrollCourseId] = useState(null)
   const [currentLessonId, setCurrentLessonId] = useState(null)
   const [completedLessons, setCompletedLessons] = useState([])
   const [isQuizOpen, setIsQuizOpen] = useState(false)
@@ -179,6 +189,7 @@ export default function StudentCoursePageWrapper({
             title: full.title,
             description: full.description,
             difficulty: full.difficulty,
+            price: full.price ?? 0,
             finalQuiz: quizData,
           }
           
@@ -423,24 +434,95 @@ export default function StudentCoursePageWrapper({
     if (isPreviewMode) return // No enrollment in preview
     
     if (!studentId) {
-      alert("Please log in first")
+      toast.error("Please log in first")
       return
     }
     
     try {
-      const enrolled = await courseService.enrollCourse(studentId, courseId)
-      if (enrolled.success) {
-        alert("Successfully enrolled! Loading course...")
-        setEnrolledCourseIds((prev) => Array.from(new Set([...(prev || []), courseId])))
-        setIsEnrolled(true)
-        navigate(`/student/coursePage/${courseId}`)
-      } else {
-        alert(enrolled.error || "Failed to enroll")
+      // Fetch course to check if it's paid
+      const courseRes = await courseService.getCourseById(courseId)
+      if (!courseRes.success) {
+        toast.error("Failed to load course details")
+        return
       }
+      
+      const courseData = courseRes.data
+      const price = Number(courseData.price) || 0
+      
+      // If course is free, enroll immediately
+      if (price === 0) {
+        const enrolled = await courseService.enrollCourse(studentId, courseId)
+        if (enrolled.success) {
+          toast.success("Successfully enrolled! Loading course...")
+          setEnrolledCourseIds((prev) => Array.from(new Set([...(prev || []), courseId])))
+          setIsEnrolled(true)
+          navigate(`/student/coursePage/${courseId}`)
+        } else {
+          toast.error(enrolled.error || "Failed to enroll")
+        }
+        return
+      }
+      
+      // Course is paid - create payment intent
+      toast.loading("Preparing payment...", { id: "payment-loading" })
+      const paymentRes = await paymentService.createPaymentIntent(courseId, studentId)
+      toast.dismiss("payment-loading")
+      
+      if (!paymentRes.success) {
+        toast.error(paymentRes.error || "Failed to initialize payment")
+        return
+      }
+      
+      // Open payment modal
+      setPendingEnrollCourseId(courseId)
+      setPaymentClientSecret(paymentRes.clientSecret)
+      setPaymentAmount(paymentRes.amount)
+      setPaymentCourseTitle(paymentRes.courseTitle || courseData.title)
+      setIsPaymentModalOpen(true)
+      
     } catch (err) {
       console.error("Enrollment error:", err)
-      alert("Error enrolling in course")
+      toast.error("Error processing enrollment")
     }
+  }
+  
+  const handlePaymentSuccess = async (paymentIntent) => {
+    console.log("✅ Payment successful:", paymentIntent.id)
+    toast.success("Payment successful! Enrolling...")
+    
+    // Close payment modal
+    setIsPaymentModalOpen(false)
+    
+    try {
+      // Enroll after successful payment
+      const enrolled = await courseService.enrollCourse(studentId, pendingEnrollCourseId)
+      if (enrolled.success) {
+        toast.success("Successfully enrolled! Loading course...")
+        setEnrolledCourseIds((prev) => Array.from(new Set([...(prev || []), pendingEnrollCourseId])))
+        setIsEnrolled(true)
+        navigate(`/student/coursePage/${pendingEnrollCourseId}`)
+      } else {
+        toast.error(enrolled.error || "Enrollment failed after payment")
+      }
+    } catch (err) {
+      console.error("Enrollment error after payment:", err)
+      toast.error("Payment succeeded but enrollment failed. Please contact support.")
+    } finally {
+      // Clean up payment state
+      setPendingEnrollCourseId(null)
+      setPaymentClientSecret(null)
+      setPaymentAmount(0)
+      setPaymentCourseTitle("")
+    }
+  }
+  
+  const handlePaymentCancel = () => {
+    setIsPaymentModalOpen(false)
+    setPendingEnrollCourseId(null)
+    setPaymentClientSecret(null)
+    setPaymentAmount(0)
+    setPaymentCourseTitle("")
+    toast.info("Payment cancelled")
   }
   
   /* -------------------- RENDER -------------------- */
@@ -474,6 +556,20 @@ export default function StudentCoursePageWrapper({
             <div className="max-w-4xl w-full p-6">
               <h2 className="text-2xl font-bold mb-4">{course.title}</h2>
               <p className="text-sm text-gray-600 mb-4">{course.description}</p>
+              
+              {/* Price Badge */}
+              <div className="mb-4">
+                {course.price > 0 ? (
+                  <span className="inline-block px-4 py-2 bg-blue-100 text-blue-700 font-bold text-lg rounded-lg">
+                    ${course.price}
+                  </span>
+                ) : (
+                  <span className="inline-block px-4 py-2 bg-green-100 text-green-700 font-bold text-lg rounded-lg">
+                    Free
+                  </span>
+                )}
+              </div>
+              
               <p className="text-gray-500 mb-4">This course requires enrollment to access.</p>
               <button
                 className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
@@ -653,6 +749,16 @@ export default function StudentCoursePageWrapper({
           previewMode={isPreviewMode}
         />
       )}
+      
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={handlePaymentCancel}
+        clientSecret={paymentClientSecret}
+        amount={paymentAmount}
+        courseTitle={paymentCourseTitle}
+        onSuccess={handlePaymentSuccess}
+      />
     </div>
   )
 }
