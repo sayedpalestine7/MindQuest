@@ -347,6 +347,35 @@ export default function TeacherProfilePage() {
     });
   };
 
+  /* ====== Handle Course Delete ====== */
+  const handleCourseDelete = (deletedCourseId) => {
+    setProfileData((prev) => {
+      if (!prev) return prev;
+      
+      // Remove the course from the courses array
+      const updatedCourses = prev.courses?.filter((course) => {
+        const cid = course._id || course.id;
+        return cid !== deletedCourseId;
+      }) || [];
+      
+      // Recalculate stats
+      const totalCourses = updatedCourses.length;
+      const totalEnrolledStudents = updatedCourses.reduce((sum, course) => sum + (course.students || 0), 0);
+      
+      return { 
+        ...prev, 
+        courses: updatedCourses,
+        totalCourses,
+        totalEnrolledStudents
+      };
+    });
+    
+    // Clear active course if it was deleted
+    if (activeCourseId === deletedCourseId) {
+      setActiveCourseId(null);
+    }
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
   if (!profileData) return <div className="min-h-screen flex items-center justify-center text-gray-500">No teacher found</div>;
@@ -392,6 +421,7 @@ export default function TeacherProfilePage() {
           activeCourseId={activeCourseId}
           onCourseSelect={handleCourseSelect}
           onCourseUpdate={handleCourseUpdate}
+          onCourseDelete={handleCourseDelete}
           
           // Chat props
           students={filteredStudents}

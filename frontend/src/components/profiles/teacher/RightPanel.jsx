@@ -14,6 +14,7 @@ export default function RightPanel({
   activeCourseId,
   onCourseSelect,
   onCourseUpdate,
+  onCourseDelete,
   
   // Chat tab props
   students,
@@ -101,6 +102,7 @@ export default function RightPanel({
                 activeCourseId={activeCourseId}
                 onCourseSelect={onCourseSelect}
                 onCourseUpdate={onCourseUpdate}
+                onCourseDelete={onCourseDelete}
               />
             </motion.div>
           )}

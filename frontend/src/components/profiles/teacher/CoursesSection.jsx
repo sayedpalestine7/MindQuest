@@ -1,16 +1,35 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ChevronRight, BookOpen, Users, Plus, Search, Send, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react"
+import { ChevronRight, BookOpen, Users, Plus, Search, Send, CheckCircle, Clock, XCircle, AlertCircle, MoreVertical, Trash2 } from "lucide-react"
 import { useNavigate } from "react-router"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import axios from "axios"
 import toast, { Toaster } from "react-hot-toast"
+import { courseService } from "../../../services/courseService"
 
-export default function CoursesSection({ courses = [], activeCourseId, onCourseSelect, onCourseUpdate }) {
+export default function CoursesSection({ courses = [], activeCourseId, onCourseSelect, onCourseUpdate, onCourseDelete }) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
   const [submittingCourseId, setSubmittingCourseId] = useState(null)
+  const [openMenuId, setOpenMenuId] = useState(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null)
+  const [isDeletingId, setIsDeletingId] = useState(null)
+  
+  // Close menu on Escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        setOpenMenuId(null)
+        setDeleteConfirmId(null)
+      }
+    }
+    
+    if (openMenuId || deleteConfirmId) {
+      document.addEventListener("keydown", handleEscape)
+      return () => document.removeEventListener("keydown", handleEscape)
+    }
+  }, [openMenuId, deleteConfirmId])
   
   const handleSubmitForReview = async (e, courseId, approvalStatus) => {
     e.stopPropagation()
@@ -49,6 +68,42 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
     } finally {
       setSubmittingCourseId(null)
     }
+  }
+  
+  const handleDeleteCourse = async (courseId) => {
+    try {
+      setIsDeletingId(courseId)
+      const result = await courseService.deleteCourse(courseId)
+      
+      if (result.success) {
+        toast.success("Course deleted successfully")
+        
+        // Update parent state to remove course from UI
+        if (onCourseDelete) {
+          onCourseDelete(courseId)
+        }
+        
+        setDeleteConfirmId(null)
+      } else {
+        toast.error(result.error || "Failed to delete course")
+      }
+    } catch (error) {
+      console.error("Error deleting course:", error)
+      toast.error("Failed to delete course")
+    } finally {
+      setIsDeletingId(null)
+    }
+  }
+  
+  const handleToggleMenu = (e, courseId) => {
+    e.stopPropagation()
+    setOpenMenuId(openMenuId === courseId ? null : courseId)
+  }
+  
+  const handleDeleteClick = (e, courseId) => {
+    e.stopPropagation()
+    setOpenMenuId(null)
+    setDeleteConfirmId(courseId)
   }
   
   // Filter courses based on search query
@@ -257,6 +312,49 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
                     )}
                   </motion.button>
                 )}
+                
+                {/* Kebab Menu (3-dot menu) */}
+                <div className="relative">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={(e) => handleToggleMenu(e, cid)}
+                    className="p-2 rounded-lg hover:bg-gray-100 transition"
+                    style={{ color: '#607D8B' }}
+                  >
+                    <MoreVertical className="w-5 h-5" />
+                  </motion.button>
+                  
+                  {/* Dropdown Menu */}
+                  {openMenuId === cid && (
+                    <>
+                      {/* Backdrop to close menu on outside click */}
+                      <div 
+                        className="fixed inset-0 z-10" 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setOpenMenuId(null)
+                        }}
+                      />
+                      
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 min-w-[160px]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={(e) => handleDeleteClick(e, cid)}
+                          className="w-full px-4 py-2 text-left text-sm font-medium hover:bg-red-50 transition flex items-center gap-2"
+                          style={{ color: '#C62828' }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete course
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -264,6 +362,83 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
       </div>
 
     </motion.div>
+    
+    {/* Delete Confirmation Modal */}
+    {deleteConfirmId && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        onClick={(e) => {
+          e.stopPropagation()
+          setDeleteConfirmId(null)
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-4">
+            <h2 className="text-2xl font-bold text-white">Delete Course</h2>
+            <p className="text-red-100 text-sm mt-1">
+              This action cannot be undone
+            </p>
+          </div>
+
+          {/* Content */}
+          <div className="p-6">
+            <div className="flex items-start gap-3 mb-6">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <p className="text-gray-800 font-medium mb-2">
+                  Are you sure you want to delete this course?
+                </p>
+                <p className="text-sm text-gray-600">
+                  This will permanently remove the course, all its lessons, and associated data. Students will lose access to this course.
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setDeleteConfirmId(null)
+                }}
+                disabled={isDeletingId === deleteConfirmId}
+                className="flex-1 px-4 py-2.5 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDeleteCourse(deleteConfirmId)
+                }}
+                disabled={isDeletingId === deleteConfirmId}
+                className="flex-1 px-4 py-2.5 rounded-lg font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ backgroundColor: '#C62828' }}
+              >
+                {isDeletingId === deleteConfirmId ? (
+                  <>Deleting...</>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Delete Course
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    )}
     </>
   )
 }

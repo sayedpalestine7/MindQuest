@@ -605,6 +605,15 @@ export const deleteCourse = async (req, res) => {
     const course = await Course.findById(req.params.id);
     if (!course) return res.status(404).json({ message: "Course not found" });
 
+    // Verify ownership (only course creator or admin can delete)
+    const userId = req.user?._id || req.user?.id;
+    const userRole = req.user?.role;
+    const courseTeacherId = course.teacherId?._id || course.teacherId;
+    
+    if (userRole !== "admin" && String(userId) !== String(courseTeacherId)) {
+      return res.status(403).json({ message: "You don't have permission to delete this course" });
+    }
+
     // Delete related lessons
     await Field.deleteMany({ lessonId: { $in: course.lessonIds } });
     await Lesson.deleteMany({ _id: { $in: course.lessonIds } });
