@@ -25,7 +25,7 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
       transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}
       className="bg-white rounded-xl overflow-hidden border hover:shadow-lg transition flex flex-col h-full"
     >
-      <div className="relative h-40 overflow-hidden">
+      <div className="relative h-48 overflow-hidden">
         <img 
           src={course.thumbnail} 
           alt={course.title} 
@@ -74,13 +74,13 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
         </div>
 
         {/* Title - fixed 2 lines */}
-        <h3 className="font-bold text-base mb-2 line-clamp-2 h-12">{course.title}</h3>
+        <h3 className="font-bold text-base mb-2 line-clamp-2 h-6">{course.title}</h3>
         
         {/* Description - fixed 2 lines */}
         <p className="text-sm text-gray-600 line-clamp-2 h-10 mb-3">{course.description}</p>
 
         {/* Instructor - fixed height */}
-        <div className="mb-2 h-6">
+        <div className="h-2">
           {course.teacherId ? (
             <Link
               to={`/instructor/${course.teacherId}`}
@@ -124,11 +124,11 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
         </div>
 
         <div className="mt-auto pt-4 border-t flex items-center justify-between">
-          <span className="text-lg font-bold text-indigo-600">{course.price}</span>
+          <span className="text-lg font-bold text-blue-600">{course.price}</span>
           {enrolledCourses.includes(courseId) ? (
             <button
               onClick={() => navigate(`/student/coursePage/${courseId}`)}
-              className="flex items-center gap-1 bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
+              className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
             >
               <CheckCircle2 className="w-4 h-4" />
               Continue
@@ -136,7 +136,7 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
           ) : (
             <button
               onClick={() => navigate(`/student/coursePage/${courseId}`)}
-              className="flex items-center gap-1 bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
+              className="flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
             >
               <Eye className="w-4 h-4" />
               View Course

@@ -13,11 +13,21 @@ export default function Statistics() {
   const [loading, setLoading] = useState(true)
   const [statsLoading, setStatsLoading] = useState(true)
 
-  // Fetch testimonials (disabled - no generic reviews endpoint)
+  // Fetch testimonials (reviews)
   useEffect(() => {
-    setLoading(false)
-    // Note: Reviews API requires courseId or teacherId
-    // Example: axios.get(`http://localhost:5000/api/reviews/course/${courseId}`)
+    const fetchReviews = async () => {
+      try {
+        setLoading(true)
+        const response = await axios.get("http://localhost:5000/api/reviews/featured")
+        setTestimonials(response.data || [])
+      } catch (err) {
+        console.error("Error fetching reviews:", err)
+        setTestimonials([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchReviews()
   }, [])
 
   // Fetch real statistics
@@ -88,25 +98,25 @@ export default function Statistics() {
 
   const statsDisplay = [
     {
-      icon: <Users className="w-8 h-8 text-blue-600" />,
+      icon: <Users className="w-8 h-8 text-white" />,
       value: statsLoading ? "..." : `${stats.students}+`,
       label: "Active Learners",
       gradient: "from-blue-500 to-cyan-500"
     },
     {
-      icon: <Star className="w-8 h-8 text-yellow-600" />,
+      icon: <Star className="w-8 h-8 text-white" />,
       value: statsLoading ? "..." : `${stats.rating.toFixed(1)}/5`,
       label: "Average Rating",
       gradient: "from-yellow-500 to-orange-500"
     },
     {
-      icon: <Award className="w-8 h-8 text-purple-600" />,
+      icon: <Award className="w-8 h-8 text-white" />,
       value: statsLoading ? "..." : `${stats.completions}+`,
       label: "Courses Completed",
       gradient: "from-purple-500 to-pink-500"
     },
     {
-      icon: <TrendingUp className="w-8 h-8 text-green-600" />,
+      icon: <TrendingUp className="w-8 h-8 text-white" />,
       value: statsLoading ? "..." : `${Math.round(stats.successRate)}%`,
       label: "Success Rate",
       gradient: "from-green-500 to-emerald-500"

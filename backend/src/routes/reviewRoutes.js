@@ -5,6 +5,7 @@ import {
   getStudentReviewForCourse,
   deleteReview,
   getReviewsByTeacher,
+  getFeaturedReviews,
 } from "../controllers/reviewController.js";
 import { protect, requireRole } from "../middleware/authMiddleware.js";
 
@@ -12,6 +13,9 @@ const router = express.Router();
 
 // Create a new review (student only)
 router.post("/", protect, requireRole(["student"]), createReview);
+
+// Get featured reviews for homepage (public)
+router.get("/featured", getFeaturedReviews);
 
 // Get all reviews for a course (public)
 router.get("/course/:courseId", getReviewsByCourse);

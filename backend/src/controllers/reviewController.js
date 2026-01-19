@@ -144,6 +144,26 @@ export const getReviewsByTeacher = async (req, res) => {
   }
 };
 
+// Get featured/recent reviews for homepage
+export const getFeaturedReviews = async (req, res) => {
+  try {
+    // Get recent high-rated reviews (4+ stars) with comments
+    const reviews = await Review.find({ 
+      rating: { $gte: 4 },
+      comment: { $exists: true, $ne: "" }
+    })
+      .populate("studentId", "name profileImage")
+      .populate("courseId", "title")
+      .sort({ createdAt: -1 })
+      .limit(6); // Get 6 reviews for the homepage
+
+    res.status(200).json(reviews);
+  } catch (err) {
+    console.error("Error fetching featured reviews:", err);
+    res.status(500).json({ message: "Failed to fetch reviews", error: err.message });
+  }
+};
+
 // Helper function to update course average rating
 async function updateCourseRating(courseId) {
   try {

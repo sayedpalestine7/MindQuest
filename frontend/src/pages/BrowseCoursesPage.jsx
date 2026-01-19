@@ -284,7 +284,7 @@ export default function BrowseCoursesPage() {
                       "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1170&q=80",
                     instructor: course.teacherId?.name || "Unknown Instructor",
                     teacherId: course.teacherId?._id,
-                    rating: course.averageRating || 0,
+                    rating: course.averageRating || course.rating || 0,
                     ratingCount: course.ratingCount || 0,
                     students: course.enrollmentCount || course.students || 0,
                     duration: course.duration || "Self-paced",

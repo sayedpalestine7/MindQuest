@@ -3,24 +3,24 @@ import { Clapperboard, Bot, Sparkles, MessageSquare, Brain, Trophy, Target, Zap,
 
 const features = [
   {
-    icon: <Clapperboard className="w-6 h-6 text-white" />,
+    icon: <Clapperboard className="w-6 h-6 text-yellow-600" />,
     title: "Animation Studio",
     desc: "Create professional algorithm visualizations with our built-in timeline editor. No external tools needed.",
-    gradient: "from-blue-600 to-purple-600",
-    highlight: true
+    gradient: "from-yellow-100 to-yellow-50",
+    highlight: false
   },
   {
-    icon: <Bot className="w-6 h-6 text-white" />,
+    icon: <Bot className="w-6 h-6 text-blue-600" />,
     title: "AI Quiz Generation",
     desc: "Generate smart quizzes automatically using AI. Save time and create better assessments.",
-    gradient: "from-purple-600 to-pink-600",
-    highlight: true
+    gradient: "from-blue-100 to-blue-50",
+    highlight: false
   },
   {
-    icon: <MessageSquare className="w-6 h-6 text-blue-600" />,
+    icon: <MessageSquare className="w-6 h-6 text-orange-600" />,
     title: "Real-Time Chat",
     desc: "Connect with teachers instantly through built-in messaging. Get help when you need it.",
-    gradient: "from-blue-100 to-blue-50",
+    gradient: "from-orange-100 to-orange-50",
     highlight: false
   },
   {
