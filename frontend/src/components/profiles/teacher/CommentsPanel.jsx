@@ -303,42 +303,7 @@ export default function CommentsPanel({ teacherId }) {
         )}
       </div>
 
-      {/* Stats Footer */}
-      {filteredReviews.length > 0 && (
-        <div
-          className="mt-4 pt-3 border-t flex items-center justify-between"
-          style={{ borderColor: "#E0E0E0" }}
-        >
-          <div className="text-sm" style={{ color: "#607D8B" }}>
-            <span className="font-semibold" style={{ color: "#263238" }}>
-              {filteredReviews.length}
-            </span>{" "}
-            {filteredReviews.length === 1 ? "review" : "reviews"}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm" style={{ color: "#607D8B" }}>
-              Average:
-            </span>
-            <div className="flex items-center gap-1">
-              {renderStars(
-                Math.round(
-                  filteredReviews.reduce((sum, r) => sum + r.rating, 0) /
-                    filteredReviews.length
-                )
-              )}
-              <span
-                className="text-sm font-semibold ml-1"
-                style={{ color: "#263238" }}
-              >
-                {(
-                  filteredReviews.reduce((sum, r) => sum + r.rating, 0) /
-                  filteredReviews.length
-                ).toFixed(1)}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Stats Footer removed - stats shown in StatsPanel */}
 
       {/* Report Modal */}
       <ReportModal

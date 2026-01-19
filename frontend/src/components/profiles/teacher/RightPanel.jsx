@@ -57,7 +57,7 @@ export default function RightPanel({
           }}
         >
           <span className="flex items-center justify-center gap-2">
-            📚 Courses
+            Courses
           </span>
         </button>
         <button
@@ -74,12 +74,12 @@ export default function RightPanel({
           }}
         >
           <span className="flex items-center justify-center gap-2">
-            💬 Chat
-            {totalUnread > 0 && (
+            Chat
+            {/* {totalUnread > 0 && (
               <span className="text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center" style={{ backgroundColor: "#E53935" }}>
                 {totalUnread}
               </span>
-            )}
+            )} */}
           </span>
         </button>
       </div>

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 export default function CoursesList({ courses, enrolledCourses }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {courses && courses.length > 0 ? (
         courses.map((course, i) => (
           <motion.div

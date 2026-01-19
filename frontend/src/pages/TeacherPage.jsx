@@ -5,6 +5,8 @@ import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import courseService from "../services/courseService";
+import DashboardLayout from "../components/profiles/teacher/DashboardLayout";
+import LeftPanel from "../components/profiles/teacher/LeftPanel";
 import TeacherHeader from "../components/profiles/treacherInfo/TeacherHeader";
 import ExpertiseTags from "../components/profiles/treacherInfo/ExpertiseTags";
 import CoursesList from "../components/profiles/treacherInfo/CoursesList";
@@ -60,6 +62,7 @@ export default function TeacherPage() {
           expertise: data.expertise || (data.specialization ? [data.specialization] : []),
           totalStudents: totalStudents,
           rating: data.rating || 0,
+          avatar: data.profileImage || data.avatar || "/placeholder.svg",
         };
 
         setTeacher(mappedTeacher);
@@ -153,61 +156,163 @@ export default function TeacherPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <Toaster position="top-right" />
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        {/* Profile Header */}
-        <Header />
+      <DashboardLayout
+        header={<Header />}
+        leftPanel={
+          <LeftPanel
+            header={
+              <div className="border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-violet-50 p-6">
+                <TeacherHeader teacher={teacher} reviewsCount={reviews.length} />
+                <div className="mt-6 pt-6 border-t border-slate-200">
+                  <ExpertiseTags skills={teacher.expertise} />
+                </div>
+              </div>
+            }
+            mainContent={
+              <div className="p-6 space-y-6">
+                {/* Teacher Profile Summary */}
+                <div className="flex items-center gap-6 pb-6 border-b border-slate-200">
+                  <div className="flex-shrink-0">
+                    <img
+                      src={teacher.avatar || "/placeholder.svg"}
+                      alt={teacher.name}
+                      className="w-20 h-20 rounded-full object-cover ring-4 ring-indigo-100"
+                    />
+                  </div>
 
-        <div className="container mx-auto p-6 space-y-8 max-w-7xl">
-          <div className="bg-white rounded-xl shadow p-6 gap-6">
-            <TeacherHeader teacher={teacher} reviewsCount={reviews.length} />
-            <div className="mt-6 pt-6 border-t border-border">
-              <ExpertiseTags skills={teacher.expertise} />
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-2xl font-bold text-slate-800 truncate">{teacher.name}</h2>
+                    {teacher.title && (
+                      <p className="text-sm text-slate-500 mt-1 truncate">{teacher.title}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-col items-center bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg px-4 py-2 w-28">
+                      <div className="text-xs text-blue-600 font-medium">Courses</div>
+                      <div className="text-lg font-bold text-blue-700">{teacher.courses?.length || 0}</div>
+                    </div>
+
+                    <div className="flex flex-col items-center bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg px-4 py-2 w-28">
+                      <div className="text-xs text-green-600 font-medium">Students</div>
+                      <div className="text-lg font-bold text-green-700">{teacher.totalStudents || 0}</div>
+                    </div>
+
+                    <div className="flex flex-col items-center bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg px-4 py-2 w-28">
+                      <div className="text-xs text-yellow-600 font-medium">Rating</div>
+                      <div className="text-lg font-bold text-yellow-700">{teacher.rating ? teacher.rating.toFixed(1) : 'N/A'}{teacher.rating && <span className="ml-1">⭐</span>}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* About Section */}
+                {teacher.bio && (
+                  <div className="bg-white rounded-lg border border-slate-200 p-5">
+                    <h3 className="text-lg font-semibold text-slate-800 mb-3">About</h3>
+                    <p className="text-slate-600 leading-relaxed">{teacher.bio}</p>
+                  </div>
+                )}
+
+                {/* Teaching Info */}
+                <div className="bg-white rounded-lg border border-slate-200 p-5">
+                  <h3 className="text-lg font-semibold text-slate-800 mb-3">Teaching Information</h3>
+                  <div className="space-y-2 text-sm">
+                    {teacher.email && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500 font-medium min-w-[100px]">Email:</span>
+                        <span className="text-slate-700">{teacher.email}</span>
+                      </div>
+                    )}
+                    {teacher.specialization && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500 font-medium min-w-[100px]">Specialization:</span>
+                        <span className="text-slate-700">{teacher.specialization}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-500 font-medium min-w-[100px]">Reviews:</span>
+                      <span className="text-slate-700">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          />
+        }
+        rightPanel={
+          <div className="flex flex-col h-full min-h-0">
+            {/* Tab Navigation */}
+            <div className="flex bg-white sticky top-0 z-20" style={{ borderBottom: '2px solid #E0E0E0' }}>
+              <button
+                onClick={() => setActiveTab("courses")}
+                className={`flex-1 py-4 px-6 font-semibold transition-all ${
+                  activeTab === "courses" ? "border-b-2" : ""
+                }`}
+                style={{
+                  color: activeTab === "courses" ? "#3F51B5" : "#607D8B",
+                  borderBottomColor: activeTab === "courses" ? "#3F51B5" : "transparent",
+                  backgroundColor: activeTab === "courses" ? "#F5F7FA" : "transparent"
+                }}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  Courses
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab("reviews")}
+                className={`flex-1 py-4 px-6 font-semibold transition-all ${
+                  activeTab === "reviews" ? "border-b-2" : ""
+                }`}
+                style={{
+                  color: activeTab === "reviews" ? "#3F51B5" : "#607D8B",
+                  borderBottomColor: activeTab === "reviews" ? "#3F51B5" : "transparent",
+                  backgroundColor: activeTab === "reviews" ? "#F5F7FA" : "transparent"
+                }}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  Reviews
+                </span>
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <AnimatePresence mode="wait">
+                {activeTab === "courses" && (
+                  <motion.div
+                    key="courses"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3 }}
+                    className="h-full min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4"
+                  >
+                    <CoursesList
+                      courses={teacher.courses}
+                      enrolledCourses={enrolledCourses}
+                    />
+                  </motion.div>
+                )}
+
+                {activeTab === "reviews" && (
+                  <motion.div
+                    key="reviews"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3 }}
+                    className="h-full min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4"
+                  >
+                    <ReviewsList reviews={reviews} loading={reviewsLoading} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
-
-          {/* Tabs */}
-          <div className="flex border-b border-gray-300 mb-6">
-            <button
-              className={`px-6 py-2 font-medium ${activeTab === "courses"
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-500 hover:text-gray-700"
-                }`}
-              onClick={() => setActiveTab("courses")}
-            >
-              Courses
-            </button>
-            <button
-              className={`px-6 py-2 font-medium ${activeTab === "reviews"
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-500 hover:text-gray-700"
-                }`}
-              onClick={() => setActiveTab("reviews")}
-            >
-              Reviews
-            </button>
-          </div>
-
-          {/* Animated Tab Content */}
-          <AnimatePresence mode="wait">
-            {activeTab === "courses" && (
-              <CoursesList
-                courses={teacher.courses}
-                enrolledCourses={enrolledCourses}
-              />
-            )}
-
-            {activeTab === "reviews" && (
-              <ReviewsList reviews={reviews} loading={reviewsLoading} />
-            )}
-          </AnimatePresence>
-        </div>
-      </motion.div>
-    </div>
+        }
+      />
+    </>
   );
 }
