@@ -11,12 +11,14 @@ const buildNavItems = (role, userId) => {
 
   const common = [
     { label: "Home", to: "/" },
-    { label: "Browse", to: "/courses" },
   ];
+
+  const browsing = { label: "Browse", to: "/courses" };
 
   if (!role) {
     return [
       ...common,
+      browsing,
       { label: "Login", to: "/login" },
       { label: "Sign Up", to: "/signup" },
     ];
@@ -25,6 +27,7 @@ const buildNavItems = (role, userId) => {
   if (role === "student") {
     return [
       ...common,
+      browsing,
       { label: "My Profile", to: `/student/${safeUserId}` },
     ];
   }

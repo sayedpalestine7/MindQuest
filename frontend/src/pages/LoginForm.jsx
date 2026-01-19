@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { motion } from "framer-motion"
 import { GoogleSignInButton } from '../components/login/GoogleSignInButton.jsx'
 import EmailInput from '../components/login/EmailInput.jsx'
@@ -12,6 +12,7 @@ import toast from 'react-hot-toast'
 import axios from "axios";
 import { useNavigate } from 'react-router'
 import { getGoogleIdToken } from "../utils/googleAuth";
+import AuthContext from "../context/AuthContext";
 
 
 function LoginForm() {
@@ -22,6 +23,7 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
+  const { login } = useContext(AuthContext);
 
   useEffect(() => {
     const rememberEmail = localStorage.getItem("rememberEmail");
@@ -72,8 +74,7 @@ function LoginForm() {
       }
 
       // Store token and user info
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      login(data.user, data.token);
       localStorage.setItem("userId", data.user._id);
 
       toast.success(`Welcome back, ${data.user.name}! 👋`);
@@ -117,8 +118,7 @@ const handleGoogleSignIn = async () => {
     );
 
     // 3️⃣ Store auth
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
+    login(data.user, data.token);
     localStorage.setItem("userId", data.user._id);
 
     toast.success(`Welcome back, ${data.user.name}! 👋`);
