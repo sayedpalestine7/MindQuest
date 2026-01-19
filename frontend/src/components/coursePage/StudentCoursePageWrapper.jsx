@@ -18,6 +18,7 @@ import StudentHeader from "./StudentHeader"
 import StudentSidebar from "./StudentSidebar"
 import LessonContent from "./LessonContent"
 import QuizModal from "./QuizModal"
+import CourseReviewsSection from "./CourseReviewsSection"
 import courseService from "../../services/courseService"
 import { useAuth } from "../../context/AuthContext"
 
@@ -607,6 +608,14 @@ export default function StudentCoursePageWrapper({
               isPreviewMode={isPreviewMode}
               onEnroll={() => handleEnrollCourse(course?.id)}
             />
+            
+            {/* Course Reviews Section - Only shown when NOT enrolled */}
+            {!isPreviewMode && (
+              <CourseReviewsSection 
+                courseId={courseId} 
+                isEnrolled={isEnrolled}
+              />
+            )}
           </main>
           
           {isAIPanelOpen && (

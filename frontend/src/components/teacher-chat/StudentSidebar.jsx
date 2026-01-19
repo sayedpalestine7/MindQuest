@@ -202,7 +202,7 @@ export default function StudentSidebar({
                 </div>
 
                 {/* Unread Badge */}
-                {unread > 0 && (
+                {/* {unread > 0 && (
                   <motion.div 
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -211,7 +211,7 @@ export default function StudentSidebar({
                   >
                     {Math.min(unread, 9)}+
                   </motion.div>
-                )}
+                )} */}
               </motion.button>
             );
           })

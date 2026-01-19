@@ -372,16 +372,16 @@ export default function TeacherProfilePage() {
             />
           }
           mainContent={
-            <MainPanel>
-              <div className="grid lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
+            <div className="h-full min-h-0">
+              <div className="grid lg:grid-cols-3 gap-6 h-full">
+                <div className="lg:col-span-2 h-full min-h-0">
                   <CommentsPanel teacherId={teacherId} />
                 </div>
-                <div>
+                <div className="h-full min-h-0 overflow-y-auto">
                   <StatsPanel stats={stats} />
                 </div>
               </div>
-            </MainPanel>
+            </div>
           }
         />
       }
