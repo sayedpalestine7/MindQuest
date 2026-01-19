@@ -65,6 +65,12 @@ export default function StudentCoursePageWrapper({
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(!isPreviewMode)
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
+
+  const getDefaultPreviewLessonId = (lessonList) => {
+    if (!Array.isArray(lessonList) || lessonList.length === 0) return null
+    const previewLesson = lessonList.find((lesson) => lesson.isPreview)
+    return previewLesson ? previewLesson.id : lessonList[0].id
+  }
   
   // Student ID - in preview mode, use mock ID
   const [studentId, setStudentId] = useState(() => {
@@ -102,7 +108,8 @@ export default function StudentCoursePageWrapper({
       if (previewLessons && previewLessons.length > 0) {
         setLessons(previewLessons)
         if (!currentLessonId) {
-          setCurrentLessonId(previewLessons[0].id)
+          const defaultLessonId = getDefaultPreviewLessonId(previewLessons)
+          if (defaultLessonId) setCurrentLessonId(defaultLessonId)
         }
       }
       setLoading(false)
@@ -402,7 +409,8 @@ export default function StudentCoursePageWrapper({
       // In preview mode, just reset local state
       setCompletedLessons([])
       if (lessons.length > 0) {
-        setCurrentLessonId(lessons[0].id)
+        const defaultLessonId = getDefaultPreviewLessonId(lessons)
+        if (defaultLessonId) setCurrentLessonId(defaultLessonId)
       }
       return
     }

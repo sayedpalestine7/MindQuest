@@ -21,7 +21,7 @@ export const useCourseBuilder = (courseId) => {
 
   // UI state
   const [lessons, setLessons] = useState([
-    { id: generateId(), title: "Lesson 1", fields: [], isPreview: false },
+    { id: generateId(), title: "Lesson 1", fields: [], isPreview: true },
   ]);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
   const [isQuizSectionOpen, setIsQuizSectionOpen] = useState(false);
@@ -90,7 +90,7 @@ export const useCourseBuilder = (courseId) => {
       });
 
       if (result.data.lessonIds && Array.isArray(result.data.lessonIds)) {
-        const newLessons = result.data.lessonIds.map((lesson) => ({
+        let newLessons = result.data.lessonIds.map((lesson) => ({
           id: lesson._id,
           title: lesson.title,
           isPreview: lesson.isPreview || false,
@@ -122,11 +122,17 @@ export const useCourseBuilder = (courseId) => {
             };
           }),
         }));
+        if (!newLessons.some((lesson) => lesson.isPreview) && newLessons.length > 0) {
+          newLessons = [
+            { ...newLessons[0], isPreview: true },
+            ...newLessons.slice(1),
+          ];
+        }
         setLessons(newLessons);
         // Reset selected lesson to first lesson of loaded course
         setSelectedLessonId(newLessons.length > 0 ? newLessons[0].id : null);
       } else {
-        setLessons([{ id: generateId(), title: "Lesson 1", fields: [] }]);
+        setLessons([{ id: generateId(), title: "Lesson 1", fields: [], isPreview: true }]);
         setSelectedLessonId(null);
       }
     } else {

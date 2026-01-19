@@ -318,8 +318,6 @@ export default function TeacherProfilePage() {
     if (filtered.length > 0) setSelectedStudent(filtered[0]);
   };
 
-  /* ====== Logout ====== */
-
   /* ====== Course Selection (for inter-panel communication) ====== */
   const handleCourseSelect = (courseId) => {
     setActiveCourseId(courseId);
@@ -384,7 +382,7 @@ export default function TeacherProfilePage() {
   return (
     <>
     <DashboardLayout
-      header={<AppHeader subtitle="Teacher Dashboard" />}
+      header={<AppHeader subtitle="Teacher Profile" />}
       leftPanel={
         <LeftPanel
           userSummary={
@@ -396,12 +394,12 @@ export default function TeacherProfilePage() {
           }
           mainContent={
             <div className="h-full min-h-0">
-              <div className="grid lg:grid-cols-3 gap-6 h-full">
-                <div className="lg:col-span-2 h-full min-h-0">
-                  <CommentsPanel teacherId={teacherId} />
+              <div className="flex flex-col gap-6 h-full min-h-0">
+                <div className="shrink-0">
+                  <StatsPanel stats={stats} layout="grid" title="Overview" />
                 </div>
-                <div className="h-full min-h-0 overflow-y-auto">
-                  <StatsPanel stats={stats} />
+                <div className="flex-1 min-h-0">
+                  <CommentsPanel teacherId={teacherId} />
                 </div>
               </div>
             </div>

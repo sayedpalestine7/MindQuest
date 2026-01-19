@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { BookOpen, Users, Star, Award } from "lucide-react";
 
-export default function StatsSection({ stats }) {
+export default function StatsSection({ stats, layout = "stack" }) {
   if (!stats) return null;
 
   const statsArray = [
@@ -37,9 +37,14 @@ export default function StatsSection({ stats }) {
     },
   ];
 
+  const containerClassName =
+    layout === "grid"
+      ? "grid grid-cols-2 lg:grid-cols-4 gap-3"
+      : "space-y-3";
+
   return (
     <motion.div
-      className="space-y-3"
+      className={containerClassName}
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
