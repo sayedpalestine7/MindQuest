@@ -3,13 +3,14 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { BookOpen, CheckCircle, Clock } from "lucide-react";
 
 import { socket } from "../utils/socket.js";
 import DashboardLayout from "../components/profiles/teacher/DashboardLayout";
 import LeftPanel from "../components/profiles/teacher/LeftPanel";
 import StudentSummaryHeader from "../components/profiles/student/StudentSummaryHeader";
 import MainPanel from "../components/profiles/teacher/MainPanel";
-import StudentPerformancePanel from "../components/profiles/student/StudentPerformancePanel";
+import StudentContinueLearningCard from "../components/profiles/student/StudentContinueLearningCard";
 import StudentStatsPanel from "../components/profiles/student/StudentStatsPanel";
 import StudentRightPanel from "../components/profiles/student/StudentRightPanel";
 import Header from "../components/profiles/student/Header";
@@ -22,6 +23,7 @@ export default function StudentProfilePage() {
   const [error, setError] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [progressData, setProgressData] = useState([]); // Progress records with timestamps
 
   // ---------------- CHAT STATES ----------------
   const [teachersList, setTeachersList] = useState([]);
@@ -70,8 +72,6 @@ export default function StudentProfilePage() {
             { headers: { Authorization: `Bearer ${token}` } }
           );
           if (enrollRes.data && enrollRes.data.enrolledCourses) {
-            console.log('Raw enrolled courses data:', enrollRes.data.enrolledCourses);
-            
             // Backend now provides completedLessons, totalLessons, and progress
             const formattedCourses = enrollRes.data.enrolledCourses.map(course => ({
               ...course,
@@ -80,11 +80,26 @@ export default function StudentProfilePage() {
               progress: course.progress || 0
             }));
             
-            console.log('Formatted courses:', formattedCourses);
+            console.log('📚 Enrolled courses loaded:', formattedCourses.length, formattedCourses);
             setEnrolledCourses(formattedCourses);
           }
         } catch (enrollErr) {
           console.error("Failed to load enrolled courses:", enrollErr);
+        }
+
+        // Fetch progress data for recent activity timestamps
+        try {
+          const progressRes = await axios.get(
+            `http://localhost:5000/api/progress/student/${studentId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (progressRes.data) {
+            const progressArray = Array.isArray(progressRes.data) ? progressRes.data : [];
+            console.log('📊 Progress data loaded:', progressArray.length, progressArray);
+            setProgressData(progressArray);
+          }
+        } catch (progressErr) {
+          console.error("Failed to load progress data:", progressErr);
         }
       } catch (err) {
         console.error(err);
@@ -346,26 +361,189 @@ export default function StudentProfilePage() {
       name: updated.name,
       email: updated.email,
       avatar: updated.profileImage,
-      score: updated.studentData?.score ?? profileData.score,
-      finishedCourses: updated.studentData?.finishedCourses ?? profileData.finishedCourses,
+      score: updated.studentData?.score ?? profileData?.score,
+      finishedCourses: updated.studentData?.finishedCourses ?? profileData?.finishedCourses,
     });
     setIsEditModalOpen(false);
   };
+
+  // ---------------- COMPUTE DATA (BEFORE EARLY RETURNS) ----------------
+  // Calculate stats from real enrolled courses
+  const stats = React.useMemo(() => ({
+    totalCourses: enrolledCourses.length,
+    completedCourses: enrolledCourses.filter((c) => c.progress === 100).length,
+    totalPoints: profileData?.score ?? 0,
+    overallProgress: enrolledCourses.length > 0 
+      ? Math.round(enrolledCourses.reduce((a, c) => a + (c.progress || 0), 0) / enrolledCourses.length)
+      : 0,
+  }), [enrolledCourses, profileData]);
+
+  // ---------------- COMPUTE CONTINUE LEARNING DATA ----------------
+  const continueLearning = React.useMemo(() => {
+    if (enrolledCourses.length === 0) return null;
+
+    // Find most recently updated course from progressData
+    const sortedProgress = [...progressData].sort((a, b) => {
+      const dateA = new Date(a.lastUpdated || a.updatedAt || 0);
+      const dateB = new Date(b.lastUpdated || b.updatedAt || 0);
+      return dateB - dateA;
+    });
+
+    const recentProgress = sortedProgress[0];
+    if (!recentProgress || !recentProgress.courseId) {
+      // Fallback: pick first incomplete course, or just first course
+      const incompleteCourse = enrolledCourses.find(c => c.progress < 100) || enrolledCourses[0];
+      if (!incompleteCourse) return null;
+
+      // Extract first lesson from populated lessonIds
+      const firstLesson = incompleteCourse.lessonIds?.[0];
+      const firstLessonId = firstLesson?._id || firstLesson;
+
+      console.log('⚠️ No progress data, using fallback course:', incompleteCourse.title, 'First lesson:', firstLesson?.title);
+
+      return {
+        courseId: incompleteCourse._id,
+        courseTitle: incompleteCourse.title,
+        nextLessonTitle: firstLesson?.title || null,
+        completedLessons: incompleteCourse.completedLessons,
+        totalLessons: incompleteCourse.totalLessons,
+        resumeLessonId: firstLessonId ? String(firstLessonId) : null
+      };
+    }
+
+    // Find matching course in enrolledCourses
+    // Extract courseId (handle both string and populated object)
+    const progressCourseId = (recentProgress.courseId?._id || recentProgress.courseId)?.toString();
+    const course = enrolledCourses.find(c => c._id.toString() === progressCourseId);
+
+    if (!course) {
+      console.log('⚠️ Could not match progress courseId:', recentProgress.courseId, 'with enrolled courses');
+      return null;
+    }
+
+    // Compute next incomplete lesson
+    const completedSet = new Set((recentProgress.completedLessons || []).map(id => id.toString()));
+    const lessons = course.lessonIds || [];
+    
+    let nextLesson = null;
+    let resumeLessonId = null;
+
+    // Check if currentLessonId is not completed (resume in-progress)
+    if (recentProgress.currentLessonId) {
+      const currentId = recentProgress.currentLessonId.toString();
+      if (!completedSet.has(currentId)) {
+        const currentLesson = lessons.find(l => (l._id || l).toString() === currentId);
+        if (currentLesson) {
+          nextLesson = currentLesson;
+          resumeLessonId = currentId;
+        }
+      }
+    }
+
+    // Otherwise find first incomplete lesson
+    if (!nextLesson) {
+      nextLesson = lessons.find(l => {
+        const lessonId = (l._id || l).toString();
+        return !completedSet.has(lessonId);
+      });
+      resumeLessonId = nextLesson ? (nextLesson._id || nextLesson).toString() : null;
+    }
+
+    const result = {
+      courseId: course._id,
+      courseTitle: course.title,
+      nextLessonTitle: nextLesson?.title || null,
+      completedLessons: course.completedLessons,
+      totalLessons: course.totalLessons,
+      resumeLessonId
+    };
+    
+    console.log('🎯 Continue Learning computed:', result);
+    return result;
+  }, [enrolledCourses, progressData]);
+
+  // ---------------- COMPUTE RECENT ACTIVITY ----------------
+  const recentActivity = React.useMemo(() => {
+    const activities = [];
+
+    // 1. Last course interaction (most recent progress update)
+    if (progressData.length > 0) {
+      const sortedProgress = [...progressData].sort((a, b) => {
+        const dateA = new Date(a.lastUpdated || a.updatedAt || 0);
+        const dateB = new Date(b.lastUpdated || b.updatedAt || 0);
+        return dateB - dateA;
+      });
+
+      const recentProgress = sortedProgress[0];
+      
+      // Extract courseId (handle both string and populated object)
+      const progressCourseId = (recentProgress.courseId?._id || recentProgress.courseId)?.toString();
+      const course = enrolledCourses.find(c => c._id.toString() === progressCourseId);
+
+      if (course) {
+        activities.push({
+          icon: BookOpen,
+          text: `Worked on "${course.title}"`,
+          timestamp: recentProgress.lastUpdated || recentProgress.updatedAt
+        });
+      } else {
+        console.log('⚠️ Could not match progress courseId:', recentProgress.courseId, 'with enrolled courses');
+      }
+    }
+
+    // 2. Last completed lesson (if we have completion data)
+    if (progressData.length > 0) {
+      // Find most recently completed lesson across all courses
+      let lastCompleted = null;
+      let lastCompletedTime = null;
+
+      progressData.forEach(p => {
+        if (p.completedLessons && p.completedLessons.length > 0) {
+          // Extract courseId (handle both string and populated object)
+          const pCourseId = (p.courseId?._id || p.courseId)?.toString();
+          const course = enrolledCourses.find(c => c._id.toString() === pCourseId);
+          
+          if (course && course.lessonIds) {
+            const lastLessonId = p.completedLessons[p.completedLessons.length - 1];
+            const lesson = course.lessonIds.find(l => (l._id || l).toString() === lastLessonId.toString());
+            if (lesson) {
+              const updateTime = new Date(p.lastUpdated || p.updatedAt || 0);
+              if (!lastCompletedTime || updateTime > lastCompletedTime) {
+                lastCompleted = { lesson, course };
+                lastCompletedTime = updateTime;
+              }
+            }
+          }
+        }
+      });
+
+      if (lastCompleted && activities.length < 3) {
+        activities.push({
+          icon: CheckCircle,
+          text: `Completed "${lastCompleted.lesson.title}"`,
+          timestamp: lastCompletedTime
+        });
+      }
+    }
+
+    // 3. Last login (use current time as placeholder if no other activity)
+    if (activities.length < 3) {
+      activities.push({
+        icon: Clock,
+        text: 'Logged in to dashboard',
+        timestamp: new Date()
+      });
+    }
+
+    const result = activities.slice(0, 3);
+    console.log('📋 Recent Activity computed:', result.length, result);
+    return result;
+  }, [enrolledCourses, progressData]);
 
   // ---------------- LOADING & ERROR STATES ----------------
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
   if (!profileData) return <div className="min-h-screen flex items-center justify-center text-gray-500">No student found</div>;
-
-  // Calculate stats from real enrolled courses
-  const stats = {
-    totalCourses: enrolledCourses.length,
-    completedCourses: enrolledCourses.filter((c) => c.progress === 100).length,
-    totalPoints: profileData.score,
-    overallProgress: enrolledCourses.length > 0 
-      ? Math.round(enrolledCourses.reduce((a, c) => a + (c.progress || 0), 0) / enrolledCourses.length)
-      : 0,
-  };
 
   return (
     <>
@@ -384,7 +562,10 @@ export default function StudentProfilePage() {
               <MainPanel>
                 <div className="grid lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
-                    <StudentPerformancePanel stats={stats} />
+                    <StudentContinueLearningCard 
+                      continueLearning={continueLearning}
+                      recentActivity={recentActivity}
+                    />
                   </div>
                   <div>
                     <StudentStatsPanel stats={stats} />

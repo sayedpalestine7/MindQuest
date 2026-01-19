@@ -1,6 +1,6 @@
 // /src/pages/StudentCoursePage.jsx
 import React, { useEffect, useState } from "react"
-import { useParams, useNavigate } from "react-router"
+import { useParams, useNavigate, useLocation } from "react-router"
 import StudentHeader from "../components/coursePage/StudentHeader"
 import StudentSidebar from "../components/coursePage/StudentSidebar"
 import LessonContent from "../components/coursePage/LessonContent"
@@ -11,6 +11,7 @@ import { useAuth } from "../context/AuthContext"
 export default function StudentCoursePage() {
   const { courseId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   // Use a ref to track if we've already loaded progress from DB
   const progressLoadedRef = React.useRef(false)
@@ -249,6 +250,20 @@ export default function StudentCoursePage() {
 
     loadProgressFromDatabase()
   }, [studentId, courseId, lessons.length, storageKey])
+
+  /* -------------------- HANDLE RESUME LESSON FROM NAVIGATION STATE -------------------- */
+  useEffect(() => {
+    // If navigated from Continue Learning with resumeLessonId, auto-select that lesson
+    const resumeLessonId = location.state?.resumeLessonId;
+    if (resumeLessonId && lessons.length > 0) {
+      const lessonExists = lessons.some(l => l.id === String(resumeLessonId));
+      if (lessonExists) {
+        setCurrentLessonId(String(resumeLessonId));
+        // Clear the state to avoid re-triggering on future renders
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [location.state, lessons, navigate, location.pathname]);
 
   /* -------------------- AUTO-SAVE PROGRESS (Local & Database) -------------------- */
   useEffect(() => {

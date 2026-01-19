@@ -36,6 +36,7 @@ export default function StudentCoursePageWrapper({
   
   // Student-specific props (from route params)
   courseIdProp = null,
+  resumeLessonIdProp = null, // Lesson to auto-select when navigating from Continue Learning
 }) {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -281,6 +282,18 @@ export default function StudentCoursePageWrapper({
     
     loadProgressFromDatabase()
   }, [studentId, courseId, lessons.length, storageKey, isPreviewMode])
+  
+  /* -------------------- HANDLE RESUME LESSON FROM NAVIGATION STATE -------------------- */
+  useEffect(() => {
+    // If navigated from Continue Learning with resumeLessonId, auto-select that lesson
+    if (isPreviewMode) return
+    if (resumeLessonIdProp && lessons.length > 0) {
+      const lessonExists = lessons.some(l => l.id === String(resumeLessonIdProp))
+      if (lessonExists) {
+        setCurrentLessonId(String(resumeLessonIdProp))
+      }
+    }
+  }, [resumeLessonIdProp, lessons, isPreviewMode])
   
   /* -------------------- AUTO-SAVE PROGRESS (Student mode only) -------------------- */
   useEffect(() => {
