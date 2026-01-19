@@ -1,29 +1,13 @@
 import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router"
-import { Brain, Zap, Gamepad2, CheckCircle2, ArrowRight, Users, Star, Clock } from "lucide-react"
 import axios from "axios"
-
-const categoryIcons = {
-  "Data Structures": <Brain className="w-12 h-12 text-blue-600" />,
-  "Algorithms": <Zap className="w-12 h-12 text-purple-600" />,
-  "Programming": <Gamepad2 className="w-12 h-12 text-pink-600" />,
-  "Web Development": <Zap className="w-12 h-12 text-green-600" />,
-  "Machine Learning": <Brain className="w-12 h-12 text-orange-600" />,
-  "default": <Brain className="w-12 h-12 text-blue-600" />
-}
-
-const categoryColors = {
-  "Data Structures": "from-blue-100 to-blue-50",
-  "Algorithms": "from-purple-100 to-purple-50",
-  "Programming": "from-pink-100 to-pink-50",
-  "Web Development": "from-green-100 to-green-50",
-  "Machine Learning": "from-orange-100 to-orange-50",
-  "default": "from-gray-100 to-gray-50"
-}
+import CourseCard from "../courseBrowse/CourseCard"
+import CourseCardSkeleton from "../courseBrowse/CourseCardSkeleton"
 
 export default function Courses() {
   const navigate = useNavigate()
   const [courses, setCourses] = useState([])
+  const [totalCourses, setTotalCourses] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -31,18 +15,31 @@ export default function Courses() {
     const fetchTopCourses = async () => {
       try {
         setLoading(true)
-        const response = await axios.get("http://localhost:5000/api/courses", {
-          params: {
-            limit: 6,
-            sortBy: "popular", // or "newest"
-            status: "approved"
-          }
+        const params = new URLSearchParams({
+          page: 1,
+          limit: 6,
+          sortBy: "popular"
         })
-        
-        setCourses(response.data.courses || response.data || [])
+
+        const response = await axios.get(`http://localhost:5000/api/courses?${params}`)
+
+        const coursesData = Array.isArray(response.data?.courses)
+          ? response.data.courses
+          : Array.isArray(response.data)
+            ? response.data
+            : []
+
+        const totalFromApi = response.data?.pagination?.total
+        const total = (typeof totalFromApi === "number" && totalFromApi > 0)
+          ? totalFromApi
+          : coursesData.length
+
+        setCourses(coursesData)
+        setTotalCourses(total)
       } catch (err) {
         console.error("Error fetching courses:", err)
         setError(err.message)
+        setTotalCourses(0)
       } finally {
         setLoading(false)
       }
@@ -50,17 +47,6 @@ export default function Courses() {
 
     fetchTopCourses()
   }, [])
-
-  const handleCourseClick = (courseId) => {
-    // Track analytics
-    if (window.gtag) {
-      window.gtag('event', 'course_click', {
-        course_id: courseId,
-        source: 'homepage'
-      })
-    }
-    navigate(`/courses/${courseId}`)
-  }
 
   const handleViewAllCourses = () => {
     // Track analytics
@@ -78,17 +64,9 @@ export default function Courses() {
         <div className="container mx-auto px-4 lg:px-8 text-center">
           <h2 className="text-4xl font-bold mb-4">Start Your Journey</h2>
           <p className="text-gray-600 mb-12">Explore our most popular courses</p>
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="border-2 p-6 rounded-xl bg-white animate-pulse">
-                <div className="aspect-video bg-gray-200 rounded-lg mb-4"></div>
-                <div className="h-6 bg-gray-200 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded mb-4"></div>
-                <div className="flex justify-between">
-                  <div className="h-4 w-20 bg-gray-200 rounded"></div>
-                  <div className="h-4 w-16 bg-gray-200 rounded"></div>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {[...Array(6)].map((_, i) => (
+              <CourseCardSkeleton key={i} index={i} />
             ))}
           </div>
         </div>
@@ -109,76 +87,70 @@ export default function Courses() {
 
   return (
     <section id="courses" className="py-20 bg-gray-50">
-      <div className="container mx-auto px-4 lg:px-8 text-center">
-        <h2 className="text-4xl font-bold mb-4">Start Your Journey</h2>
-        <p className="text-gray-600 mb-12">Explore our most popular courses</p>
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-8">
-          {courses.slice(0, 6).map((course) => {
-            const icon = categoryIcons[course.category] || categoryIcons.default
-            const color = categoryColors[course.category] || categoryColors.default
-            
-            return (
-              <div 
-                key={course._id} 
-                onClick={() => handleCourseClick(course._id)}
-                className="border-2 p-6 rounded-xl hover:shadow-lg bg-white transition cursor-pointer group"
-              >
-                <div className={`aspect-video bg-gradient-to-br ${color} rounded-lg mb-4 flex items-center justify-center overflow-hidden`}>
-                  {course.thumbnail ? (
-                    <img 
-                      src={`http://localhost:5000${course.thumbnail}`} 
-                      alt={course.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    icon
-                  )}
-                </div>
-                <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 transition">{course.title}</h3>
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">{course.description}</p>
-                
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                    <span>{course.lessonCount || course.lessons?.length || 0} Lessons</span>
-                  </div>
-                  {course.students && (
-                    <div className="flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      <span>{course.students}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-3 text-gray-500">
-                    {course.rating > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span>{course.rating.toFixed(1)}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span className="capitalize">{course.difficulty || "Beginner"}</span>
-                    </div>
-                  </div>
-                  <button className="text-blue-600 flex items-center gap-1 group-hover:gap-2 transition-all">
-                    Explore <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+      <div className="container mx-auto px-4 lg:px-8">
+        <div className="text-center">
+          <h2 className="text-4xl font-bold mb-4">Start Your Journey</h2>
+          <p className="text-gray-600 mb-12">Explore our most enrolled courses</p>
         </div>
-        
+
+        {!loading && !error && courses.length > 0 && (
+          <p className="text-gray-600 mt-6 mb-4 text-center">
+            Showing <span className="font-semibold text-gray-900">{courses.length}</span> of{" "}
+            <span className="font-semibold text-gray-900">{totalCourses}</span> courses
+          </p>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto mb-8 items-stretch">
+          {courses
+            .slice(0, 6)
+            .map((course, index) => (
+            <CourseCard
+              key={course._id}
+              course={{
+                id: course._id,
+                title: course.title,
+                description: course.description,
+                thumbnail:
+                  course.thumbnail ||
+                  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1170&q=80",
+                instructor: course.teacherId?.name || "Unknown Instructor",
+                teacherId: course.teacherId?._id,
+                rating: course.averageRating || course.rating || 0,
+                ratingCount: course.ratingCount || 0,
+                students: course.enrollmentCount || course.students || 0,
+                duration: course.duration || "Self-paced",
+                lessons:
+                  course.lessons ??
+                  course.lessonsCount ??
+                  course.lessonIds?.length ??
+                  0,
+                lessonTitles:
+                  (Array.isArray(course.lessonTitles) && course.lessonTitles.length > 0)
+                    ? course.lessonTitles
+                    : Array.isArray(course.lessons)
+                      ? course.lessons.map((l) => l?.title).filter(Boolean).slice(0, 3)
+                      : [],
+                difficulty: course.difficulty || "Beginner",
+                category: course.category || "General",
+                price: course.price > 0 ? `$${course.price}` : "Free",
+                tags: course.tags || [],
+              }}
+              index={index}
+              enrolledCourses={[]}
+              handleEnroll={() => {}}
+            />
+          ))}
+        </div>
+
         {courses.length > 0 && (
-          <button 
-            onClick={handleViewAllCourses}
-            className="px-8 py-3 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-600 hover:text-white transition font-medium"
-          >
-            View All {courses.length > 6 ? 'Courses' : `${courses.length} Courses`}
-          </button>
+          <div className="text-center">
+            <button
+              onClick={handleViewAllCourses}
+              className="px-8 py-3 border-2 border-blue-600 text-blue-600 rounded-md hover:bg-blue-600 hover:text-white transition font-medium"
+            >
+              View All Courses
+            </button>
+          </div>
         )}
       </div>
     </section>

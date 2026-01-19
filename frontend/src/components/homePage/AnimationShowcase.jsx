@@ -203,10 +203,10 @@ export default function AnimationShowcase() {
     <section id="animation-showcase" className="py-20 bg-white">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full mb-4">
+          {/* <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full mb-4">
             <Sparkles className="w-4 h-4 text-blue-600" />
             <span className="text-sm font-medium text-blue-700">Our Unique Feature</span>
-          </div>
+          </div> */}
           <h2 className="text-4xl lg:text-5xl font-bold mb-4">
             Built-in <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Animation Studio</span>
           </h2>
@@ -232,7 +232,7 @@ export default function AnimationShowcase() {
               </div>
               <div className="flex-1 flex items-center justify-center">
                 <div className="flex items-center gap-2 px-4 py-1.5 bg-gray-700/50 rounded-lg">
-                  <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                  {/* <Sparkles className="w-3.5 h-3.5 text-blue-400" /> */}
                   <span className="text-xs text-gray-300 font-medium">Animation Studio Preview</span>
                 </div>
               </div>

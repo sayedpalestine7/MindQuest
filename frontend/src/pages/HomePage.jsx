@@ -18,7 +18,9 @@ import CourseCardSkeleton from "../components/courseBrowse/CourseCardSkeleton.js
 import EmptyState from "../components/courseBrowse/EmptyState.jsx"
 import ErrorState from "../components/courseBrowse/ErrorState.jsx"
 import Pagination from "../components/courseBrowse/Pagination.jsx"
+import courseService from "../services/courseService"
 import { useDebounce } from "../hooks/useDebounce"
+import { useAuth } from "../context/AuthContext.jsx"
 
 const difficultyMap = {
   "All Levels": "all",
@@ -29,6 +31,7 @@ const difficultyMap = {
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const { isAuthenticated, isStudent, isTeacher, isAdmin } = useAuth()
   
   // Course data
   const [courses, setCourses] = useState([])
@@ -45,7 +48,7 @@ export default function HomePage() {
   const [searchInput, setSearchInput] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedDifficulty, setSelectedDifficulty] = useState("All Levels")
-  const [sortBy, setSortBy] = useState("newest")
+  const [sortBy, setSortBy] = useState("popular")
   const [categories, setCategories] = useState(["all"])
   
   // Student data
@@ -57,11 +60,17 @@ export default function HomePage() {
 
   // Get student ID from auth on mount
   useEffect(() => {
+    if (!isStudent) {
+      setStudentId(null)
+      setEnrolledCourses([])
+      return
+    }
+
     const userId = localStorage.getItem("userId")
     if (userId) {
       setStudentId(userId)
     }
-  }, [])
+  }, [isStudent])
 
   // Fetch categories on mount
   useEffect(() => {
@@ -101,7 +110,6 @@ export default function HomePage() {
           page: currentPage,
           limit: 6,
           sortBy: sortBy,
-          status: "approved"
         })
 
         if (selectedCategory && selectedCategory !== "all") {
@@ -117,11 +125,12 @@ export default function HomePage() {
         }
 
         const response = await axios.get(`http://localhost:5000/api/courses?${params.toString()}`)
-        
+
         setCourses(response.data.courses || [])
-        setTotalPages(response.data.totalPages || 1)
-        setTotalCourses(response.data.totalCourses || 0)
-        setHasMore(response.data.hasMore || false)
+        setCurrentPage(response.data.pagination?.page || currentPage)
+        setTotalPages(response.data.pagination?.totalPages || 1)
+        setTotalCourses(response.data.pagination?.total || 0)
+        setHasMore(response.data.pagination?.hasMore || false)
       } catch (err) {
         console.error("Error fetching courses:", err)
         setError({
@@ -139,17 +148,19 @@ export default function HomePage() {
   // Fetch enrolled courses
   useEffect(() => {
     const fetchEnrolledCourses = async () => {
-      if (!studentId) return
+      if (!studentId || !isStudent) return
       try {
-        const response = await axios.get(`http://localhost:5000/api/students/${studentId}/courses`)
-        const enrolled = response.data.courses?.map(c => c._id || c.id) || []
-        setEnrolledCourses(enrolled)
+        const result = await courseService.getEnrolledCourses(studentId)
+        if (result.success && result.data) {
+          const enrolledIds = result.data.map((c) => c._id || c.id)
+          setEnrolledCourses(enrolledIds)
+        }
       } catch (err) {
         console.error("Error fetching enrolled courses:", err)
       }
     }
     fetchEnrolledCourses()
-  }, [studentId])
+  }, [studentId, isStudent])
 
   // Handle enroll with toast notifications
   const handleEnroll = async (courseId) => {
@@ -163,12 +174,18 @@ export default function HomePage() {
       return
     }
 
+    const loadingToast = toast.loading("Enrolling...")
+
     try {
-      await axios.post(`http://localhost:5000/api/students/${studentId}/courses/${courseId}/enroll`)
-      setEnrolledCourses([...enrolledCourses, courseId])
-      toast.success("Successfully enrolled in the course!")
+      const result = await courseService.enrollCourse(studentId, courseId)
+      if (result.success) {
+        setEnrolledCourses([...enrolledCourses, courseId])
+        toast.success("Successfully enrolled in the course!", { id: loadingToast })
+      } else {
+        toast.error(result.error || "Failed to enroll in course", { id: loadingToast })
+      }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to enroll in course")
+      toast.error("Failed to enroll in course", { id: loadingToast })
       console.error("Error enrolling in course:", err)
     }
   }
@@ -192,6 +209,14 @@ export default function HomePage() {
     setError(null)
     setCurrentPage(1)
   }
+
+  const handleSignUpAsStudent = () => {
+    navigate("/signup")
+  }
+
+  const canAccessCourses = isStudent
+  const showStudentPrompt = !isAuthenticated
+  const showNonStudentNote = isAuthenticated && !isStudent
 
   return (
     <div className="min-h-screen">
@@ -223,6 +248,28 @@ export default function HomePage() {
             setSortBy={setSortBy}
             categories={categories}
           /> */}
+
+          {showStudentPrompt && (
+            <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-blue-900">
+                Sign in as a student to view and enroll in courses.
+              </p>
+              <button
+                onClick={handleSignUpAsStudent}
+                className="mq-btn-primary px-4 py-2"
+              >
+                Sign up as student
+              </button>
+            </div>
+          )}
+
+          {showNonStudentNote && (
+            <div className="mb-6 rounded-lg border border-gray-200 bg-white px-4 py-3">
+              <p className="text-sm text-gray-700">
+                Course access and enrollment are available to student accounts only.
+              </p>
+            </div>
+          )}
 
           {!loading && !error && (
             <p className="text-gray-600 mt-6 mb-4">
@@ -270,7 +317,12 @@ export default function HomePage() {
                       ratingCount: course.ratingCount || 0,
                       students: course.enrollmentCount || course.students || 0,
                       duration: course.duration || "Self-paced",
-                      lessons: course.lessonIds?.length || 0,
+                      lessons:
+                        course.lessons ??
+                        course.lessonsCount ??
+                        course.lessonIds?.length ??
+                        0,
+                      lessonTitles: course.lessonTitles || [],
                       difficulty: course.difficulty,
                       category: course.category || "General",
                       price: course.price > 0 ? `$${course.price}` : "Free",
@@ -279,16 +331,17 @@ export default function HomePage() {
                     index={index}
                     enrolledCourses={enrolledCourses}
                     handleEnroll={handleEnroll}
+                    canAccessCourse={canAccessCourses}
                   />
                 ))}
               </div>
 
-              <Pagination
+              {/* <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
                 hasMore={hasMore}
                 onPageChange={handlePageChange}
-              />
+              /> */}
             </>
           )}
         </div>

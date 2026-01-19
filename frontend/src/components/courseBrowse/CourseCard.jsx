@@ -2,9 +2,10 @@ import { motion } from "framer-motion"
 import { Star, Users, Clock, BookOpen, CheckCircle2, Eye } from "lucide-react"
 import { Link, useNavigate } from "react-router"
 
-export default function CourseCard({ course, index, enrolledCourses, handleEnroll }) {
+export default function CourseCard({ course, index, enrolledCourses, handleEnroll, canAccessCourse }) {
   const navigate = useNavigate()
   const courseId = course?._id || course?.id
+  const actionDisabled = !canAccessCourse
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case "Beginner":
@@ -128,16 +129,20 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
           <span className="text-lg font-bold text-blue-600">{course.price}</span>
           {enrolledCourses.includes(courseId) ? (
             <button
-              onClick={() => navigate(`/student/coursePage/${courseId}`)}
-              className="mq-btn-primary px-8 py-3"
+              onClick={actionDisabled ? undefined : () => navigate(`/student/coursePage/${courseId}`)}
+              disabled={actionDisabled}
+              aria-disabled={actionDisabled}
+              className={`mq-btn-primary px-8 py-3 ${actionDisabled ? "opacity-60 cursor-not-allowed" : ""}`}
             >
               <CheckCircle2 className="w-4 h-4" />
               Continue
             </button>
           ) : (
             <button
-              onClick={() => navigate(`/student/coursePage/${courseId}`)}
-              className="mq-btn-primary px-4 py-3"
+              onClick={actionDisabled ? undefined : () => navigate(`/student/coursePage/${courseId}`)}
+              disabled={actionDisabled}
+              aria-disabled={actionDisabled}
+              className={`mq-btn-primary px-4 py-3 ${actionDisabled ? "opacity-60 cursor-not-allowed" : ""}`}
             >
               <Eye className="w-4 h-4" />
               View Course

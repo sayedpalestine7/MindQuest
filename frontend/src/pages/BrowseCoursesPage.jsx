@@ -14,6 +14,7 @@ import ErrorState from "../components/courseBrowse/ErrorState.jsx"
 import Pagination from "../components/courseBrowse/Pagination.jsx"
 import courseService from "../services/courseService"
 import { useDebounce } from "../hooks/useDebounce"
+import { useAuth } from "../context/AuthContext.jsx"
 
 const difficultyMap = {
   "All Levels": "all",
@@ -24,6 +25,7 @@ const difficultyMap = {
 
 export default function BrowseCoursesPage() {
   const navigate = useNavigate()
+  const { isStudent } = useAuth()
   
   // Course data
   const [courses, setCourses] = useState([])
@@ -302,6 +304,7 @@ export default function BrowseCoursesPage() {
                   index={index}
                   enrolledCourses={enrolledCourses}
                   handleEnroll={handleEnroll}
+                  canAccessCourse={isStudent}
                 />
               ))}
             </div>

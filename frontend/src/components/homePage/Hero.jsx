@@ -95,11 +95,11 @@ export default function Hero() {
 
       <div className="relative z-10 container mx-auto px-4 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <span className="inline-flex items-center gap-1 text-blue-600 font-medium mb-6">
+          {/* <span className="inline-flex items-center gap-1 text-blue-600 font-medium mb-6">
             <Sparkles className="w-4 h-4" /> Interactive Learning Platform
-          </span>
+          </span> */}
           <h1 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight">
-            Master <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Algorithms</span>
+            Master <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Programming</span>
             <span className="block mt-2">Through Interactive Animations</span>
           </h1>
           <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
