@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import courseService from "../services/courseService";
 import TeacherHeader from "../components/profiles/treacherInfo/TeacherHeader";
@@ -120,14 +121,16 @@ export default function TeacherPage() {
 
   const handleEnroll = async (courseId) => {
     if (!studentId) {
-      alert("Please log in first");
+      toast.error("Please log in first");
       return;
     }
 
     if (enrolledCourses.includes(courseId)) {
-      alert("You are already enrolled in this course!");
+      toast.error("You are already enrolled in this course!");
       return;
     }
+
+    const loadingToast = toast.loading("Enrolling...");
 
     try {
       // Call backend API to enroll student
@@ -135,20 +138,23 @@ export default function TeacherPage() {
       if (result.success) {
         // Update local enrolled courses state
         setEnrolledCourses([...enrolledCourses, courseId]);
-        alert("Successfully enrolled! Navigating to course...");
-        // Navigate to the course page
-        navigate(`/student/coursePage/${courseId}`);
+        toast.success("Successfully enrolled!", { id: loadingToast });
+        // Navigate to the course page with slight delay
+        setTimeout(() => {
+          navigate(`/student/coursePage/${courseId}`);
+        }, 500);
       } else {
-        alert(result.error || "Failed to enroll in course");
+        toast.error(result.error || "Failed to enroll in course", { id: loadingToast });
       }
     } catch (err) {
       console.error("Enrollment error:", err);
-      alert("Error enrolling in course");
+      toast.error("Error enrolling in course", { id: loadingToast });
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-right" />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -193,7 +199,6 @@ export default function TeacherPage() {
               <CoursesList
                 courses={teacher.courses}
                 enrolledCourses={enrolledCourses}
-                handleEnroll={handleEnroll}
               />
             )}
 

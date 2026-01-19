@@ -1,7 +1,11 @@
 import React from "react";
-import { Clock ,BookOpen  } from 'lucide-react';
+import { Clock, BookOpen, Eye } from 'lucide-react';
+import { useNavigate } from "react-router";
 
-export default function CourseCard({ course, enrolledCourses, handleEnroll }) {
+export default function CourseCard({ course, enrolledCourses }) {
+  const navigate = useNavigate();
+  const courseId = course?.id || course?._id;
+  
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case "beginner": return "bg-green-100 text-green-700";
@@ -37,18 +41,13 @@ export default function CourseCard({ course, enrolledCourses, handleEnroll }) {
         </div>
 
         <div className="mt-auto">
-          {enrolledCourses.includes(course.id) ? (
-            <button className="w-full py-2 bg-gray-200 text-gray-500 rounded" disabled>
-              Enrolled
-            </button>
-          ) : (
-            <button
-              onClick={() => handleEnroll(course.id)}
-              className="w-full py-2 bg-blue-500 text-white rounded"
-            >
-              Enroll Now
-            </button>
-          )}
+          <button
+            onClick={() => navigate(`/student/coursePage/${courseId}`)}
+            className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+          >
+            <Eye className="w-4 h-4" />
+            {enrolledCourses.includes(courseId) ? "Continue" : "View Course"}
+          </button>
         </div>
       </div>
     </div>
