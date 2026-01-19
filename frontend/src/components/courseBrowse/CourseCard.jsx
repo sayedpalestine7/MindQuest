@@ -80,11 +80,11 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
         <p className="text-sm text-gray-600 line-clamp-2 h-10 mb-3">{course.description}</p>
 
         {/* Instructor - fixed height */}
-        <div className="h-2">
+        <div className="h-6 mb-2">
           {course.teacherId ? (
             <Link
               to={`/instructor/${course.teacherId}`}
-              className="text-sm text-indigo-600 hover:underline font-medium inline-block truncate"
+              className="text-sm text-blue-600 hover:underline font-medium inline-block truncate"
             >
               By {course.instructor}
             </Link>
@@ -95,40 +95,41 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
           )}
         </div>
 
-        {/* Tags - fixed height */}
+        {/* Lesson Titles - fixed height */}
         <div className="h-6 mb-2">
-          {course.tags && course.tags.length > 0 && (
+          {course.lessonTitles && course.lessonTitles.length > 0 && (
             <div className="flex flex-wrap gap-1">
-              {course.tags.slice(0, 3).map((tag) => (
+              {course.lessonTitles.slice(0, 3).map((title, idx) => (
                 <span
-                  key={tag}
-                  className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs"
+                  key={idx}
+                  className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs line-clamp-1"
                 >
-                  {tag}
+                  {title}
                 </span>
               ))}
             </div>
           )}
         </div>
-
+          
         {/* Course stats - fixed height */}
-        <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+          {/* <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
             <span>{course.duration}</span>
-          </div>
+          </div> */}
           <div className="flex items-center gap-1">
             <BookOpen className="w-4 h-4" />
             <span>{course.lessons} lessons</span>
           </div>
         </div>
 
+
         <div className="mt-auto pt-4 border-t flex items-center justify-between">
           <span className="text-lg font-bold text-blue-600">{course.price}</span>
           {enrolledCourses.includes(courseId) ? (
             <button
               onClick={() => navigate(`/student/coursePage/${courseId}`)}
-              className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+              className="flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
             >
               <CheckCircle2 className="w-4 h-4" />
               Continue
@@ -136,7 +137,7 @@ export default function CourseCard({ course, index, enrolledCourses, handleEnrol
           ) : (
             <button
               onClick={() => navigate(`/student/coursePage/${courseId}`)}
-              className="flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
             >
               <Eye className="w-4 h-4" />
               View Course

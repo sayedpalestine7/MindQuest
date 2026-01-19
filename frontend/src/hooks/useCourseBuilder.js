@@ -13,6 +13,7 @@ export const useCourseBuilder = (courseId) => {
     title: "",
     description: "",
     difficulty: "beginner",
+    category: "General",
     thumbnail: "",
     finalQuiz: { questions: [], passingScore: 70, points: 100 },
   });
@@ -81,6 +82,7 @@ export const useCourseBuilder = (courseId) => {
         title: result.data.title,
         description: result.data.description,
         difficulty: result.data.difficulty,
+        category: result.data.category || "General",
         thumbnail: result.data.thumbnail,
         finalQuiz: finalQuizData,
       });

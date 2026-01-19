@@ -183,7 +183,7 @@ export const validateQuiz = (quiz) => {
  * Sanitize course data for API (remove client-only fields)
  */
 export const sanitizeCourseForAPI = (course) => {
-  const { title, description, difficulty, thumbnail, scoreOnFinish } = course;
+  const { title, description, difficulty, category, thumbnail, scoreOnFinish } = course;
   // Map frontend difficulty values to backend enum values (capitalize)
   const mapDifficulty = (d) => {
     if (!d) return "Beginner";
@@ -199,6 +199,7 @@ export const sanitizeCourseForAPI = (course) => {
     title,
     description,
     difficulty: mapDifficulty(difficulty),
+    category: category || "General",
     thumbnail,
     scoreOnFinish: scoreOnFinish || 0,
   };

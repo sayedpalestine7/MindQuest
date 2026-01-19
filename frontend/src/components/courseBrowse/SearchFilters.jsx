@@ -68,7 +68,7 @@ export default function SearchFilters({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search courses, topics, or skills..."
-            className="w-full border border-gray-300 rounded-lg pl-10 h-12 focus:ring-2 focus:ring-indigo-400 outline-none"
+            className="w-full border border-gray-300 rounded-lg pl-10 h-12 focus:ring-2 focus:ring-blue-400 outline-none"
             aria-label="Search courses"
           />
         </div>
@@ -109,7 +109,7 @@ export default function SearchFilters({
                         }}
                         className={`px-4 py-2 cursor-pointer flex items-center justify-between hover:bg-gray-100 ${
                           selectedCategory === cat
-                            ? "text-indigo-600 font-medium bg-indigo-50"
+                            ? "text-blue-600 font-medium bg-blue-50"
                             : "text-gray-700"
                         }`}
                         role="option"
@@ -117,7 +117,7 @@ export default function SearchFilters({
                       >
                         {label}
                         {selectedCategory === cat && (
-                          <Check className="w-4 h-4 text-indigo-600" />
+                          <Check className="w-4 h-4 text-blue-600" />
                         )}
                       </li>
                     )
@@ -158,7 +158,7 @@ export default function SearchFilters({
                       }}
                       className={`px-4 py-2 cursor-pointer flex items-center justify-between hover:bg-gray-100 ${
                         selectedDifficulty === level
-                          ? "text-indigo-600 font-medium bg-indigo-50"
+                          ? "text-blue-600 font-medium bg-blue-50"
                           : "text-gray-700"
                       }`}
                       role="option"
@@ -166,7 +166,7 @@ export default function SearchFilters({
                     >
                       {level}
                       {selectedDifficulty === level && (
-                        <Check className="w-4 h-4 text-indigo-600" />
+                        <Check className="w-4 h-4 text-blue-600" />
                       )}
                     </li>
                   ))}
@@ -208,7 +208,7 @@ export default function SearchFilters({
                       }}
                       className={`px-4 py-2 cursor-pointer flex items-center justify-between hover:bg-gray-100 ${
                         sortBy === option.value
-                          ? "text-indigo-600 font-medium bg-indigo-50"
+                          ? "text-blue-600 font-medium bg-blue-50"
                           : "text-gray-700"
                       }`}
                       role="option"
@@ -216,7 +216,7 @@ export default function SearchFilters({
                     >
                       {option.label}
                       {sortBy === option.value && (
-                        <Check className="w-4 h-4 text-indigo-600" />
+                        <Check className="w-4 h-4 text-blue-600" />
                       )}
                     </li>
                   ))}

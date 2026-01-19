@@ -96,19 +96,12 @@ export default function RightPanel({
               transition={{ duration: 0.3 }}
               className="h-full min-h-0 overflow-y-auto overscroll-contain"
             >
-              {courses && courses.length > 0 ? (
-                <CoursesSection 
-                  courses={courses} 
-                  activeCourseId={activeCourseId}
-                  onCourseSelect={onCourseSelect}
-                  onCourseUpdate={onCourseUpdate}
-                />
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <p className="text-lg">No courses yet</p>
-                  <p className="text-sm mt-2">Create your first course to get started</p>
-                </div>
-              )}
+              <CoursesSection 
+                courses={courses} 
+                activeCourseId={activeCourseId}
+                onCourseSelect={onCourseSelect}
+                onCourseUpdate={onCourseUpdate}
+              />
             </motion.div>
           )}
 

@@ -5,6 +5,7 @@ import { ChevronRight, BookOpen, Users, Plus, Search, Send, CheckCircle, Clock, 
 import { useNavigate } from "react-router"
 import { useState } from "react"
 import axios from "axios"
+import toast, { Toaster } from "react-hot-toast"
 
 export default function CoursesSection({ courses = [], activeCourseId, onCourseSelect, onCourseUpdate }) {
   const navigate = useNavigate()
@@ -16,7 +17,7 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
     
     // Only allow submission for draft or rejected courses
     if (approvalStatus !== "draft" && approvalStatus !== "rejected") {
-      alert(`Course is already ${approvalStatus}`)
+      toast.error(`Course is already ${approvalStatus}`)
       return
     }
     
@@ -36,13 +37,15 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
       }
       
       // Success feedback
-      alert(response.data.message || "Course submitted for review successfully")
+      toast.success(response.data.message || "Course submitted for review successfully")
       
       // Refresh the page to show updated status
-      window.location.reload()
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
     } catch (error) {
       console.error("Error submitting course for review:", error)
-      alert(error.response?.data?.message || "Failed to submit course for review")
+      toast.error(error.response?.data?.message || "Failed to submit course for review")
     } finally {
       setSubmittingCourseId(null)
     }
@@ -56,35 +59,40 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
 
   if (!courses || courses.length === 0) {
     return (
-      <motion.div
-        className="rounded-lg p-6 border-2 border-dashed"
-        style={{ backgroundColor: '#E8EAF6', borderColor: '#C5CAE9' }}
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <div className="flex items-center justify-center gap-4 mb-4">
-          <BookOpen className="w-10 h-10" style={{ color: '#3F51B5' }} />
-          <h3 className="text-2xl font-semibold" style={{ color: '#263238' }}>No Courses Yet</h3>
-        </div>
-        <p className="text-center mb-6" style={{ color: '#607D8B' }}>Start creating your first course to engage with students</p>
-        <motion.button 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate("/teacher/courseBuilder")}
-          className="w-full text-white px-6 py-3 rounded-lg hover:shadow-lg transition flex items-center justify-center gap-2 font-semibold"
-          style={{ background: 'linear-gradient(to right, #3F51B5, #5C6BC0)' }}
+      <>
+        <Toaster position="top-right" />
+        <motion.div
+          className="rounded-lg p-6 border-2 border-dashed"
+          style={{ backgroundColor: '#E8EAF6', borderColor: '#C5CAE9' }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
         >
-          <Plus className="w-5 h-5" /> Create Your First Course
-        </motion.button>
-      </motion.div>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <BookOpen className="w-10 h-10" style={{ color: '#3F51B5' }} />
+            <h3 className="text-2xl font-semibold" style={{ color: '#263238' }}>No Courses Yet</h3>
+          </div>
+          <p className="text-center mb-6" style={{ color: '#607D8B' }}>Start creating your first course to engage with students</p>
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate("/teacher/courseBuilder")}
+            className="w-full text-white px-6 py-3 rounded-lg hover:shadow-lg transition flex items-center justify-center gap-2 font-semibold"
+            style={{ background: 'linear-gradient(to right, #3F51B5, #5C6BC0)' }}
+          >
+            <Plus className="w-5 h-5" /> Create Your First Course
+          </motion.button>
+        </motion.div>
+      </>
     )
   }
 
   return (
-    <motion.div
-      className="shadow-lg overflow-hidden"
-      style={{ backgroundColor: '#FFFFFF' }}
+    <>
+      <Toaster position="top" />
+      <motion.div
+        className="shadow-lg overflow-hidden"
+        style={{ backgroundColor: '#FFFFFF' }}
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
@@ -256,5 +264,6 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
       </div>
 
     </motion.div>
+    </>
   )
 }

@@ -11,7 +11,7 @@ import { sanitizeLessons } from "../services/sanitizationService.js";
 // 🧠 CREATE a new course
 export const createCourse = async (req, res) => {
   try {
-    const { title, description, difficulty, thumbnail, teacherId, scoreOnFinish, lessons, quiz } = req.body;
+    const { title, description, difficulty, category, thumbnail, teacherId, scoreOnFinish, lessons, quiz } = req.body;
 
     try {
       console.log('createCourse payload lessons (full):', JSON.stringify(lessons, null, 2))
@@ -30,6 +30,7 @@ export const createCourse = async (req, res) => {
       title,
       description,
       difficulty,
+      category: category || "General",
       thumbnail,
       teacherId,
       scoreOnFinish: scoreOnFinish || 0,
@@ -276,6 +277,38 @@ export const getCourses = async (req, res) => {
       Course.countDocuments(filter)
     ]);
 
+    // Attach lesson meta (count + first 3 titles) for course cards
+    if (Array.isArray(courses) && courses.length > 0) {
+      const courseIds = courses.map((c) => c._id);
+      const lessons = await Lesson.find({ courseId: { $in: courseIds } })
+        .select("title courseId createdAt")
+        .sort({ createdAt: 1 })
+        .lean();
+
+      const lessonTitlesByCourse = new Map();
+      const lessonCountByCourse = new Map();
+
+      for (const lesson of lessons) {
+        const key = String(lesson.courseId);
+        const currentCount = lessonCountByCourse.get(key) || 0;
+        lessonCountByCourse.set(key, currentCount + 1);
+
+        const titles = lessonTitlesByCourse.get(key) || [];
+        if (titles.length < 3) {
+          titles.push(lesson.title);
+          lessonTitlesByCourse.set(key, titles);
+        }
+      }
+
+      for (const course of courses) {
+        const key = String(course._id);
+        const count = lessonCountByCourse.get(key) || 0;
+        course.lessons = count;
+        course.lessonsCount = count;
+        course.lessonTitles = lessonTitlesByCourse.get(key) || [];
+      }
+    }
+
     // Return different format based on whether pagination is used
     if (limit) {
       res.status(200).json({
@@ -368,7 +401,7 @@ export const getCourseById = async (req, res) => {
 // 🧱 UPDATE course
 export const updateCourse = async (req, res) => {
   try {
-    const { title, description, difficulty, thumbnail, scoreOnFinish, quizId, lessons, quiz } = req.body;
+    const { title, description, difficulty, category, thumbnail, scoreOnFinish, quizId, lessons, quiz } = req.body;
 
     try {
       console.log('updateCourse payload lessons (full):', JSON.stringify(lessons, null, 2))
@@ -549,6 +582,7 @@ export const updateCourse = async (req, res) => {
         title,
         description,
         difficulty,
+        category: category || "General",
         thumbnail,
         scoreOnFinish,
         quizId: newQuizId,

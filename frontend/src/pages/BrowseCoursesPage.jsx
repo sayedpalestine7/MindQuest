@@ -219,9 +219,9 @@ export default function BrowseCoursesPage() {
           className="text-center mb-10"
         >
           <h2 className="text-4xl font-bold mb-3">Explore Our Courses</h2>
-          <p className="text-lg text-gray-600">
+          {/* <p className="text-lg text-gray-600">
             Discover new skills and advance your career with our comprehensive course catalog.
-          </p>
+          </p> */}
         </motion.div>
 
         {/* Search + Filters */}
@@ -288,7 +288,12 @@ export default function BrowseCoursesPage() {
                     ratingCount: course.ratingCount || 0,
                     students: course.enrollmentCount || course.students || 0,
                     duration: course.duration || "Self-paced",
-                    lessons: course.lessonIds?.length || 0,
+                    lessons:
+                      course.lessons ??
+                      course.lessonsCount ??
+                      course.lessonIds?.length ??
+                      0,
+                    lessonTitles: course.lessonTitles || [],
                     difficulty: course.difficulty,
                     category: course.category || "General",
                     price: course.price || "Free",
