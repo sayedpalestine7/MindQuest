@@ -76,16 +76,30 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
       const result = await courseService.deleteCourse(courseId)
       
       if (result.success) {
-        toast.success("Course deleted successfully")
-        
-        // Update parent state to remove course from UI
-        if (onCourseDelete) {
-          onCourseDelete(courseId)
+        // Handle based on action type
+        if (result.action === "archived") {
+          toast.success("Course archived successfully")
+          // Remove archived course from UI (archived courses are hidden from teacher list)
+          if (onCourseDelete) {
+            onCourseDelete(courseId)
+          }
+        } else if (result.action === "deleted") {
+          toast.success("Course deleted successfully")
+          // Remove course from UI
+          if (onCourseDelete) {
+            onCourseDelete(courseId)
+          }
         }
         
         setDeleteConfirmId(null)
       } else {
-        toast.error(result.error || "Failed to delete course")
+        // Handle blocked deletion (approved course with enrollments)
+        if (result.action === "blocked") {
+          toast.error(result.error || `Cannot delete course with ${result.enrollmentCount} enrolled students`)
+          setDeleteConfirmId(null)
+        } else {
+          toast.error(result.error || "Failed to delete course")
+        }
       }
     } catch (error) {
       console.error("Error deleting course:", error)
@@ -106,10 +120,12 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
     setDeleteConfirmId(courseId)
   }
   
-  // Filter courses based on search query
+  // Filter courses based on search query and exclude archived courses
   const filteredCourses = courses.filter(course => {
     const title = course.title || course.name || "";
-    return title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
+    const isNotArchived = !course.archived;
+    return matchesSearch && isNotArchived;
   }) 
 
   if (!courses || courses.length === 0) {
@@ -306,10 +322,15 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
                       >
                         <button
                           onClick={(e) => handleDeleteClick(e, cid)}
-                          className="w-full px-4 py-2 text-left text-sm font-medium hover:bg-red-50 transition flex items-center gap-2 text-red-600"
+                          disabled={course.archived}
+                          className="w-full px-4 py-2 text-left text-sm font-medium hover:bg-red-50 transition flex items-center gap-2 text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Trash2 className="w-4 h-4" />
-                          Delete course
+                          {course.archived
+                            ? 'Archived'
+                            : course.approvalStatus === 'approved' && (course.enrollmentCount || course.students || 0) === 0
+                            ? 'Archive course'
+                            : 'Delete course'}
                         </button>
                       </motion.div>
                     </>
@@ -342,9 +363,21 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-4">
-            <h2 className="text-2xl font-bold text-white">Delete Course</h2>
+            <h2 className="text-2xl font-bold text-white">
+              {(() => {
+                const course = courses.find(c => (c._id || c.id) === deleteConfirmId);
+                const isApproved = course?.approvalStatus === 'approved';
+                const hasEnrollments = (course?.enrollmentCount || course?.students || 0) > 0;
+                return isApproved && !hasEnrollments ? 'Archive Course' : 'Delete Course';
+              })()}
+            </h2>
             <p className="text-red-100 text-sm mt-1">
-              This action cannot be undone
+              {(() => {
+                const course = courses.find(c => (c._id || c.id) === deleteConfirmId);
+                const isApproved = course?.approvalStatus === 'approved';
+                const hasEnrollments = (course?.enrollmentCount || course?.students || 0) > 0;
+                return isApproved && !hasEnrollments ? 'This will unpublish the course' : 'This action cannot be undone';
+              })()}
             </p>
           </div>
 
@@ -356,10 +389,32 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
               </div>
               <div>
                 <p className="text-gray-800 font-medium mb-2">
-                  Are you sure you want to delete this course?
+                  {(() => {
+                    const course = courses.find(c => (c._id || c.id) === deleteConfirmId);
+                    const isApproved = course?.approvalStatus === 'approved';
+                    const hasEnrollments = (course?.enrollmentCount || course?.students || 0) > 0;
+                    if (isApproved && hasEnrollments) {
+                      return 'This approved course has enrolled students and cannot be deleted.';
+                    } else if (isApproved && !hasEnrollments) {
+                      return 'Are you sure you want to archive this course?';
+                    } else {
+                      return 'Are you sure you want to delete this course?';
+                    }
+                  })()}
                 </p>
                 <p className="text-sm text-gray-600">
-                  This will permanently remove the course, all its lessons, and associated data. Students will lose access to this course.
+                  {(() => {
+                    const course = courses.find(c => (c._id || c.id) === deleteConfirmId);
+                    const isApproved = course?.approvalStatus === 'approved';
+                    const hasEnrollments = (course?.enrollmentCount || course?.students || 0) > 0;
+                    if (isApproved && hasEnrollments) {
+                      return 'Please contact support if you need assistance removing this course.';
+                    } else if (isApproved && !hasEnrollments) {
+                      return 'This will unpublish and archive the course. You can restore it later if needed.';
+                    } else {
+                      return 'This will permanently remove the course, all its lessons, and associated data.';
+                    }
+                  })()}
                 </p>
               </div>
             </div>
@@ -386,11 +441,22 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
                 style={{ backgroundColor: '#C62828' }}
               >
                 {isDeletingId === deleteConfirmId ? (
-                  <>Deleting...</>
+                  <>Processing...</>
                 ) : (
                   <>
                     <Trash2 className="w-4 h-4" />
-                    Delete Course
+                    {(() => {
+                      const course = courses.find(c => (c._id || c.id) === deleteConfirmId);
+                      const isApproved = course?.approvalStatus === 'approved';
+                      const hasEnrollments = (course?.enrollmentCount || course?.students || 0) > 0;
+                      if (isApproved && hasEnrollments) {
+                        return 'Cannot Delete';
+                      } else if (isApproved && !hasEnrollments) {
+                        return 'Archive Course';
+                      } else {
+                        return 'Delete Course';
+                      }
+                    })()}
                   </>
                 )}
               </button>

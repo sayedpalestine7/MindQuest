@@ -1,7 +1,9 @@
-import React from "react"
-import { CalendarDays, Eye, BookOpen , ChartColumnStacked, CheckCircle, XCircle } from "lucide-react"
+import React, { useState } from "react"
+import { CalendarDays, Eye, BookOpen , ChartColumnStacked, CheckCircle, XCircle, Trash2, MoreVertical } from "lucide-react"
 
-export default function CourseCard({ course, onView, onApprove, onReject }) {
+export default function CourseCard({ course, onView, onApprove, onReject, onDelete }) {
+  const [showMenu, setShowMenu] = useState(false)
+  
   const createdDate = new Date(course.createdAt || Date.now()).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -30,11 +32,55 @@ export default function CourseCard({ course, onView, onApprove, onReject }) {
         >
           {course.approvalStatus || "draft"}
         </span>
+        {course.archived && (
+          <span className="absolute top-2 left-2 px-2 py-1 text-xs font-semibold rounded bg-gray-700 text-gray-300">
+            Archived
+          </span>
+        )}
       </div>
 
       {/* Info */}
       <div className="p-4 space-y-3">
-        <h3 className="font-semibold text-lg truncate text-white">{course.title}</h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-semibold text-lg truncate text-white flex-1">{course.title}</h3>
+          
+          {/* Kebab Menu - Admin actions */}
+          {onDelete && (
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="flex items-center justify-center p-1 hover:bg-gray-800 rounded-md text-gray-400 hover:text-white transition"
+              >
+                <MoreVertical size={18} />
+              </button>
+              
+              {showMenu && (
+                <>
+                  {/* Backdrop to close menu */}
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setShowMenu(false)}
+                  />
+                  
+                  {/* Dropdown Menu */}
+                  <div className="absolute right-0 mt-1 w-40 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-20">
+                    <button
+                      onClick={() => {
+                        setShowMenu(false)
+                        onDelete()
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-gray-700 transition rounded-md"
+                    >
+                      <Trash2 size={14} />
+                      Delete Course
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+        
         <p className="text-sm text-gray-400 line-clamp-2">{course.description}</p>
         
         <div className="flex justify-between items-center">

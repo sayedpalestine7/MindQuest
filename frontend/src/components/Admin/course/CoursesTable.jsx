@@ -35,6 +35,9 @@ export default function CoursesTable() {
         // Add limit=all for admin to get all courses without pagination
         params.push("limit=all")
         
+        // Add archived=all to show archived courses to admin
+        params.push("archived=all")
+        
         if (statusFilter === "pending" || statusFilter === "approved" || statusFilter === "rejected") {
           params.push(`approvalStatus=${statusFilter}`)
         } else if (statusFilter === "draft") {
@@ -138,6 +141,34 @@ export default function CoursesTable() {
     } catch (err) {
       console.error("Failed to reject course", err)
       alert(err.response?.data?.message || "Failed to reject course")
+    }
+  }
+
+  const deleteCourse = async (id) => {
+    try {
+      const confirmDelete = window.confirm(
+        "⚠️ Are you sure you want to permanently delete this course? This action cannot be undone and will remove all course data including lessons, quizzes, and fields."
+      )
+      if (!confirmDelete) return
+
+      const token = localStorage.getItem("token")
+      if (!token) {
+        alert("No authentication token found. Please log in.")
+        return
+      }
+
+      const response = await courseService.deleteCourse(id)
+      
+      if (response.success) {
+        // Remove course from list
+        setCourses((prev) => prev.filter((c) => c.id !== id))
+        alert(response.message || "Course deleted successfully")
+      } else {
+        alert(response.message || "Failed to delete course")
+      }
+    } catch (err) {
+      console.error("Failed to delete course", err)
+      alert(err.response?.data?.message || err.message || "Failed to delete course")
     }
   }
 
@@ -340,6 +371,7 @@ export default function CoursesTable() {
                 onView={() => handleViewCourse(course)}
                 onApprove={() => approveCourse(course.id)}
                 onReject={() => rejectCourse(course.id)}
+                onDelete={() => deleteCourse(course.id)}
               />
             </motion.div>
           ))}

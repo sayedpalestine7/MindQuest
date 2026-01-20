@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react";
 import axios from "axios"
-import AppHeader from "../components/shared/AppHeader"
+
 
 function AdminForm() {
   const [stats, setStats] = useState([
@@ -51,8 +51,7 @@ function AdminForm() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <AppHeader subtitle="Admin Dashboard" showNotifications={false} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">     
       <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <Sidebar />
         <div className="flex-1 p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">

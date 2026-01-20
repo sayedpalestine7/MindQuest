@@ -3,6 +3,7 @@ import Progress from "../models/mongo/progressModel.js";
 import Course from "../models/mongo/courseModel.js";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
+import { createNotification } from "../services/notificationService.js";
 //http://localhost:5000/api/student/id/690e68ad573b0a98730c2dcd
 
 export const getStudentByID = async (req, res) => {
@@ -164,6 +165,29 @@ export const enrollCourse = async (req, res) => {
     course.students = (course.students || 0) + 1;
     
     await Promise.all([student.save(), course.save()]);
+    
+    // Send notification to student
+    await createNotification({
+      recipientId: studentId,
+      type: "enrollment",
+      title: "Enrollment Successful!",
+      message: `You have successfully enrolled in "${course.title}".`,
+      entityId: courseId,
+      metadata: { courseName: course.title }
+    });
+
+    // Send notification to teacher
+    if (course.teacherId) {
+      const studentName = student.name || student.email || "A student";
+      await createNotification({
+        recipientId: course.teacherId,
+        type: "enrollment",
+        title: "New Enrollment!",
+        message: `${studentName} enrolled in your course "${course.title}".`,
+        entityId: courseId,
+        metadata: { courseName: course.title, studentName }
+      });
+    }
 
     res.status(200).json({
       message: "Successfully enrolled in course",

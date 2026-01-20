@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { Bell, Brain, LogOut } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationsContext";
+import NotificationBell from "./NotificationBell";
 
 const resolveUserId = (user) => user?._id || user?.id || localStorage.getItem("userId");
 
@@ -58,8 +59,6 @@ export default function AppHeader({ subtitle, showNotifications }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
-  const [isOpen, setIsOpen] = useState(false);
 
   const userId = resolveUserId(user);
   const role = user?.role || null;
@@ -106,53 +105,7 @@ export default function AppHeader({ subtitle, showNotifications }) {
         </nav>
 
         <div className="flex items-center gap-3">
-          {displayNotifications && (
-            <div className="relative">
-              <button
-                onClick={() => setIsOpen((prev) => !prev)}
-                className="relative p-2 rounded-full hover:bg-gray-100 transition"
-                aria-label="Notifications"
-              >
-                <Bell className="w-5 h-5 text-gray-600" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-
-              {isOpen && (
-                <div className="absolute right-0 mt-2 w-72 rounded-xl border border-gray-200 bg-white shadow-lg z-50">
-                  <div className="flex items-center justify-between px-4 py-3 border-b">
-                    <span className="text-sm font-semibold text-gray-700">Notifications</span>
-                    <button
-                      onClick={markAllRead}
-                      className="text-xs text-blue-600 hover:text-blue-700"
-                    >
-                      Mark all read
-                    </button>
-                  </div>
-                  <div className="max-h-72 overflow-y-auto">
-                    {notifications.length === 0 && (
-                      <div className="px-4 py-6 text-sm text-gray-500">No notifications</div>
-                    )}
-                    {notifications.map((n) => (
-                      <button
-                        key={n.id}
-                        onClick={() => markRead(n.id)}
-                        className={`w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 ${
-                          n.read ? "text-gray-500" : "text-gray-800"
-                        }`}
-                      >
-                        <div className="text-sm font-medium">{n.title}</div>
-                        {n.message && <div className="text-xs mt-1 text-gray-500">{n.message}</div>}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {displayNotifications && <NotificationBell />}
 
           {user ? (
             <button

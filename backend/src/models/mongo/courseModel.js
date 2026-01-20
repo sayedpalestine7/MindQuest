@@ -30,6 +30,7 @@ const courseSchema = new mongoose.Schema(
     tags: [{ type: String }],
     scoreOnFinish: { type: Number, default: 0 },
     published: { type: Boolean, default: false },
+    archived: { type: Boolean, default: false },
     
     // 📢 Course approval workflow
     approvalStatus: {

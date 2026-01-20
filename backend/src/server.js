@@ -24,6 +24,7 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 // -------------------- CONFIG --------------------
 dotenv.config();
@@ -90,6 +91,19 @@ export const io = new Server(server, {
 // -------------------- SOCKET CONNECTION --------------------
 io.on("connection", (socket) => {
   console.log("🟢 Socket connected:", socket.id);
+
+  // -------------------- JOIN USER ROOM --------------------
+  // When a user connects, they join their personal room for notifications
+  socket.on("join_user_room", (userId) => {
+    if (!userId) {
+      console.log("⚠️ Missing userId in join_user_room event");
+      return;
+    }
+    
+    const userRoom = `user_${userId}`;
+    socket.join(userRoom);
+    console.log(`🔔 ${socket.id} joined user room: ${userRoom}`);
+  });
 
   // -------------------- JOIN ROOM --------------------
   socket.on("join_room", ({ teacherId, studentId }) => {
@@ -164,6 +178,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Serve uploads folder
 app.use("/uploads", express.static("uploads"));
