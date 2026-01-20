@@ -542,6 +542,7 @@ export default function TeacherCourseBuilder() {
         isOpen={isAIGenerateOpen}
         onClose={() => setIsAIGenerateOpen(false)}
         onSubmit={handleAIGenerateSubmit}
+        lessons={courseBuilder.lessons}
       />
 
       {/* Save Progress Indicator */}
