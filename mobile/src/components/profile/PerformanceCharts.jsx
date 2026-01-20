@@ -10,6 +10,7 @@ import {
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import studentService from '../../services/studentService';
+import courseService from '../../services/courseService';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -58,27 +59,38 @@ export default function PerformanceCharts({ studentId }) {
     try {
       setLoading(true);
 
-      // Fetch student details and enrolled courses
-      const [studentResult, coursesResult] = await Promise.all([
+      const [student, courses] = await Promise.all([
         studentService.getStudentById(studentId),
-        studentService.getEnrolledCourses(studentId)
+        courseService.getEnrolledCourses(studentId, false)
       ]);
 
-      if (studentResult.success && coursesResult.success) {
-        const student = studentResult.data;
-        const courses = coursesResult.data.enrolledCourses || [];
+      const coursesArray = Array.isArray(courses) ? courses : [];
+      const totalCourses = coursesArray.length;
 
-        // Calculate stats
-        const totalCourses = courses.length;
-        const completedCourses = courses.filter(c => c.status === 'completed').length;
-        const inProgressCourses = courses.filter(c => c.status === 'in-progress').length;
-        const totalLessons = courses.reduce((sum, c) => sum + (c.totalLessons || 0), 0);
-        const completedLessons = courses.reduce((sum, c) => sum + (c.completedLessons || 0), 0);
-        
-        // Average progress
-        const avgProgress = totalCourses > 0 
-          ? Math.round(courses.reduce((sum, c) => sum + (c.progress || 0), 0) / totalCourses)
+      const courseMetrics = coursesArray.map((course) => {
+        const totalLessons = course.totalLessons ?? course.lessonIds?.length ?? 0;
+        const completedLessons = Math.min(course.completedLessons ?? 0, totalLessons);
+        const progressPercent = totalLessons > 0
+          ? Math.min(100, Math.round((completedLessons / totalLessons) * 100))
           : 0;
+
+        return { totalLessons, completedLessons, progressPercent };
+      });
+
+      const completedCourses = courseMetrics.filter(
+        (c) => c.totalLessons > 0 && c.completedLessons >= c.totalLessons
+      ).length;
+      const inProgressCourses = courseMetrics.filter(
+        (c) => c.totalLessons > 0 && c.completedLessons > 0 && c.completedLessons < c.totalLessons
+      ).length;
+      const totalLessons = courseMetrics.reduce((sum, c) => sum + c.totalLessons, 0);
+      const completedLessons = courseMetrics.reduce((sum, c) => sum + c.completedLessons, 0);
+      const avgProgress = totalCourses > 0
+        ? Math.min(
+            100,
+            Math.round(courseMetrics.reduce((sum, c) => sum + c.progressPercent, 0) / totalCourses)
+          )
+        : 0;
 
         // Mock weekly progress data (in real app, fetch from backend)
         const weeklyProgress = {
@@ -118,9 +130,9 @@ export default function PerformanceCharts({ studentId }) {
           labels: ['Beginner', 'Intermediate', 'Advanced'],
           datasets: [{
             data: [
-              courses.filter(c => c.difficulty === 'Beginner').length || 1,
-              courses.filter(c => c.difficulty === 'Intermediate').length || 1,
-              courses.filter(c => c.difficulty === 'Advanced').length || 1,
+              coursesArray.filter(c => c.difficulty === 'Beginner').length || 1,
+              coursesArray.filter(c => c.difficulty === 'Intermediate').length || 1,
+              coursesArray.filter(c => c.difficulty === 'Advanced').length || 1,
             ],
           }],
         };
@@ -133,15 +145,12 @@ export default function PerformanceCharts({ studentId }) {
             totalLessons,
             completedLessons,
             avgProgress,
-            score: student.studentData?.score || 0,
+            score: student?.studentData?.score || 0,
           },
           weeklyProgress,
           progressDistribution,
           difficultyData,
         });
-      } else {
-        throw new Error('Failed to fetch performance data');
-      }
     } catch (err) {
       console.error('Error fetching performance data:', err);
       setError(err.message);

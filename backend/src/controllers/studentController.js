@@ -256,9 +256,10 @@ export const getEnrolledCourses = async (req, res) => {
     // Create a map of courseId -> progress
     const progressMap = {};
     progressData.forEach(p => {
+      const uniqueCompleted = new Set((p.completedLessons || []).map((id) => id.toString()));
       progressMap[p.courseId.toString()] = {
-        completedLessons: p.completedLessons || [],
-        completedLessonsCount: (p.completedLessons || []).length,
+        completedLessons: Array.from(uniqueCompleted),
+        completedLessonsCount: uniqueCompleted.size,
         quizScore: p.quizScore || 0,
         status: p.status || 'in-progress'
       };
@@ -271,17 +272,20 @@ export const getEnrolledCourses = async (req, res) => {
       const progress = progressMap[courseId];
       
       const totalLessons = courseObj.lessonIds?.length || 0;
-      const completedLessonsCount = progress?.completedLessonsCount || 0;
+      const completedLessonsCount = Math.min(progress?.completedLessonsCount || 0, totalLessons);
       const progressPercent = totalLessons > 0 
-        ? Math.round((completedLessonsCount / totalLessons) * 100) 
+        ? Math.min(100, Math.round((completedLessonsCount / totalLessons) * 100)) 
         : 0;
+      const status = completedLessonsCount >= totalLessons && totalLessons > 0
+        ? 'completed'
+        : (progress?.status || 'not-started');
 
       return {
         ...courseObj,
         completedLessons: completedLessonsCount,
         totalLessons: totalLessons,
         progress: progressPercent,
-        status: progress?.status || 'not-started'
+        status
       };
     });
 
@@ -425,22 +429,26 @@ export const updateCourseProgress = async (req, res) => {
     try {
       let progressDoc = await Progress.findOne({ studentId, courseId });
       
+      const course = await Course.findById(courseId).select("lessonIds");
+      const totalLessons = course?.lessonIds?.length || 0;
+      const uniqueCompleted = new Set((updatedProgress?.completedLessons || []).map((id) => id.toString()));
+      const completedCount = Math.min(uniqueCompleted.size, totalLessons);
+      const isCompleted = totalLessons > 0 && completedCount >= totalLessons;
+
       if (!progressDoc) {
         progressDoc = await Progress.create({
           studentId,
           courseId,
-          completedLessons: updatedProgress?.completedLessons || [],
+          completedLessons: Array.from(uniqueCompleted),
           quizScore: updatedProgress?.quizScore || 0,
           totalScore: 0,
-          status: "in-progress"
+          status: isCompleted ? "completed" : "in-progress"
         });
       } else {
-        progressDoc.completedLessons = updatedProgress?.completedLessons || [];
+        progressDoc.completedLessons = Array.from(uniqueCompleted);
         progressDoc.quizScore = updatedProgress?.quizScore || 0;
         progressDoc.totalScore = updatedProgress?.quizScore || 0;
-        if (updatedProgress?.quizCompleted) {
-          progressDoc.status = "completed";
-        }
+        progressDoc.status = isCompleted ? "completed" : (updatedProgress?.quizCompleted ? "completed" : progressDoc.status);
         await progressDoc.save();
       }
     } catch (syncErr) {

@@ -72,14 +72,16 @@ export const markLessonCompleted = async (req, res) => {
       progress = new Progress({ studentId, courseId, completedLessons: [] });
     }
 
-    // Add lesson if not already completed
-    if (!progress.completedLessons.includes(lessonId)) {
+    // Add lesson if not already completed (compare by string to avoid duplicates)
+    const completedSet = new Set((progress.completedLessons || []).map((id) => id.toString()));
+    if (!completedSet.has(lessonId.toString())) {
       progress.completedLessons.push(lessonId);
+      completedSet.add(lessonId.toString());
     }
 
     // Check if all lessons in the course are completed
     const totalLessons = course.lessonIds.length;
-    const completedCount = progress.completedLessons.length;
+    const completedCount = Math.min(completedSet.size, totalLessons);
 
     let courseJustCompleted = false;
     if (totalLessons > 0 && completedCount >= totalLessons && progress.status !== "completed") {

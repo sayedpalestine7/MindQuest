@@ -87,6 +87,11 @@ export default function EnrolledCourses({ courses }) {
       >
         {courses.map((course, i) => {
           const review = reviews[course._id];
+          const totalLessons = course.totalLessons || course.lessonIds?.length || 0;
+          const completedLessons = Math.min(course.completedLessons || 0, totalLessons);
+          const progress = totalLessons > 0
+            ? Math.min(100, Math.round((completedLessons / totalLessons) * 100))
+            : 0;
 
           return (
             <motion.div
@@ -110,21 +115,21 @@ export default function EnrolledCourses({ courses }) {
                   {course.title}
                 </h4>
                 <p className="text-xs mb-3 text-slate-500">
-                  {course.completedLessons || 0} / {course.totalLessons || 0} lessons completed
+                  {completedLessons} / {totalLessons} lessons completed
                 </p>
 
                 <div className="w-full h-2 rounded-full mb-3 bg-slate-200">
                   <motion.div
                     className="h-2 rounded-full bg-indigo-600"
                     initial={{ width: 0 }}
-                    animate={{ width: `${course.progress}%` }}
+                    animate={{ width: `${progress}%` }}
                     transition={{ duration: 0.8, delay: i * 0.1 }}
                   />
                 </div>
 
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-semibold text-indigo-600">
-                    {course.progress}% Complete
+                    {progress}% Complete
                   </span>
                 </div>
 

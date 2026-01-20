@@ -6,13 +6,11 @@ import StudentPerformanceSection from "./StudentPerformanceSection";
  */
 export default function StudentPerformancePanel({ stats }) {
   return (
-    <div className="mq-card p-4 h-full flex flex-col">
-      <h2 className="text-lg font-bold mb-3 text-slate-800">
+    <div className="mq-card p-6">
+      <h2 className="text-lg font-bold mb-5 text-slate-800">
         Learning Overview
       </h2>
-      <div className="flex-1">
-        <StudentPerformanceSection stats={stats} />
-      </div>
+      <StudentPerformanceSection stats={stats} />
     </div>
   );
 }

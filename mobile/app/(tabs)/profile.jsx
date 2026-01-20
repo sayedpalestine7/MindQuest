@@ -21,7 +21,6 @@ import { getCourseThumbnail, getUserAvatar } from '../../src/utils/imageUtils';
 import ReviewModal from '../../src/components/profile/ReviewModal';
 import EditProfileModal from '../../src/components/profile/EditProfileModal';
 import CertificateModal from '../../src/components/profile/CertificateModal';
-import AchievementsSection from '../../src/components/profile/AchievementsSection';
 import RecentActivityTimeline from '../../src/components/profile/RecentActivityTimeline';
 import PerformanceCharts from '../../src/components/profile/PerformanceCharts';
 
@@ -44,7 +43,7 @@ export default function ProfileScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const [activeTab, setActiveTab] = useState('courses'); // 'courses', 'achievements', 'activity', 'performance', 'messages'
+  const [activeTab, setActiveTab] = useState('courses'); // 'courses', 'activity', 'performance', 'messages'
   const [courseProgressMap, setCourseProgressMap] = useState({});
   const [reviews, setReviews] = useState({});
   const [continueLearning, setContinueLearning] = useState(null);
@@ -94,14 +93,16 @@ export default function ProfileScreen() {
 
       coursesArray.forEach((course) => {
         const progress = progressMap[course._id];
-        const completedLessons = course.completedLessons ?? progress?.completedLessons?.length ?? 0;
         const totalLessons = course.totalLessons ?? course.lessonIds?.length ?? 0;
-        const progressPercent = course.progress ?? (totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0);
+        const completedLessonsRaw = course.completedLessons ?? progress?.completedLessons?.length ?? 0;
+        const completedLessons = Math.min(completedLessonsRaw, totalLessons);
+        const computedProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+        const progressPercent = Math.min(100, course.progress ?? computedProgress);
 
         lessonsCompleted += completedLessons;
         totalProgress += progressPercent;
 
-        if (progress?.status === 'completed' || progressPercent === 100) {
+        if (totalLessons > 0 && completedLessons >= totalLessons) {
           completed++;
         } else if (progress || completedLessons > 0) {
           inProgress++;
@@ -199,9 +200,11 @@ export default function ProfileScreen() {
 
   const getCourseProgressData = (course) => {
     const progress = courseProgressMap[course._id];
-    const completedLessons = course.completedLessons ?? progress?.completedLessons?.length ?? 0;
     const totalLessons = course.totalLessons ?? course.lessonIds?.length ?? 0;
-    const progressPercent = course.progress ?? (totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0);
+    const completedLessonsRaw = course.completedLessons ?? progress?.completedLessons?.length ?? 0;
+    const completedLessons = Math.min(completedLessonsRaw, totalLessons);
+    const computedProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    const progressPercent = Math.min(100, course.progress ?? computedProgress);
     const firstLesson = course.lessonIds?.[0];
     const firstLessonId = typeof firstLesson === 'object' ? firstLesson?._id : firstLesson;
     const resumeLessonId = progress?.currentLessonId || firstLessonId || null;
@@ -497,20 +500,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'achievements' && styles.tabActive]}
-            onPress={() => setActiveTab('achievements')}
-          >
-            <Ionicons 
-              name={activeTab === 'achievements' ? 'trophy' : 'trophy-outline'} 
-              size={20} 
-              color={activeTab === 'achievements' ? '#4F46E5' : '#6B7280'} 
-            />
-            <Text style={[styles.tabText, activeTab === 'achievements' && styles.tabTextActive]}>
-              Achievements
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
             style={[styles.tab, activeTab === 'activity' && styles.tabActive]}
             onPress={() => setActiveTab('activity')}
           >
@@ -574,12 +563,6 @@ export default function ProfileScreen() {
                   {Array.isArray(enrolledCourses) && enrolledCourses.map((course) => renderCourseCard(course))}
                 </View>
               )}
-            </View>
-          )}
-
-          {activeTab === 'achievements' && (
-            <View style={styles.section}>
-              <AchievementsSection studentId={user._id} />
             </View>
           )}
 

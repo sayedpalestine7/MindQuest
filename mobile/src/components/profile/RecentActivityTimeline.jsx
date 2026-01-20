@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import achievementService from '../../services/achievementService';
+import courseService from '../../services/courseService';
+import progressService from '../../services/progressService';
 import { getImageUrl } from '../../utils/imageUtils';
 
 const ActivityItem = ({ activity }) => {
@@ -86,14 +87,52 @@ export default function RecentActivityTimeline({ studentId, limit = 15 }) {
       if (forceRefresh) setRefreshing(true);
       else setLoading(true);
 
-      const result = await achievementService.getRecentActivity(studentId, limit);
-      
-      if (result.success) {
-        setActivities(result.data);
-        setError(null);
-      } else {
-        setError(result.error || 'Failed to load activities');
-      }
+      const [courses, progressList] = await Promise.all([
+        courseService.getEnrolledCourses(studentId, false),
+        progressService.getAllProgress(studentId),
+      ]);
+
+      const coursesArray = Array.isArray(courses) ? courses : [];
+      const progressArray = Array.isArray(progressList) ? progressList : [];
+
+      const courseMap = new Map(
+        coursesArray.map((course) => [course._id?.toString(), course])
+      );
+
+      const timeline = progressArray
+        .map((progress) => {
+          const courseId =
+            typeof progress.courseId === 'object' ? progress.courseId?._id : progress.courseId;
+          const course = courseMap.get(courseId?.toString());
+          const totalLessons = course?.totalLessons ?? course?.lessonIds?.length ?? 0;
+          const completedLessons = Math.min(
+            progress.completedLessons?.length ?? 0,
+            totalLessons
+          );
+          const progressPercent =
+            totalLessons > 0
+              ? Math.min(100, Math.round((completedLessons / totalLessons) * 100))
+              : 0;
+          const isCompleted = totalLessons > 0 && completedLessons >= totalLessons;
+
+          return {
+            id: `${courseId}-${progress.updatedAt || progress.createdAt || ''}`,
+            icon: isCompleted ? '🎓' : progress.quizScore ? '📝' : '📘',
+            title: isCompleted ? 'Course completed' : 'Course progress',
+            description: `${course?.title || 'Course'} • ${completedLessons}/${totalLessons} lessons`,
+            thumbnail: course?.thumbnail,
+            timestamp: progress.lastUpdated || progress.updatedAt || progress.createdAt,
+            points: isCompleted ? 10 : undefined,
+            score: progress.quizScore ?? undefined,
+            progressPercent,
+          };
+        })
+        .filter((item) => item.timestamp)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(0, limit);
+
+      setActivities(timeline);
+      setError(null);
     } catch (err) {
       console.error('Error fetching activities:', err);
       setError('An unexpected error occurred');
