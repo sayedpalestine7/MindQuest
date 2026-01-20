@@ -80,11 +80,19 @@ export const courseService = {
   deleteCourse: async (courseId) => {
     try {
       const response = await apiClient.delete(`/courses/${courseId}`);
-      return { success: true, message: response.data.message };
+      return {
+        success: true,
+        message: response.data.message,
+        action: response.data.action, // "deleted", "archived", or "blocked"
+        course: response.data.course, // Updated course object if archived
+        enrollmentCount: response.data.enrollmentCount
+      };
     } catch (error) {
       return {
         success: false,
         error: error.response?.data?.message || error.message,
+        action: error.response?.data?.action,
+        enrollmentCount: error.response?.data?.enrollmentCount
       };
     }
   },

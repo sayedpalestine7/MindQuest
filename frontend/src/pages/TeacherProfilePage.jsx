@@ -324,7 +324,7 @@ export default function TeacherProfilePage() {
     // Future: can trigger performance updates or filter chat by course context
   };
 
-  /* ====== Handle Course Update (after publish/unpublish) ====== */
+  /* ====== Handle Course Update (after publish/unpublish/archive) ====== */
   const handleCourseUpdate = (updatedCourse) => {
     setProfileData((prev) => {
       if (!prev) return prev;
@@ -332,7 +332,7 @@ export default function TeacherProfilePage() {
       const updatedCourses = prev.courses?.map((course) => {
         const cid = course._id || course.id;
         const updatedCid = updatedCourse._id || updatedCourse.id;
-        return cid === updatedCid ? { ...course, published: updatedCourse.published } : course;
+        return cid === updatedCid ? { ...course, ...updatedCourse } : course;
       }) || [];
       
       return { ...prev, courses: updatedCourses };

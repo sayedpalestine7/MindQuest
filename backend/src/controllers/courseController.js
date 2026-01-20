@@ -216,6 +216,15 @@ export const getCourses = async (req, res) => {
       filter.approvalStatus = 'approved';
     }
 
+    // Archived filter (exclude archived courses by default unless explicitly requested)
+    if (req.query.archived !== undefined) {
+      const archivedValue = req.query.archived === 'true';
+      filter.archived = archivedValue;
+    } else {
+      // Default: exclude archived courses from public/teacher views
+      filter.archived = { $ne: true };
+    }
+
     // Category filter
     if (req.query.category && req.query.category !== 'all') {
       filter.category = req.query.category;
@@ -334,7 +343,7 @@ export const getCourses = async (req, res) => {
 // 📂 GET unique course categories
 export const getCourseCategories = async (req, res) => {
   try {
-    const categories = await Course.distinct('category', { approvalStatus: 'approved' });
+    const categories = await Course.distinct('category', { approvalStatus: 'approved', archived: { $ne: true } });
     res.status(200).json(['all', ...categories.filter(Boolean).sort()]);
   } catch (err) {
     res.status(500).json({ message: "❌ Error fetching categories", error: err.message });
@@ -601,7 +610,7 @@ export const updateCourse = async (req, res) => {
   }
 };
 
-// 🗑️ DELETE course (and its lessons + quiz)
+// 🗑️ DELETE/ARCHIVE course based on approval status and enrollments
 export const deleteCourse = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
@@ -616,19 +625,53 @@ export const deleteCourse = async (req, res) => {
       return res.status(403).json({ message: "You don't have permission to delete this course" });
     }
 
-    // Delete related lessons
-    await Field.deleteMany({ lessonId: { $in: course.lessonIds } });
-    await Lesson.deleteMany({ _id: { $in: course.lessonIds } });
+    const approvalStatus = course.approvalStatus || "draft";
+    const enrollmentCount = course.enrollmentCount || course.students || 0;
 
-    // Delete related quiz
-    if (course.quizId) {
-      await Quiz.findByIdAndDelete(course.quizId);
+    // Business Rules:
+    // 1. Draft/Rejected courses → Hard delete (safe to remove)
+    // 2. Approved courses with enrollments → Block deletion (protect students)
+    // 3. Approved courses without enrollments → Archive (set archived=true, published=false)
+
+    if (approvalStatus === "approved") {
+      if (enrollmentCount > 0) {
+        // Block deletion of courses with enrolled students
+        return res.status(403).json({
+          message: "Cannot delete approved course with enrolled students. Please contact support if you need to remove this course.",
+          action: "blocked",
+          enrollmentCount
+        });
+      } else {
+        // Archive approved courses with no enrollments
+        course.archived = true;
+        course.published = false;
+        await course.save();
+        
+        return res.status(200).json({
+          message: "✅ Course archived successfully",
+          action: "archived",
+          course: course
+        });
+      }
+    } else {
+      // Hard delete for Draft/Rejected courses
+      // Delete related lessons
+      await Field.deleteMany({ lessonId: { $in: course.lessonIds } });
+      await Lesson.deleteMany({ _id: { $in: course.lessonIds } });
+
+      // Delete related quiz
+      if (course.quizId) {
+        await Quiz.findByIdAndDelete(course.quizId);
+      }
+
+      // Delete the course itself
+      await Course.findByIdAndDelete(req.params.id);
+
+      return res.status(200).json({
+        message: "✅ Course deleted successfully",
+        action: "deleted"
+      });
     }
-
-    // Delete the course itself
-    await Course.findByIdAndDelete(req.params.id);
-
-    res.status(200).json({ message: "✅ Course and related data deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: "❌ Error deleting course", error: err.message });
   }
