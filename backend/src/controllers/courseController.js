@@ -218,8 +218,12 @@ export const getCourses = async (req, res) => {
 
     // Archived filter (exclude archived courses by default unless explicitly requested)
     if (req.query.archived !== undefined) {
-      const archivedValue = req.query.archived === 'true';
-      filter.archived = archivedValue;
+      if (req.query.archived === 'all') {
+        // Don't filter by archived status - show all (used by admin)
+      } else {
+        const archivedValue = req.query.archived === 'true';
+        filter.archived = archivedValue;
+      }
     } else {
       // Default: exclude archived courses from public/teacher views
       filter.archived = { $ne: true };
@@ -628,7 +632,27 @@ export const deleteCourse = async (req, res) => {
     const approvalStatus = course.approvalStatus || "draft";
     const enrollmentCount = course.enrollmentCount || course.students || 0;
 
-    // Business Rules:
+    // Admin bypass: Admin can hard delete any course
+    if (userRole === "admin") {
+      // Delete related lessons and fields
+      await Field.deleteMany({ lessonId: { $in: course.lessonIds } });
+      await Lesson.deleteMany({ _id: { $in: course.lessonIds } });
+
+      // Delete related quiz
+      if (course.quizId) {
+        await Quiz.findByIdAndDelete(course.quizId);
+      }
+
+      // Delete the course itself
+      await Course.findByIdAndDelete(req.params.id);
+
+      return res.status(200).json({
+        message: "✅ Course deleted successfully by admin",
+        action: "deleted"
+      });
+    }
+
+    // Business Rules for Teachers:
     // 1. Draft/Rejected courses → Hard delete (safe to remove)
     // 2. Approved courses with enrollments → Block deletion (protect students)
     // 3. Approved courses without enrollments → Archive (set archived=true, published=false)
