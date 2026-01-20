@@ -7,6 +7,7 @@ import Question from "../models/mongo/questionModel.js";
 import { Teacher } from "../models/mongo/teacherSchema.js";
 import { generateQuizFromAI } from "../services/aiService.js";
 import { sanitizeLessons } from "../services/sanitizationService.js";
+import { createNotification } from "../services/notificationService.js";
 
 // 🧠 CREATE a new course
 export const createCourse = async (req, res) => {
@@ -915,6 +916,16 @@ export const approveCourse = async (req, res) => {
     
     await course.save();
     
+    // Send notification to teacher
+    await createNotification({
+      recipientId: course.teacherId,
+      type: "course_approved",
+      title: "Course Approved!",
+      message: `Your course "${course.title}" has been approved and published.`,
+      entityId: course._id.toString(),
+      metadata: { courseName: course.title }
+    });
+    
     res.status(200).json({ 
       message: "Course approved and published successfully", 
       course 
@@ -946,6 +957,16 @@ export const rejectCourse = async (req, res) => {
     course.reviewedBy = req.user.id;
     course.rejectionReason = reason || "No reason provided";
     await course.save();
+    
+    // Send notification to teacher
+    await createNotification({
+      recipientId: course.teacherId,
+      type: "course_rejected",
+      title: "Course Rejected",
+      message: `Your course "${course.title}" was rejected. Reason: ${course.rejectionReason}`,
+      entityId: course._id.toString(),
+      metadata: { courseName: course.title, reason: course.rejectionReason }
+    });
     
     res.status(200).json({ 
       message: "Course rejected successfully", 

@@ -1,5 +1,6 @@
 import Review from "../models/mongo/reviewModel.js";
 import Course from "../models/mongo/courseModel.js";
+import { createNotification } from "../services/notificationService.js";
 
 // Create a new review
 export const createReview = async (req, res) => {
@@ -41,6 +42,16 @@ export const createReview = async (req, res) => {
 
     // Update course average rating
     await updateCourseRating(courseId);
+    
+    // Send notification to course teacher
+    await createNotification({
+      recipientId: course.teacherId,
+      type: "review",
+      title: "New Course Review",
+      message: `A student left a ${rating}-star review on "${course.title}".`,
+      entityId: courseId,
+      metadata: { courseName: course.title, rating }
+    });
 
     res.status(201).json({
       message: "Review created successfully",

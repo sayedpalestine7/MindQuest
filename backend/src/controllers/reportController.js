@@ -1,6 +1,7 @@
 import ReviewReport from "../models/mongo/reviewReportModel.js";
 import Review from "../models/mongo/reviewModel.js";
 import Course from "../models/mongo/courseModel.js";
+import { createNotification } from "../services/notificationService.js";
 
 // Create a new report
 export const createReport = async (req, res) => {
@@ -146,6 +147,16 @@ export const deleteReportedReview = async (req, res) => {
 
     // Update course rating
     await updateCourseRating(courseId);
+    
+    // Send notification to review author that their review was removed
+    await createNotification({
+      recipientId: review.studentId,
+      type: "report_status",
+      title: "Review Removed",
+      message: "Your review was removed after being reported and reviewed by moderators.",
+      entityId: reviewId,
+      metadata: { status: "removed" }
+    });
 
     res.status(200).json({ message: "Review and all related reports deleted successfully" });
   } catch (err) {

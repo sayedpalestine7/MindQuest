@@ -1,5 +1,6 @@
 import Course from "../models/mongo/courseModel.js";
 import { stripe } from "../server.js";
+import { createNotification } from "../services/notificationService.js";
 
 /**
  * Create a Stripe PaymentIntent for course enrollment
@@ -133,6 +134,21 @@ export const handleWebhook = async (req, res) => {
         console.log("✅ Payment succeeded:", paymentIntent.id);
         console.log("   Course ID:", paymentIntent.metadata.courseId);
         console.log("   Student ID:", paymentIntent.metadata.studentId);
+        
+        // Send notification to student
+        if (paymentIntent.metadata.studentId && paymentIntent.metadata.courseId) {
+          await createNotification({
+            recipientId: paymentIntent.metadata.studentId,
+            type: "payment",
+            title: "Payment Successful",
+            message: `Your payment for "${paymentIntent.metadata.courseTitle}" was successful.`,
+            entityId: paymentIntent.metadata.courseId,
+            metadata: { 
+              courseName: paymentIntent.metadata.courseTitle,
+              amount: paymentIntent.amount / 100
+            }
+          });
+        }
         
         // Here you could automatically enroll the student
         // For now, we'll rely on frontend confirmation
