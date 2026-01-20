@@ -67,16 +67,50 @@ export const useCourseBuilder = (courseId) => {
       // Map quiz questions (if populated) into builder-friendly shape
       let finalQuizData = { questions: [], passingScore: 70, points: 100 };
       if (result.data.quizId && result.data.quizId.questionIds && Array.isArray(result.data.quizId.questionIds)) {
-        finalQuizData.questions = result.data.quizId.questionIds.map((q) => ({
-          id: q._id || q.id,
-          type: q.type || 'mcq',
-          question: q.text || q.question || '',
-          options: Array.isArray(q.options) ? q.options : [],
-          correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : null,
-          correctAnswer: q.correctAnswer || '',
-          points: q.points || 1,
-          explanation: q.explanation || '',
-        }));
+        finalQuizData.questions = result.data.quizId.questionIds.map((q) => {
+          const typeRaw = (q.type || 'mcq').toString().toLowerCase().trim();
+          const type = (typeRaw === 't/f' || typeRaw === 'true_false' || typeRaw === 'truefalse' || typeRaw === 'true-false') ? 'tf' : typeRaw;
+          const normalizedType = ['mcq', 'tf', 'short'].includes(type) ? type : 'mcq';
+          
+          // Normalize TF answers when loading
+          if (normalizedType === 'tf') {
+            let tfAnswer = 'True';
+            if (typeof q.correctAnswer === 'boolean') {
+              tfAnswer = q.correctAnswer ? 'True' : 'False';
+            } else {
+              const caStr = (q.correctAnswer ?? '').toString().toLowerCase().trim().replace(/[^\w]+/g, '');
+              if (['false', 'f', 'no', 'n', '0'].includes(caStr) || caStr.includes('false')) {
+                tfAnswer = 'False';
+              }
+            }
+            // Fallback to correctAnswerIndex
+            if (q.correctAnswerIndex === 1) tfAnswer = 'False';
+            if (q.correctAnswerIndex === 0) tfAnswer = 'True';
+            
+            const tfIndex = tfAnswer === 'False' ? 1 : 0;
+            return {
+              id: q._id || q.id,
+              type: 'tf',
+              question: q.text || q.question || '',
+              options: ['True', 'False'],
+              correctAnswerIndex: tfIndex,
+              correctAnswer: tfAnswer,
+              points: q.points || 1,
+              explanation: q.explanation || '',
+            };
+          }
+          
+          return {
+            id: q._id || q.id,
+            type: normalizedType,
+            question: q.text || q.question || '',
+            options: Array.isArray(q.options) ? q.options : [],
+            correctAnswerIndex: q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : null,
+            correctAnswer: q.correctAnswer || '',
+            points: q.points || 1,
+            explanation: q.explanation || '',
+          };
+        });
       }
 
       setCourse({
@@ -395,7 +429,7 @@ export const useCourseBuilder = (courseId) => {
 
       const questionText = q.question || q.text || "";
       const options = Array.isArray(q.options) ? q.options : [];
-      const correctAnswer = (q.correctAnswer || '').toString();
+      const correctAnswer = (q.correctAnswer ?? '').toString();
       const points = q.points || 1;
       const explanation = q.explanation || "";
 
@@ -418,14 +452,27 @@ export const useCourseBuilder = (courseId) => {
       }
 
       if (normalizedType === 'tf') {
-        const caLower = correctAnswer.toLowerCase().trim();
-        const tfAnswer = caLower === 'false' ? 'False' : 'True';
+        // Normalize TF answer from various formats (boolean, string, index)
+        let tfAnswer = 'True';
+        if (typeof q.correctAnswer === 'boolean') {
+          tfAnswer = q.correctAnswer ? 'True' : 'False';
+        } else {
+          const caLower = correctAnswer.toLowerCase().trim().replace(/[^\w]+/g, '');
+          if (['false', 'f', 'no', 'n', '0'].includes(caLower) || caLower.includes('false')) {
+            tfAnswer = 'False';
+          }
+        }
+        // Fallback to correctAnswerIndex if provided
+        if (q.correctAnswerIndex === 1) tfAnswer = 'False';
+        if (q.correctAnswerIndex === 0) tfAnswer = 'True';
+        
+        const tfIndex = tfAnswer === 'False' ? 1 : 0;
         return {
           id: `quiz-${Date.now()}-${idx}-${Math.random().toString(36).slice(2,8)}`,
           type: 'tf',
           question: questionText,
           options: ['True', 'False'],
-          correctAnswerIndex: 0,
+          correctAnswerIndex: tfIndex,
           correctAnswer: tfAnswer,
           points,
           explanation,

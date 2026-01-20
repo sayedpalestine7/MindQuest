@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
-export default function AIGenerateModal({ isOpen, onClose, onSubmit }) {
+export default function AIGenerateModal({ isOpen, onClose, onSubmit, lessons = [] }) {
   const [topic, setTopic] = useState("");
   const [numQuestions, setNumQuestions] = useState(5);
   const [questionTypes, setQuestionTypes] = useState(["mcq"]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [persist, setPersist] = useState(false);
+  const [selectedLessonIds, setSelectedLessonIds] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -14,8 +15,30 @@ export default function AIGenerateModal({ isOpen, onClose, onSubmit }) {
       setNumQuestions(5);
       setQuestionTypes(["mcq"]);
       setIsSubmitting(false);
+      setSelectedLessonIds([]);
     }
   }, [isOpen]);
+
+  // Auto-fill topic when lessons are selected
+  const handleLessonToggle = (lessonId) => {
+    setSelectedLessonIds((prev) => {
+      const newIds = prev.includes(lessonId)
+        ? prev.filter((id) => id !== lessonId)
+        : [...prev, lessonId];
+      
+      // Update topic with all selected lesson titles
+      if (newIds.length > 0) {
+          const selectedTitles = newIds
+            .map((id) => lessons.find((l) => l.id === id)?.title)
+          .filter(Boolean);
+        setTopic(selectedTitles.join(", "));
+      } else {
+        setTopic("");
+      }
+      
+      return newIds;
+    });
+  };
 
   if (!isOpen) return null;
 
@@ -62,12 +85,34 @@ export default function AIGenerateModal({ isOpen, onClose, onSubmit }) {
       <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
         <h3 className="text-lg font-semibold mb-3">Generate Quiz with AI</h3>
         <div className="space-y-3">
+          {/* Lesson selector - only shown when lessons exist */}
+          {lessons.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Use lesson titles as topic (optional)
+              </label>
+              <div className="max-h-32 overflow-y-auto border border-gray-200 rounded p-2 space-y-1">
+                {lessons.map((lesson) => (
+                  <label key={lesson.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={selectedLessonIds.includes(lesson.id)}
+                      onChange={() => handleLessonToggle(lesson.id)}
+                      className="rounded border-gray-300"
+                    />
+                    <span className="text-sm">{lesson.title || "Untitled Lesson"}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700">Topic</label>
             <input
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              className="mt-1 block w-full border-gray-200 rounded p-2"
+              className="mt-1 block w-full border-gray-300 rounded p-2"
               placeholder="e.g. Linear algebra: eigenvalues"
             />
           </div>
