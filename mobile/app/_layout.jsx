@@ -4,11 +4,19 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { AuthProvider } from '../src/auth/authContext';
 import { useAuth } from '../src/auth/useAuth';
+import notificationService from '../src/services/notificationService';
 
 const RootNavigator = () => {
   const router = useRouter();
   const segments = useSegments();
   const { user, loading } = useAuth();
+
+  // Setup notification listeners
+  useEffect(() => {
+    if (user) {
+      notificationService.setupNotificationListeners();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (loading) return;
@@ -21,7 +29,7 @@ const RootNavigator = () => {
     }
 
     if (user && inAuthGroup) {
-      router.replace('/(tabs)/home');
+      router.replace('/(tabs)/courses');
     }
   }, [user, loading, segments, router]);
 

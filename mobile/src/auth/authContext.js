@@ -1,7 +1,8 @@
 import React, { createContext, useEffect, useMemo, useState } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import { platformStorage } from './storage';
 import { login, registerStudent, registerTeacher, googleAuth } from '../api/auth';
 import { tokenStorage } from '../api/client';
+import notificationService from '../services/notificationService';
 
 const USER_KEY = 'mindquest_user';
 
@@ -16,10 +17,11 @@ export const AuthProvider = ({ children }) => {
     const restore = async () => {
       try {
         const storedToken = await tokenStorage.get();
-        const storedUser = await SecureStore.getItemAsync(USER_KEY);
+        const storedUser = await platformStorage.getItem(USER_KEY);
         setToken(storedToken || null);
         setUser(storedUser ? JSON.parse(storedUser) : null);
       } catch (error) {
+        console.error('Error restoring auth state:', error);
         setToken(null);
         setUser(null);
       } finally {
@@ -33,9 +35,18 @@ export const AuthProvider = ({ children }) => {
   const signIn = async ({ email, password }) => {
     const data = await login({ email, password });
     await tokenStorage.set(data.token);
-    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(data.user));
+    await platformStorage.setItem(USER_KEY, JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
+    
+    // Register for push notifications after successful login
+    try {
+      await notificationService.registerForPushNotifications();
+    } catch (error) {
+      console.error('Failed to register for push notifications:', error);
+      // Don't fail login if push notification registration fails
+    }
+    
     return data;
   };
 
@@ -68,9 +79,16 @@ export const AuthProvider = ({ children }) => {
 
     if (data?.token && data?.user) {
       await tokenStorage.set(data.token);
-      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(data.user));
+      await platformStorage.setItem(USER_KEY, JSON.stringify(data.user));
       setToken(data.token);
       setUser(data.user);
+      
+      // Register for push notifications after successful login
+      try {
+        await notificationService.registerForPushNotifications();
+      } catch (error) {
+        console.error('Failed to register for push notifications:', error);
+      }
     }
 
     return data;
@@ -78,7 +96,7 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = async () => {
     await tokenStorage.clear();
-    await SecureStore.deleteItemAsync(USER_KEY);
+    await platformStorage.removeItem(USER_KEY);
     setToken(null);
     setUser(null);
   };

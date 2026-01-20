@@ -46,6 +46,7 @@ export default function LoginScreen() {
     try {
       await signIn({ email, password });
     } catch (err) {
+      console.error('Login error:', err);
       setError(err?.response?.data?.message || 'Login failed.');
     } finally {
       setLoading(false);
@@ -58,6 +59,7 @@ export default function LoginScreen() {
     try {
       await signInWithGoogle({ googleIdToken: idToken, mode: 'signin' });
     } catch (err) {
+      console.error('Google sign-in error:', err);
       setError(err?.response?.data?.message || 'Google sign-in failed.');
     } finally {
       setLoading(false);

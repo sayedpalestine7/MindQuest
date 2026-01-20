@@ -1,218 +1,208 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/useAuth';
-import { connectSocket, disconnectSocket, getSocket } from '../../src/sockets/socket';
-import { getConversation } from '../../src/api/chat';
+import courseService from '../../src/services/courseService';
 
-export default function ChatScreen() {
-  const { user, token } = useAuth();
-  const [partnerId, setPartnerId] = useState('');
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [error, setError] = useState('');
-  const [connected, setConnected] = useState(false);
+export default function ChatsScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
 
-  const role = user?.role || 'student';
-
-  const teacherId = useMemo(() => (role === 'teacher' ? user?._id : partnerId), [role, user, partnerId]);
-  const studentId = useMemo(() => (role === 'student' ? user?._id : partnerId), [role, user, partnerId]);
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    return () => {
-      disconnectSocket();
-    };
-  }, []);
-
-  const connectToChat = async () => {
-    setError('');
-
-    if (!teacherId || !studentId) {
-      setError('Provide both teacher and student IDs.');
-      return;
+    if (user) {
+      loadTeachers();
     }
+  }, [user]);
 
+  const loadTeachers = async () => {
     try {
-      const history = await getConversation({ teacherId, studentId });
-      setMessages(history || []);
-
-      const socket = connectSocket(token);
-      socket.emit('join_room', { teacherId, studentId });
-
-      socket.off('new_message');
-      socket.on('new_message', (payload) => {
-        setMessages((prev) => [...prev, payload]);
-      });
-
-      setConnected(true);
-    } catch (err) {
-      setError(err?.response?.data?.message || 'Failed to connect to chat.');
+      setLoading(true);
+      
+      // Get enrolled courses to extract unique teachers - force fresh data
+      const enrolledCourses = await courseService.getEnrolledCourses(user._id, false);
+      
+      // Extract unique teachers
+      const uniqueTeachers = [];
+      const teacherIds = new Set();
+      
+      // Check if enrolledCourses is an array before iterating
+      if (Array.isArray(enrolledCourses)) {
+        enrolledCourses.forEach((course) => {
+          if (course.teacherId && !teacherIds.has(course.teacherId._id)) {
+            teacherIds.add(course.teacherId._id);
+            uniqueTeachers.push({
+              ...course.teacherId,
+              courseName: course.title,
+            });
+          }
+        });
+      }
+      
+      setTeachers(uniqueTeachers);
+    } catch (error) {
+      console.error('Error loading teachers:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSend = () => {
-    setError('');
-    if (!message.trim()) return;
-    if (!teacherId || !studentId) {
-      setError('Provide both teacher and student IDs.');
-      return;
-    }
-
-    const payload = {
-      content: message.trim(),
-      sender: role,
-      teacherId,
-      studentId,
-    };
-
-    const socket = getSocket();
-    socket?.emit('send_message', payload);
-    setMessages((prev) => [...prev, { ...payload, _id: Date.now().toString() }]);
-    setMessage('');
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadTeachers();
+    setRefreshing(false);
   };
+
+  const renderTeacherCard = ({ item }) => (
+    <TouchableOpacity
+      style={styles.teacherCard}
+      onPress={() => router.push(`/chat/${item._id}`)}
+    >
+      <Image
+        source={{ uri: item.avatar || 'https://via.placeholder.com/60' }}
+        style={styles.teacherAvatar}
+      />
+      <View style={styles.teacherInfo}>
+        <Text style={styles.teacherName}>{item.name}</Text>
+        <Text style={styles.courseName} numberOfLines={1}>
+          {item.courseName}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4F46E5" />
+      </View>
+    );
+  }
+
+  if (teachers.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="chatbubbles-outline" size={80} color="#D1D5DB" />
+        <Text style={styles.emptyText}>No Conversations Yet</Text>
+        <Text style={styles.emptySubtext}>
+          Enroll in courses to chat with instructors
+        </Text>
+        <TouchableOpacity
+          style={styles.browseCoursesButton}
+          onPress={() => router.push('/(tabs)/courses')}
+        >
+          <Text style={styles.browseCoursesButtonText}>Browse Courses</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Chat</Text>
-        <Text style={styles.subtitle}>Role: {role}</Text>
-      </View>
-
-      <TextInput
-        style={styles.input}
-        placeholder={role === 'student' ? 'Teacher ID' : 'Student ID'}
-        value={partnerId}
-        onChangeText={setPartnerId}
-      />
-
-      <Pressable style={styles.connectButton} onPress={connectToChat}>
-        <Text style={styles.connectText}>{connected ? 'Reconnect' : 'Connect'}</Text>
-      </Pressable>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
+    <View style={styles.container}>
       <FlatList
-        data={messages}
-        keyExtractor={(item) => item._id || `${item.content}-${Math.random()}`}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <View style={[styles.message, item.sender === role ? styles.outgoing : styles.incoming]}>
-            <Text style={item.sender === role ? styles.messageTextOutgoing : styles.messageTextIncoming}>
-              {item.content}
-            </Text>
-          </View>
-        )}
+        data={teachers}
+        renderItem={renderTeacherCard}
+        keyExtractor={(item) => item._id}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#4F46E5"
+          />
+        }
       />
-
-      <View style={styles.composer}>
-        <TextInput
-          style={styles.composerInput}
-          placeholder="Type your message"
-          value={message}
-          onChangeText={setMessage}
-        />
-        <Pressable style={styles.sendButton} onPress={handleSend}>
-          <Text style={styles.sendText}>Send</Text>
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#F9FAFB',
   },
-  header: {
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: '#6b7280',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
-  },
-  connectButton: {
-    backgroundColor: '#4f46e5',
-    paddingVertical: 10,
-    borderRadius: 8,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
   },
-  connectText: {
-    color: '#fff',
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyText: {
+    fontSize: 20,
     fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 20,
   },
-  error: {
-    color: '#dc2626',
-    marginBottom: 8,
+  emptySubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginTop: 8,
+    textAlign: 'center',
   },
-  list: {
-    flexGrow: 1,
+  browseCoursesButton: {
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 24,
     paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 24,
   },
-  message: {
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 8,
-    maxWidth: '80%',
+  browseCoursesButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
-  outgoing: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#111827',
+  listContent: {
+    padding: 16,
   },
-  incoming: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#e5e7eb',
-  },
-  messageTextIncoming: {
-    color: '#111827',
-  },
-  messageTextOutgoing: {
-    color: '#fff',
-  },
-  composer: {
+  teacherCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingBottom: 12,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  composerInput: {
+  teacherAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginRight: 12,
+  },
+  teacherInfo: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
-    padding: 10,
   },
-  sendButton: {
-    backgroundColor: '#111827',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-  },
-  sendText: {
-    color: '#fff',
+  teacherName: {
+    fontSize: 16,
     fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  courseName: {
+    fontSize: 14,
+    color: '#6B7280',
   },
 });

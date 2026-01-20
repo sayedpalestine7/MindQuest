@@ -40,6 +40,7 @@ const app = express();
 const allowedOrigins = [
   CLIENT_URL,
   'http://localhost:5173',
+  'http://localhost:8081',  // Expo web dev server
   'https://accounts.google.com',
   'https://www.googleapis.com'
 ];
