@@ -4,7 +4,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { Trash2, AlertTriangle, X, Loader2 } from "lucide-react";
 import Sidebar from "./Sidebar";
-import AppHeader from "../shared/AppHeader";
+
 
 export default function ManageReports() {
   const [reports, setReports] = useState([]);
@@ -132,7 +132,6 @@ export default function ManageReports() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-        <AppHeader subtitle="Admin - Reports" showNotifications={false} />
         <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
           <Sidebar />
           <main className="flex-1 p-6">
@@ -147,7 +146,6 @@ export default function ManageReports() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <AppHeader subtitle="Admin - Reports" showNotifications={false} />
       <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <Sidebar />
 

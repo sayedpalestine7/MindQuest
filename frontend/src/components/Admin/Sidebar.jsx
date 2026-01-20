@@ -1,5 +1,5 @@
-import { Link, useLocation } from "react-router"
-import { LayoutDashboard, BookOpen, Users, FileQuestion, Settings, AlertTriangle } from "lucide-react"
+import { Link, useLocation, useNavigate } from "react-router"
+import { LayoutDashboard, BookOpen, Users, FileQuestion, Settings, AlertTriangle, LogOut } from "lucide-react"
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -7,14 +7,22 @@ const navigation = [
   { name: "Manage Users", href: "/admin/users", icon: Users },
   { name: "Teacher Verification", href: "/admin/verification", icon: FileQuestion },
   { name: "Reported Comments", href: "/admin/reports", icon: AlertTriangle },
-  // { name: "Settings", href: "/admin/settings", icon: Settings },
+  { name: "Settings", href: "/admin/Settings", icon: Settings },
 ]
 
 function Sidebar() {
   const location = useLocation()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    localStorage.removeItem("userId")
+    localStorage.removeItem("role")
+    navigate("/login")
+  }
 
   return (
-    <aside className="m-h-screen w-64 bg-gray-900 text-gray-100 border-r border-gray-800 flex flex-col">
+    <aside className="min-h-screen w-64 bg-gray-900 text-gray-100 border-r border-gray-800 flex flex-col">
       <div className="flex items-center justify-center h-16 border-b border-gray-800 text-xl font-bold">
         Admin Panel
       </div>
@@ -41,10 +49,20 @@ function Sidebar() {
         })}
       </nav>
 
+      <div className="p-4 border-t border-gray-800">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 w-full text-gray-400 hover:bg-gray-800 hover:text-white hover:translate-x-1"
+        >
+          <LogOut className="h-5 w-5 flex-shrink-0" />
+          <span className="truncate">Logout</span>
+        </button>
+      </div>
+
       <div className="p-4 border-t border-gray-800 text-center text-xs text-gray-500">
         © 2025 LearnX
       </div>
-    </aside>
+    </aside> 
   )
 }
 
