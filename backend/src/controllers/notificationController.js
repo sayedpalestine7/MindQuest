@@ -80,3 +80,24 @@ export const markAllAsRead = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// -------------------- DELETE NOTIFICATION --------------------
+export const deleteNotification = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { notificationId } = req.params;
+
+    const notification = await Notification.findOneAndDelete({
+      _id: notificationId,
+      recipientId: userId,
+    });
+
+    if (!notification) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    res.status(200).json({ message: "Notification deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

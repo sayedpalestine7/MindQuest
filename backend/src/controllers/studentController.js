@@ -4,6 +4,13 @@ import Course from "../models/mongo/courseModel.js";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import { createNotification } from "../services/notificationService.js";
+import PDFDocument from "pdfkit";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 //http://localhost:5000/api/student/id/690e68ad573b0a98730c2dcd
 
 export const getStudentByID = async (req, res) => {
@@ -563,6 +570,459 @@ export const resetCourseProgress = async (req, res) => {
     console.error("❌ Error resetting course progress:", err);
     res.status(500).json({ 
       success: false,
+      message: "Server error",
+      error: err.message 
+    });
+  }
+};
+
+// 📜 Generate Certificate for Completed Course
+export const generateCertificate = async (req, res) => {
+  try {
+    const { studentId, courseId } = req.params;
+
+    // Find student and course
+    const [student, course] = await Promise.all([
+      User.findById(studentId),
+      Course.findById(courseId).populate('teacherId', 'name')
+    ]);
+
+    if (!student || student.role !== "student") {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    // Check if course is completed
+    const progress = await Progress.findOne({ studentId, courseId });
+    const totalLessons = course.lessonIds?.length || 0;
+    const completedLessons = progress?.completedLessons?.length || 0;
+
+    if (completedLessons < totalLessons || !progress?.quizScore) {
+      return res.status(400).json({ 
+        message: "Course not completed. Finish all lessons and pass the quiz first." 
+      });
+    }
+
+    // Create PDF certificate
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'landscape',
+      margin: 50
+    });
+
+    // Set response headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=certificate-${courseId}-${Date.now()}.pdf`);
+
+    // Pipe PDF to response
+    doc.pipe(res);
+
+    // Certificate design
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+
+    // Border
+    doc.rect(30, 30, pageWidth - 60, pageHeight - 60)
+       .lineWidth(3)
+       .strokeColor('#6366f1')
+       .stroke();
+
+    // Inner border
+    doc.rect(40, 40, pageWidth - 80, pageHeight - 80)
+       .lineWidth(1)
+       .strokeColor('#6366f1')
+       .stroke();
+
+    // Title
+    doc.fontSize(48)
+       .fillColor('#6366f1')
+       .font('Helvetica-Bold')
+       .text('Certificate of Completion', 0, 100, {
+         align: 'center',
+         width: pageWidth
+       });
+
+    // Subtitle
+    doc.fontSize(16)
+       .fillColor('#64748b')
+       .font('Helvetica')
+       .text('This certifies that', 0, 180, {
+         align: 'center',
+         width: pageWidth
+       });
+
+    // Student name
+    doc.fontSize(36)
+       .fillColor('#1e293b')
+       .font('Helvetica-Bold')
+       .text(student.name || student.email, 0, 220, {
+         align: 'center',
+         width: pageWidth
+       });
+
+    // Course info
+    doc.fontSize(16)
+       .fillColor('#64748b')
+       .font('Helvetica')
+       .text('has successfully completed the course', 0, 280, {
+         align: 'center',
+         width: pageWidth
+       });
+
+    // Course title
+    doc.fontSize(28)
+       .fillColor('#6366f1')
+       .font('Helvetica-Bold')
+       .text(course.title, 0, 320, {
+         align: 'center',
+         width: pageWidth
+       });
+
+    // Score
+    const scorePercentage = Math.round((progress.quizScore / (course.quizId?.questionIds?.length || 1)) * 100);
+    doc.fontSize(18)
+       .fillColor('#64748b')
+       .font('Helvetica')
+       .text(`Final Score: ${scorePercentage}%`, 0, 380, {
+         align: 'center',
+         width: pageWidth
+       });
+
+    // Date
+    const completionDate = new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    doc.fontSize(14)
+       .fillColor('#94a3b8')
+       .text(`Completed on ${completionDate}`, 0, 420, {
+         align: 'center',
+         width: pageWidth
+       });
+
+    // Teacher signature section
+    if (course.teacherId?.name) {
+      doc.fontSize(14)
+         .fillColor('#64748b')
+         .font('Helvetica-Bold')
+         .text(course.teacherId.name, 100, pageHeight - 120, {
+           align: 'left'
+         });
+      
+      doc.fontSize(12)
+         .fillColor('#94a3b8')
+         .font('Helvetica')
+         .text('Instructor', 100, pageHeight - 100, {
+           align: 'left'
+         });
+
+      // Signature line
+      doc.moveTo(100, pageHeight - 130)
+         .lineTo(250, pageHeight - 130)
+         .strokeColor('#cbd5e1')
+         .stroke();
+    }
+
+    // MindQuest logo/text
+    doc.fontSize(14)
+       .fillColor('#6366f1')
+       .font('Helvetica-Bold')
+       .text('MindQuest', pageWidth - 200, pageHeight - 120, {
+         align: 'right',
+         width: 150
+       });
+
+    doc.fontSize(12)
+       .fillColor('#94a3b8')
+       .font('Helvetica')
+       .text('Interactive Learning Platform', pageWidth - 250, pageHeight - 100, {
+         align: 'right',
+         width: 200
+       });
+
+    // Certificate ID at bottom
+    doc.fontSize(10)
+       .fillColor('#cbd5e1')
+       .text(`Certificate ID: ${courseId}-${studentId}-${Date.now()}`, 0, pageHeight - 50, {
+         align: 'center',
+         width: pageWidth
+       });
+
+    // Finalize PDF
+    doc.end();
+
+    // Log certificate generation
+    console.log(`✅ Certificate generated for student ${studentId} - course ${courseId}`);
+
+  } catch (err) {
+    console.error("❌ Error generating certificate:", err);
+    res.status(500).json({ 
+      message: "Server error",
+      error: err.message 
+    });
+  }
+};
+
+// 🏆 Get Student Achievements
+export const getAchievements = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const student = await User.findById(studentId);
+    if (!student || student.role !== "student") {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Get student stats
+    const enrolledCourses = student.studentData?.enrolledCourses || [];
+    const progressData = await Progress.find({ studentId });
+    
+    // Calculate stats
+    const completedCourses = progressData.filter(p => {
+      const course = enrolledCourses.find(c => c.toString() === p.courseId.toString());
+      return course && p.status === 'completed';
+    }).length;
+
+    const totalLessonsCompleted = progressData.reduce((sum, p) => 
+      sum + (p.completedLessons?.length || 0), 0
+    );
+
+    const averageQuizScore = progressData.length > 0 
+      ? progressData.reduce((sum, p) => sum + (p.quizScore || 0), 0) / progressData.length 
+      : 0;
+
+    const totalScore = student.studentData?.score || 0;
+
+    // Define achievement criteria
+    const achievements = [
+      {
+        id: 'first_course',
+        title: 'First Steps',
+        description: 'Complete your first course',
+        icon: '🎓',
+        unlocked: completedCourses >= 1,
+        progress: Math.min(completedCourses, 1),
+        total: 1
+      },
+      {
+        id: 'course_master',
+        title: 'Course Master',
+        description: 'Complete 5 courses',
+        icon: '📚',
+        unlocked: completedCourses >= 5,
+        progress: Math.min(completedCourses, 5),
+        total: 5
+      },
+      {
+        id: 'course_legend',
+        title: 'Course Legend',
+        description: 'Complete 10 courses',
+        icon: '👑',
+        unlocked: completedCourses >= 10,
+        progress: Math.min(completedCourses, 10),
+        total: 10
+      },
+      {
+        id: 'lesson_learner',
+        title: 'Lesson Learner',
+        description: 'Complete 50 lessons',
+        icon: '📖',
+        unlocked: totalLessonsCompleted >= 50,
+        progress: Math.min(totalLessonsCompleted, 50),
+        total: 50
+      },
+      {
+        id: 'lesson_expert',
+        title: 'Lesson Expert',
+        description: 'Complete 100 lessons',
+        icon: '🎯',
+        unlocked: totalLessonsCompleted >= 100,
+        progress: Math.min(totalLessonsCompleted, 100),
+        total: 100
+      },
+      {
+        id: 'quiz_ace',
+        title: 'Quiz Ace',
+        description: 'Achieve 90%+ average on quizzes',
+        icon: '⭐',
+        unlocked: averageQuizScore >= 0.9,
+        progress: averageQuizScore,
+        total: 1
+      },
+      {
+        id: 'perfect_score',
+        title: 'Perfect Score',
+        description: 'Get 100% on any quiz',
+        icon: '💯',
+        unlocked: progressData.some(p => {
+          const course = enrolledCourses.find(c => c.toString() === p.courseId.toString());
+          return course && p.quizScore === 100;
+        }),
+        progress: progressData.some(p => p.quizScore === 100) ? 1 : 0,
+        total: 1
+      },
+      {
+        id: 'point_collector',
+        title: 'Point Collector',
+        description: 'Earn 100 points',
+        icon: '💎',
+        unlocked: totalScore >= 100,
+        progress: Math.min(totalScore, 100),
+        total: 100
+      },
+      {
+        id: 'dedicated_learner',
+        title: 'Dedicated Learner',
+        description: 'Enroll in 5 courses',
+        icon: '🚀',
+        unlocked: enrolledCourses.length >= 5,
+        progress: Math.min(enrolledCourses.length, 5),
+        total: 5
+      },
+      {
+        id: 'early_bird',
+        title: 'Early Bird',
+        description: 'Join MindQuest',
+        icon: '🐦',
+        unlocked: true,
+        progress: 1,
+        total: 1
+      }
+    ];
+
+    // Separate unlocked and locked achievements
+    const unlocked = achievements.filter(a => a.unlocked);
+    const locked = achievements.filter(a => !a.unlocked);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        achievements: {
+          unlocked,
+          locked,
+          all: achievements
+        },
+        stats: {
+          totalAchievements: achievements.length,
+          unlockedCount: unlocked.length,
+          completionPercentage: Math.round((unlocked.length / achievements.length) * 100)
+        }
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching achievements:", err);
+    res.status(500).json({ 
+      message: "Server error",
+      error: err.message 
+    });
+  }
+};
+
+// 📊 Get Recent Activity for Student
+export const getRecentActivity = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const limit = parseInt(req.query.limit) || 20;
+
+    const student = await User.findById(studentId);
+    if (!student || student.role !== "student") {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Get all progress records with course details
+    const progressData = await Progress.find({ studentId })
+      .populate('courseId', 'title thumbnail')
+      .sort({ updatedAt: -1 })
+      .limit(limit);
+
+    // Build activity timeline
+    const activities = [];
+
+    for (const progress of progressData) {
+      if (!progress.courseId) continue;
+
+      // Course enrollment activity
+      activities.push({
+        id: `enroll-${progress._id}`,
+        type: 'enrollment',
+        title: 'Enrolled in Course',
+        description: progress.courseId.title,
+        courseId: progress.courseId._id,
+        courseName: progress.courseId.title,
+        thumbnail: progress.courseId.thumbnail,
+        timestamp: progress.createdAt,
+        icon: '📚'
+      });
+
+      // Lesson completion activities
+      if (progress.completedLessons && progress.completedLessons.length > 0) {
+        activities.push({
+          id: `lessons-${progress._id}`,
+          type: 'lesson_complete',
+          title: 'Completed Lessons',
+          description: `${progress.completedLessons.length} lessons in ${progress.courseId.title}`,
+          courseId: progress.courseId._id,
+          courseName: progress.courseId.title,
+          thumbnail: progress.courseId.thumbnail,
+          count: progress.completedLessons.length,
+          timestamp: progress.updatedAt,
+          icon: '✅'
+        });
+      }
+
+      // Quiz completion activity
+      if (progress.quizScore > 0) {
+        activities.push({
+          id: `quiz-${progress._id}`,
+          type: 'quiz_complete',
+          title: 'Completed Quiz',
+          description: `Scored ${progress.quizScore}% on ${progress.courseId.title}`,
+          courseId: progress.courseId._id,
+          courseName: progress.courseId.title,
+          thumbnail: progress.courseId.thumbnail,
+          score: progress.quizScore,
+          timestamp: progress.updatedAt,
+          icon: progress.quizScore >= 80 ? '🏆' : '📝'
+        });
+      }
+
+      // Course completion activity
+      if (progress.status === 'completed') {
+        activities.push({
+          id: `complete-${progress._id}`,
+          type: 'course_complete',
+          title: 'Course Completed!',
+          description: progress.courseId.title,
+          courseId: progress.courseId._id,
+          courseName: progress.courseId.title,
+          thumbnail: progress.courseId.thumbnail,
+          timestamp: progress.updatedAt,
+          icon: '🎓',
+          points: 10
+        });
+      }
+    }
+
+    // Sort by timestamp (most recent first) and limit
+    activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const recentActivities = activities.slice(0, limit);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        activities: recentActivities,
+        total: activities.length
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching recent activity:", err);
+    res.status(500).json({ 
       message: "Server error",
       error: err.message 
     });

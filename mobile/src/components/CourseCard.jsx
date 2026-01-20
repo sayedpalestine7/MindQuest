@@ -1,18 +1,19 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { getCourseThumbnail } from '../utils/imageUtils';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 32;
 
-export default function CourseCard({ course, onPress }) {
+const CourseCard = memo(({ course, onPress }) => {
   const {
     title,
     description,
@@ -42,9 +43,11 @@ export default function CourseCard({ course, onPress }) {
     >
       {/* Thumbnail */}
       <Image
-        source={{ uri: thumbnail || 'https://via.placeholder.com/400x200' }}
+        source={{ uri: getCourseThumbnail(course) }}
         style={styles.thumbnail}
-        resizeMode="cover"
+        contentFit="cover"
+        transition={200}
+        cachePolicy="memory-disk"
       />
 
       {/* Difficulty Badge */}
@@ -112,7 +115,7 @@ export default function CourseCard({ course, onPress }) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {
@@ -211,3 +214,7 @@ const styles = StyleSheet.create({
     color: '#4F46E5',
   },
 });
+
+CourseCard.displayName = 'CourseCard';
+
+export default CourseCard;

@@ -13,11 +13,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import studentService from '../../services/studentService';
+import { getImageUrl } from '../../utils/imageUtils';
 
 export default function EditProfileModal({ visible, user, onClose, onUpdate }) {
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [avatar, setAvatar] = useState(user?.avatar || '');
+  const [avatar, setAvatar] = useState(user?.profileImage || user?.avatar || '');
   const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -58,7 +59,7 @@ export default function EditProfileModal({ visible, user, onClose, onUpdate }) {
 
       // Upload avatar if changed
       let avatarUrl = avatar;
-      if (imageFile && imageFile.uri !== user?.avatar) {
+      if (imageFile && imageFile.uri !== user?.profileImage) {
         avatarUrl = await studentService.uploadProfileImage(imageFile);
       }
 
@@ -66,7 +67,7 @@ export default function EditProfileModal({ visible, user, onClose, onUpdate }) {
       await studentService.updateStudent(user._id, {
         name: name.trim(),
         email: email.trim(),
-        avatar: avatarUrl,
+        profileImage: avatarUrl,
       });
 
       Alert.alert('Success', 'Profile updated successfully!');
@@ -94,7 +95,7 @@ export default function EditProfileModal({ visible, user, onClose, onUpdate }) {
           {/* Avatar */}
           <View style={styles.avatarContainer}>
             <Image
-              source={{ uri: avatar || 'https://via.placeholder.com/120' }}
+              source={{ uri: getImageUrl(avatar) || 'https://via.placeholder.com/120' }}
               style={styles.avatar}
             />
             <TouchableOpacity style={styles.changeAvatarButton} onPress={pickImage}>

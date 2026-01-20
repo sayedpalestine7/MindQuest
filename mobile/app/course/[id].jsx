@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/useAuth';
 import courseService from '../../src/services/courseService';
 import reviewService from '../../src/services/reviewService';
+import { getCourseThumbnail, getUserAvatar } from '../../src/utils/imageUtils';
 import PaymentModal from '../../src/components/PaymentModal';
 import QuizModal from '../../src/components/quiz/QuizModal';
 
@@ -133,7 +134,7 @@ export default function CourseDetailScreen() {
       <ScrollView style={styles.container}>
         {/* Header Image */}
         <Image
-          source={{ uri: course.thumbnail || 'https://via.placeholder.com/400x200' }}
+          source={{ uri: getCourseThumbnail(course) }}
           style={styles.headerImage}
           resizeMode="cover"
         />
@@ -177,7 +178,7 @@ export default function CourseDetailScreen() {
           {course.teacherId && (
             <View style={styles.instructorCard}>
               <Image
-                source={{ uri: course.teacherId.avatar || 'https://via.placeholder.com/50' }}
+                source={{ uri: getUserAvatar(course.teacherId) }}
                 style={styles.instructorAvatar}
               />
               <View style={styles.instructorInfo}>

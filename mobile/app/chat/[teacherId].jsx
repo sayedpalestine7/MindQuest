@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/useAuth';
 import chatService from '../../src/services/chatService';
 import { getSocket, connectSocket, disconnectSocket } from '../../src/sockets/socket';
+import { getUserAvatar } from '../../src/utils/imageUtils';
 
 export default function ChatScreen() {
   const { teacherId } = useLocalSearchParams();
@@ -27,8 +28,11 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [sending, setSending] = useState(false);
   const [teacher, setTeacher] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [oldestCursor, setOldestCursor] = useState(null);
 
   useEffect(() => {
     if (user && teacherId) {
@@ -44,13 +48,34 @@ export default function ChatScreen() {
   const loadMessages = async () => {
     try {
       setLoading(true);
-      const data = await chatService.getConversation(teacherId, user._id);
+      const data = await chatService.getConversation(teacherId, user._id, 50);
       // Reverse messages so oldest are at top, newest at bottom
       setMessages((data.messages || []).reverse());
+      setHasMore(data.hasMore || false);
+      setOldestCursor(data.oldestCursor || null);
     } catch (error) {
       console.error('Error loading messages:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMoreMessages = async () => {
+    if (!hasMore || loadingMore || !oldestCursor) return;
+
+    try {
+      setLoadingMore(true);
+      const data = await chatService.getConversation(teacherId, user._id, 50, oldestCursor);
+      
+      // Prepend older messages to the beginning
+      const olderMessages = (data.messages || []).reverse();
+      setMessages((prev) => [...olderMessages, ...prev]);
+      setHasMore(data.hasMore || false);
+      setOldestCursor(data.oldestCursor || null);
+    } catch (error) {
+      console.error('Error loading more messages:', error);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -104,7 +129,7 @@ export default function ChatScreen() {
       >
         {!isOwnMessage && (
           <Image
-            source={{ uri: teacher?.avatar || 'https://via.placeholder.com/40' }}
+            source={{ uri: getUserAvatar(teacher) }}
             style={styles.avatar}
           />
         )}
@@ -162,6 +187,26 @@ export default function ChatScreen() {
             keyExtractor={(item, index) => item._id || index.toString()}
             contentContainerStyle={styles.messagesList}
             onContentSizeChange={scrollToBottom}
+            onEndReached={loadMoreMessages}
+            onEndReachedThreshold={0.5}
+            inverted={false}
+            ListHeaderComponent={
+              loadingMore ? (
+                <View style={styles.loadingMoreContainer}>
+                  <ActivityIndicator size="small" color="#6366f1" />
+                  <Text style={styles.loadingMoreText}>Loading older messages...</Text>
+                </View>
+              ) : hasMore ? (
+                <TouchableOpacity style={styles.loadMoreButton} onPress={loadMoreMessages}>
+                  <Ionicons name="arrow-up-circle-outline" size={20} color="#6366f1" />
+                  <Text style={styles.loadMoreText}>Load older messages</Text>
+                </TouchableOpacity>
+              ) : messages.length > 20 ? (
+                <View style={styles.endOfMessagesContainer}>
+                  <Text style={styles.endOfMessagesText}>Start of conversation</Text>
+                </View>
+              ) : null
+            }
           />
         )}
 
@@ -308,5 +353,37 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#D1D5DB',
+  },
+  loadingMoreContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  loadingMoreText: {
+    fontSize: 13,
+    color: '#64748b',
+  },
+  loadMoreButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 6,
+  },
+  loadMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6366f1',
+  },
+  endOfMessagesContainer: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  endOfMessagesText: {
+    fontSize: 12,
+    color: '#94a3b8',
+    fontStyle: 'italic',
   },
 });

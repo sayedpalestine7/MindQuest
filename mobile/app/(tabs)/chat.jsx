@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/useAuth';
 import courseService from '../../src/services/courseService';
+import { getUserAvatar } from '../../src/utils/imageUtils';
 
 export default function ChatsScreen() {
   const router = useRouter();
@@ -72,7 +73,7 @@ export default function ChatsScreen() {
       onPress={() => router.push(`/chat/${item._id}`)}
     >
       <Image
-        source={{ uri: item.avatar || 'https://via.placeholder.com/60' }}
+        source={{ uri: getUserAvatar(item) }}
         style={styles.teacherAvatar}
       />
       <View style={styles.teacherInfo}>

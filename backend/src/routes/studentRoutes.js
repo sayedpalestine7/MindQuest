@@ -6,7 +6,10 @@ import {
   getEnrolledCourses, 
   updateCourseProgress,
   getCourseProgress,
-  resetCourseProgress
+  resetCourseProgress,
+  generateCertificate,
+  getAchievements,
+  getRecentActivity
 } from "../controllers/studentController.js";
 
 const router = express.Router();
@@ -31,5 +34,14 @@ router.put("/:studentId/progress/:courseId", updateCourseProgress);
 
 // Reset course progress
 router.delete("/:studentId/progress/:courseId", resetCourseProgress);
+
+// Generate certificate for completed course
+router.get("/:studentId/certificate/:courseId", generateCertificate);
+
+// Get student achievements
+router.get("/:studentId/achievements", getAchievements);
+
+// Get recent activity
+router.get("/:studentId/activity", getRecentActivity);
 
 export default router;

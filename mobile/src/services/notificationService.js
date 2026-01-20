@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import storageService from './storageService';
+import { apiClient } from '../api/client';
 
 /**
  * Notification Service for handling push notifications
@@ -159,15 +160,92 @@ class NotificationService {
    */
   async sendTokenToBackend(token, userId) {
     try {
-      const { apiClient } = require('../api/client');
       // You'll need to create this endpoint in your backend
-      await apiClient.post('/notifications/register', {
+      await apiClient.post('/api/notifications/register', {
         userId,
         token,
         platform: Platform.OS,
       });
     } catch (error) {
       console.error('Error sending token to backend:', error);
+    }
+  }
+
+  /**
+   * Get notifications from API
+   */
+  async getNotifications() {
+    try {
+      const response = await apiClient.get('/notifications');
+      return {
+        success: true,
+        data: response.data.notifications || []
+      };
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Mark notification as read
+   */
+  async markAsRead(notificationId) {
+    try {
+      await apiClient.put(`/notifications/${notificationId}/read`);
+      return { success: true };
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Mark all notifications as read
+   */
+  async markAllAsRead() {
+    try {
+      await apiClient.put('/notifications/read-all');
+      return { success: true };
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Delete notification
+   */
+  async deleteNotification(notificationId) {
+    try {
+      await apiClient.delete(`/notifications/${notificationId}`);
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Show local notification
+   */
+  async showLocalNotification(title, body, data = {}) {
+    try {
+      await this.scheduleLocalNotification(title, body, data, 0);
+    } catch (error) {
+      console.error('Error showing local notification:', error);
     }
   }
 }

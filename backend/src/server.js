@@ -38,26 +38,64 @@ const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 const app = express();
 
 // CORS Configuration
+const ENV_ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
   CLIENT_URL,
-  'http://localhost:5173',
-  'http://localhost:8081',  // Expo web dev server
-  'https://accounts.google.com',
-  'https://www.googleapis.com'
+  "http://localhost:5173",
+  "http://localhost:8081", // Expo web dev server
+  "https://accounts.google.com",
+  "https://www.googleapis.com",
+  ...ENV_ALLOWED_ORIGINS,
 ];
+
+const isPrivateOrigin = (origin) => {
+  try {
+    const { hostname } = new URL(origin);
+    if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+    if (hostname.startsWith("192.168.")) return true;
+    if (hostname.startsWith("10.")) return true;
+
+    const match = hostname.match(/^172\.(\d{1,2})\./);
+    if (match) {
+      const octet = Number(match[1]);
+      return octet >= 16 && octet <= 31;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+};
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  if (
+    allowedOrigins.includes(origin) ||
+    allowedOrigins.some((allowed) => origin.startsWith(allowed))
+  ) {
+    return true;
+  }
+
+  if (process.env.NODE_ENV !== "production" && isPrivateOrigin(origin)) {
+    return true;
+  }
+
+  return false;
+};
 
 // CORS Middleware
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin) || 
-        allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+    if (isAllowedOrigin(origin)) {
       return callback(null, true);
     }
-    
-    const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+
+    const msg = "The CORS policy for this site does not allow access from the specified Origin.";
     return callback(new Error(msg), false);
   },
   credentials: true,
@@ -83,7 +121,12 @@ const server = http.createServer(app);
 
 export const io = new Server(server, {
   cors: {
-    origin: CLIENT_URL, // must match frontend exactly
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Socket.IO CORS blocked"), false);
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },

@@ -6,6 +6,7 @@ import YoutubeField from './fields/YoutubeField';
 import CodeField from './fields/CodeField';
 import TableField from './fields/TableField';
 import QuestionField from './fields/QuestionField';
+import AnimationField from './fields/AnimationField';
 
 export default function LessonContent({ fields }) {
   const renderField = (field, index) => {
@@ -31,8 +32,8 @@ export default function LessonContent({ fields }) {
         return <QuestionField key={_id || index} field={field} />;
       
       case 'animation':
-        // Animation will be rendered as video/GIF
-        return <ImageField key={_id || index} content={content?.animationUrl || content} />;
+        // Animation rendered as video/GIF using expo-av
+        return <AnimationField key={_id || index} content={content} />;
       
       case 'minigame':
         // Skipping minigames for now as per requirements

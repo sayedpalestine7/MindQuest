@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { AuthProvider } from '../src/auth/authContext';
+import { NotificationsProvider } from '../src/context/NotificationsContext';
 import { useAuth } from '../src/auth/useAuth';
 import notificationService from '../src/services/notificationService';
 
@@ -52,7 +53,9 @@ const RootNavigator = () => {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootNavigator />
+      <NotificationsProvider>
+        <RootNavigator />
+      </NotificationsProvider>
     </AuthProvider>
   );
 }

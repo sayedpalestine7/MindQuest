@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import reviewService from '../../services/reviewService';
 
-export default function ReviewModal({ visible, course, studentId, onClose }) {
+export default function ReviewModal({ visible, course, studentId, onClose, onSuccess }) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -25,8 +25,11 @@ export default function ReviewModal({ visible, course, studentId, onClose }) {
 
     try {
       setSubmitting(true);
-      await reviewService.submitReview(course._id, studentId, rating, comment);
+      const response = await reviewService.createReview(course._id, rating, comment.trim());
       Alert.alert('Success', 'Review submitted successfully!');
+      if (onSuccess && response?.review) {
+        onSuccess(response.review);
+      }
       onClose();
     } catch (error) {
       console.error('Error submitting review:', error);

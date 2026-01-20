@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
-import { View, Image, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import React, { useState, memo } from 'react';
+import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { Image } from 'expo-image';
+import { getImageUrl } from '../../utils/imageUtils';
 
-export default function ImageField({ content }) {
+const ImageField = memo(({ content }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   if (!content) return null;
 
   const imageUri = typeof content === 'string' ? content : content.url || content.src;
+  const fullImageUrl = getImageUrl(imageUri);
 
-  if (!imageUri) return null;
+  if (!fullImageUrl) return null;
 
   return (
     <View style={styles.container}>
@@ -25,9 +28,11 @@ export default function ImageField({ content }) {
         </View>
       ) : (
         <Image
-          source={{ uri: imageUri }}
+          source={{ uri: fullImageUrl }}
           style={styles.image}
-          resizeMode="contain"
+          contentFit="contain"
+          transition={200}
+          cachePolicy="memory-disk"
           onLoadStart={() => setLoading(true)}
           onLoadEnd={() => setLoading(false)}
           onError={() => {
@@ -38,7 +43,11 @@ export default function ImageField({ content }) {
       )}
     </View>
   );
-}
+});
+
+ImageField.displayName = 'ImageField';
+
+export default ImageField;
 
 const styles = StyleSheet.create({
   container: {

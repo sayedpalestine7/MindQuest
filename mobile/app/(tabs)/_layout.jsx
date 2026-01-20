@@ -1,24 +1,46 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Tabs } from 'expo-router';
+import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNotifications } from '../../src/context/NotificationsContext';
+import NotificationCenter from '../../src/components/notifications/NotificationCenter';
 
 export default function TabsLayout() {
-  return (
-    <Tabs
-      screenOptions={{
-        headerShown: true,
-        tabBarActiveTintColor: '#4F46E5',
-        tabBarInactiveTintColor: '#9CA3AF',
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
-        },
-      }}
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { unreadCount } = useNotifications();
+
+  const NotificationButton = () => (
+    <TouchableOpacity
+      style={styles.notificationButton}
+      onPress={() => setShowNotifications(true)}
     >
+      <Ionicons name="notifications-outline" size={24} color="#1F2937" />
+      {unreadCount > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+
+  return (
+    <>
+      <Tabs
+        screenOptions={{
+          headerShown: true,
+          tabBarActiveTintColor: '#4F46E5',
+          tabBarInactiveTintColor: '#9CA3AF',
+          tabBarStyle: {
+            backgroundColor: '#FFFFFF',
+            borderTopWidth: 1,
+            borderTopColor: '#E5E7EB',
+            paddingBottom: 5,
+            paddingTop: 5,
+            height: 60,
+          },
+          headerRight: () => <NotificationButton />,
+        }}
+      >
       <Tabs.Screen
         name="courses"
         options={{
@@ -56,5 +78,35 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+
+    <NotificationCenter
+      visible={showNotifications}
+      onClose={() => setShowNotifications(false)}
+    />
+  </>
   );
 }
+
+const styles = StyleSheet.create({
+  notificationButton: {
+    marginRight: 16,
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+});
