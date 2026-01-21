@@ -3,7 +3,8 @@ import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { AuthProvider } from '../src/auth/authContext';
-import { NotificationsProvider } from '../src/context/NotificationsContext';
+import { NotificationsProvider, useNotifications } from '../src/context/NotificationsContext';
+import NotificationCenter from '../src/components/notifications/NotificationCenter';
 import { useAuth } from '../src/auth/useAuth';
 import notificationService from '../src/services/notificationService';
 
@@ -30,7 +31,7 @@ const RootNavigator = () => {
     }
 
     if (user && inAuthGroup) {
-      router.replace('/(tabs)/courses');
+      router.replace(user.role === 'teacher' ? '/(tabs)/profile' : '/(tabs)/courses');
     }
   }, [user, loading, segments, router]);
 
@@ -55,7 +56,18 @@ export default function RootLayout() {
     <AuthProvider>
       <NotificationsProvider>
         <RootNavigator />
+        <NotificationsOverlay />
       </NotificationsProvider>
     </AuthProvider>
   );
 }
+
+const NotificationsOverlay = () => {
+  const { isOpen, closeNotifications } = useNotifications();
+  return (
+    <NotificationCenter
+      visible={isOpen}
+      onClose={closeNotifications}
+    />
+  );
+};

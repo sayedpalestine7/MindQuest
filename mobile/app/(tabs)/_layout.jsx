@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Tabs } from 'expo-router';
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNotifications } from '../../src/context/NotificationsContext';
-import NotificationCenter from '../../src/components/notifications/NotificationCenter';
+import { useAuth } from '../../src/auth/useAuth';
 
 export default function TabsLayout() {
-  const [showNotifications, setShowNotifications] = useState(false);
-  const { unreadCount } = useNotifications();
+  const { unreadCount, openNotifications } = useNotifications();
+  const { user } = useAuth();
+  const isTeacher = user?.role === 'teacher';
 
   const NotificationButton = () => (
     <TouchableOpacity
       style={styles.notificationButton}
-      onPress={() => setShowNotifications(true)}
+      onPress={openNotifications}
     >
       <Ionicons name="notifications-outline" size={24} color="#1F2937" />
       {unreadCount > 0 && (
@@ -46,6 +47,7 @@ export default function TabsLayout() {
         options={{
           title: 'Courses',
           headerTitle: 'Browse Courses',
+          tabBarButton: isTeacher ? () => null : undefined,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="book" size={size} color={color} />
           ),
@@ -79,10 +81,6 @@ export default function TabsLayout() {
       />
     </Tabs>
 
-    <NotificationCenter
-      visible={showNotifications}
-      onClose={() => setShowNotifications(false)}
-    />
   </>
   );
 }

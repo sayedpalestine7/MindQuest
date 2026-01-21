@@ -3,7 +3,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import storageService from './storageService';
-import { apiClient } from '../api/client';
+import { apiClient, tokenStorage } from '../api/client';
 
 /**
  * Notification Service for handling push notifications
@@ -183,14 +183,41 @@ class NotificationService {
   /**
    * Get notifications from API
    */
-  async getNotifications() {
+  async getNotifications({ limit, skip, log } = {}) {
     try {
-      const response = await apiClient.get('/notifications');
+      const token = await tokenStorage.get();
+      const params = {};
+      if (Number.isFinite(limit)) params.limit = limit;
+      if (Number.isFinite(skip)) params.skip = skip;
+      if (log) {
+        console.log('Fetching notifications', { limit, skip, hasToken: !!token });
+      }
+      const response = await apiClient.get('/notifications', {
+        params,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (log) {
+        console.log('Notifications response:', response?.data);
+      }
+      const payload = response.data;
+      const raw = Array.isArray(payload)
+        ? payload
+        : payload?.notifications || payload?.data?.notifications || payload?.data || [];
+      const normalized = raw.map((notification) => ({
+        ...notification,
+        read: notification.read ?? notification.isRead ?? false,
+      }));
+      if (log) {
+        console.log('Notifications normalized count:', normalized.length);
+      }
       return {
         success: true,
-        data: response.data.notifications || []
+        data: normalized
       };
     } catch (error) {
+      if (log) {
+        console.log('Notifications error status:', error?.response?.status);
+      }
       console.error('Error fetching notifications:', error);
       return {
         success: false,

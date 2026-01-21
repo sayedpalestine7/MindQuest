@@ -36,6 +36,8 @@ export default function ProfileScreen() {
   const [teacherCourses, setTeacherCourses] = useState([]);
   const [teacherProfile, setTeacherProfile] = useState(null);
   const [teacherReviews, setTeacherReviews] = useState([]);
+  const [showAllTeacherCourses, setShowAllTeacherCourses] = useState(false);
+  const [showAllTeacherReviews, setShowAllTeacherReviews] = useState(false);
   const [stats, setStats] = useState({
     totalCourses: 0,
     coursesCompleted: 0,
@@ -507,8 +509,8 @@ export default function ProfileScreen() {
     </TouchableOpacity>
   );
 
-  const renderTeacherReviews = () => {
-    if (!Array.isArray(teacherReviews) || teacherReviews.length === 0) {
+  const renderTeacherReviews = (reviewsList) => {
+    if (!Array.isArray(reviewsList) || reviewsList.length === 0) {
       return (
         <View style={styles.emptyState}>
           <Ionicons name="chatbubble-outline" size={64} color="#D1D5DB" />
@@ -517,7 +519,7 @@ export default function ProfileScreen() {
       );
     }
 
-    return teacherReviews.map((review) => (
+    return reviewsList.map((review) => (
       <View key={review._id} style={styles.teacherReviewCard}>
         <View style={styles.teacherReviewHeader}>
           <Image
@@ -619,6 +621,23 @@ export default function ProfileScreen() {
   }
 
   if (isTeacher) {
+    const totalCourses = teacherCourses.length || teacherProfile?.totalCourses || 0;
+    const totalStudents = teacherCourses.reduce(
+      (sum, course) => sum + (course.enrollmentCount ?? course.students ?? 0),
+      0
+    );
+    const totalPoints = teacherProfile?.totalPoints || 0;
+    const rating = teacherProfile?.rating || 0;
+
+    const courseLimit = 3;
+    const reviewLimit = 3;
+    const visibleCourses = showAllTeacherCourses
+      ? teacherCourses
+      : teacherCourses.slice(0, courseLimit);
+    const visibleReviews = showAllTeacherReviews
+      ? teacherReviews
+      : teacherReviews.slice(0, reviewLimit);
+
     return (
       <>
         <ScrollView
@@ -643,16 +662,20 @@ export default function ProfileScreen() {
             ) : null}
             <View style={styles.teacherStatsRow}>
               <View style={styles.teacherStatChip}>
-                <Text style={styles.teacherStatValue}>{teacherCourses.length}</Text>
+                <Text style={styles.teacherStatValue}>{totalCourses}</Text>
                 <Text style={styles.teacherStatLabel}>Courses</Text>
               </View>
               <View style={styles.teacherStatChip}>
-                <Text style={styles.teacherStatValue}>{teacherProfile?.rating ?? 0}</Text>
+                <Text style={styles.teacherStatValue}>{totalStudents}</Text>
+                <Text style={styles.teacherStatLabel}>Students</Text>
+              </View>
+              <View style={styles.teacherStatChip}>
+                <Text style={styles.teacherStatValue}>{rating}</Text>
                 <Text style={styles.teacherStatLabel}>Rating</Text>
               </View>
               <View style={styles.teacherStatChip}>
-                <Text style={styles.teacherStatValue}>{teacherReviews.length}</Text>
-                <Text style={styles.teacherStatLabel}>Reviews</Text>
+                <Text style={styles.teacherStatValue}>{totalPoints}</Text>
+                <Text style={styles.teacherStatLabel}>Points</Text>
               </View>
             </View>
 
@@ -675,14 +698,44 @@ export default function ProfileScreen() {
               </View>
             ) : (
               <View style={styles.coursesGrid}>
-                {teacherCourses.map((course) => renderTeacherCourseCard(course))}
+                {visibleCourses.map((course) => renderTeacherCourseCard(course))}
+                {teacherCourses.length > courseLimit ? (
+                  <TouchableOpacity
+                    style={styles.showMoreButton}
+                    onPress={() => setShowAllTeacherCourses((prev) => !prev)}
+                  >
+                    <Text style={styles.showMoreText}>
+                      {showAllTeacherCourses ? 'Show less' : 'Press here for more'}
+                    </Text>
+                    <Ionicons
+                      name={showAllTeacherCourses ? 'chevron-up' : 'chevron-down'}
+                      size={16}
+                      color="#4F46E5"
+                    />
+                  </TouchableOpacity>
+                ) : null}
               </View>
             )}
           </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Reviews</Text>
-            {renderTeacherReviews()}
+            {renderTeacherReviews(visibleReviews)}
+            {teacherReviews.length > reviewLimit ? (
+              <TouchableOpacity
+                style={styles.showMoreButton}
+                onPress={() => setShowAllTeacherReviews((prev) => !prev)}
+              >
+                <Text style={styles.showMoreText}>
+                  {showAllTeacherReviews ? 'Show less' : 'Press here for more'}
+                </Text>
+                <Ionicons
+                  name={showAllTeacherReviews ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color="#4F46E5"
+                />
+              </TouchableOpacity>
+            ) : null}
           </View>
 
           <View style={styles.section}>
@@ -1209,6 +1262,7 @@ const styles = StyleSheet.create({
   },
   teacherStatsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
     marginBottom: 16,
   },
@@ -1218,7 +1272,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     alignItems: 'center',
-    minWidth: 90,
+    minWidth: 80,
   },
   teacherStatValue: {
     fontSize: 16,
@@ -1345,6 +1399,37 @@ const styles = StyleSheet.create({
   teacherReviewComment: {
     fontSize: 13,
     color: '#374151',
+  },
+  showMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    marginTop: 4,
+    borderRadius: 10,
+    backgroundColor: '#EEF2FF',
+  },
+  showMoreText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4F46E5',
+  },
+  showMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  showMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4F46E5',
   },
   courseInfo: {
     flex: 1,

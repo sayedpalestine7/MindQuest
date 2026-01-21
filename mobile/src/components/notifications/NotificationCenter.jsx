@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -57,9 +57,11 @@ const NotificationItem = ({ notification, onPress, onDelete }) => {
     return notifDate.toLocaleDateString();
   };
 
+  const isRead = notification.read ?? notification.isRead ?? false;
+
   return (
     <TouchableOpacity
-      style={[styles.notificationItem, !notification.read && styles.notificationItemUnread]}
+      style={[styles.notificationItem, !isRead && styles.notificationItemUnread]}
       onPress={() => onPress(notification)}
       activeOpacity={0.7}
     >
@@ -72,7 +74,7 @@ const NotificationItem = ({ notification, onPress, onDelete }) => {
           <Text style={styles.notificationTitle} numberOfLines={1}>
             {notification.title}
           </Text>
-          {!notification.read && <View style={styles.unreadDot} />}
+          {!isRead && <View style={styles.unreadDot} />}
         </View>
         
         <Text style={styles.notificationMessage} numberOfLines={2}>
@@ -106,6 +108,12 @@ export default function NotificationCenter({ visible, onClose }) {
     deleteNotification,
     refresh
   } = useNotifications();
+
+  useEffect(() => {
+    if (visible) {
+      console.log('NotificationCenter count:', notifications.length);
+    }
+  }, [visible, notifications.length]);
 
   const handleNotificationPress = async (notification) => {
     // Mark as read
@@ -159,6 +167,9 @@ export default function NotificationCenter({ visible, onClose }) {
             <View style={styles.headerLeft}>
               <Ionicons name="notifications" size={24} color="#6366f1" />
               <Text style={styles.headerTitle}>Notifications</Text>
+              {__DEV__ && (
+                <Text style={styles.debugCount}>Loaded: {notifications.length}</Text>
+              )}
               {unreadCount > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{unreadCount}</Text>
@@ -187,6 +198,7 @@ export default function NotificationCenter({ visible, onClose }) {
           {/* Notifications List */}
           <ScrollView
             style={styles.notificationsList}
+            contentContainerStyle={notifications.length === 0 ? styles.emptyContent : styles.listContent}
             refreshControl={
               <RefreshControl
                 refreshing={loading}
@@ -232,6 +244,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '85%',
+    minHeight: 260,
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
@@ -269,6 +282,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
+  debugCount: {
+    fontSize: 12,
+    color: '#94a3b8',
+  },
   actions: {
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -286,7 +303,13 @@ const styles = StyleSheet.create({
     color: '#6366f1',
   },
   notificationsList: {
-    flex: 1,
+    flexGrow: 1,
+  },
+  listContent: {
+    paddingBottom: 24,
+  },
+  emptyContent: {
+    flexGrow: 1,
   },
   notificationItem: {
     flexDirection: 'row',
