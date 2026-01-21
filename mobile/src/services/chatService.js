@@ -9,13 +9,13 @@ class ChatService {
   /**
    * Send a message
    */
-  async sendMessage(teacherId, studentId, content) {
+  async sendMessage(teacherId, studentId, content, sender = 'student') {
     try {
       const response = await apiClient.post('/chat/send', {
         teacher: teacherId,
         student: studentId,
         content,
-        sender: 'student'
+        sender
       });
       return response.data;
     } catch (error) {
@@ -65,6 +65,32 @@ class ChatService {
   }
 
   /**
+   * Get all student chats for a teacher
+   */
+  async getStudentChats(teacherId) {
+    try {
+      const response = await apiClient.get(`/chat/teacher/${teacherId}/chats`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching student chats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get students enrolled in teacher courses (chat sidebar)
+   */
+  async getTeacherEnrolledStudents() {
+    try {
+      const response = await apiClient.get('/chat/teacher/students');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching teacher enrolled students:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get unread message counts
    */
   async getUnreadCounts(studentId) {
@@ -78,11 +104,26 @@ class ChatService {
   }
 
   /**
+   * Get unread message counts for teacher
+   */
+  async getTeacherUnreadCounts(teacherId) {
+    try {
+      const response = await apiClient.get(`/chat/teacher/unread/${teacherId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching teacher unread counts:', error);
+      return {};
+    }
+  }
+
+  /**
    * Mark messages as read
    */
-  async markAsRead(teacherId, studentId) {
+  async markAsRead(teacherId, studentId, reader = 'student') {
     try {
-      const response = await apiClient.put(`/chat/read/${teacherId}/${studentId}`);
+      const response = await apiClient.put(`/chat/read/${teacherId}/${studentId}`, {
+        reader,
+      });
       return response.data;
     } catch (error) {
       console.error('Error marking messages as read:', error);

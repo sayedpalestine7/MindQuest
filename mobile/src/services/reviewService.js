@@ -76,6 +76,19 @@ class ReviewService {
       throw error;
     }
   }
+
+  /**
+   * Get reviews for a teacher
+   */
+  async getTeacherReviews(teacherId) {
+    try {
+      const response = await apiClient.get(`/reviews/teacher/${teacherId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching teacher reviews:', error);
+      throw error;
+    }
+  }
 }
 
 export default new ReviewService();

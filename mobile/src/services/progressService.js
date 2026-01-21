@@ -20,7 +20,7 @@ class ProgressService {
       // Fetch from server
       try {
         const response = await apiClient.get(`/student/${studentId}/progress/${courseId}`);
-        const serverProgress = response.data;
+        const serverProgress = response.data?.data ?? response.data?.progress ?? response.data;
 
         // Merge server progress with local (server takes precedence)
         if (serverProgress) {
@@ -93,7 +93,7 @@ class ProgressService {
           // Mark as synced
           await storageService.markProgressSynced(studentId, courseId);
           
-          return response.data;
+          return response.data?.data ?? response.data?.progress ?? response.data;
         } catch (error) {
           console.error('Error syncing progress to server:', error);
           // Progress is still saved locally
@@ -133,8 +133,8 @@ class ProgressService {
         currentLessonId: lessonId
       };
 
-      // Save locally and sync
-      await this.updateProgress(studentId, courseId, updatedProgress);
+      // Save locally and sync immediately
+      await this.updateProgress(studentId, courseId, updatedProgress, true);
 
       // Also call the specific endpoint
       try {

@@ -18,8 +18,26 @@ export const AuthProvider = ({ children }) => {
       try {
         const storedToken = await tokenStorage.get();
         const storedUser = await platformStorage.getItem(USER_KEY);
-        setToken(storedToken || null);
-        setUser(storedUser ? JSON.parse(storedUser) : null);
+        
+        if (storedToken && storedUser) {
+          // Verify the token is still valid by making a test request
+          try {
+            // The apiClient will automatically use the stored token
+            // If it's invalid, the interceptor will clear it
+            setToken(storedToken);
+            setUser(JSON.parse(storedUser));
+          } catch (verifyError) {
+            // Token is invalid, clear everything
+            console.warn('Stored token is invalid, clearing auth state');
+            await tokenStorage.clear();
+            await platformStorage.removeItem(USER_KEY);
+            setToken(null);
+            setUser(null);
+          }
+        } else {
+          setToken(null);
+          setUser(null);
+        }
       } catch (error) {
         console.error('Error restoring auth state:', error);
         setToken(null);

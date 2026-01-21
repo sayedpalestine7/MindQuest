@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,26 +9,33 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Modal,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/useAuth';
 import courseService from '../../src/services/courseService';
 import progressService from '../../src/services/progressService';
 import reviewService from '../../src/services/reviewService';
 import studentService from '../../src/services/studentService';
+import teacherService from '../../src/services/teacherService';
 import { getCourseThumbnail, getUserAvatar } from '../../src/utils/imageUtils';
 import ReviewModal from '../../src/components/profile/ReviewModal';
 import EditProfileModal from '../../src/components/profile/EditProfileModal';
+import EditTeacherProfileModal from '../../src/components/profile/EditTeacherProfileModal';
 import CertificateModal from '../../src/components/profile/CertificateModal';
 import RecentActivityTimeline from '../../src/components/profile/RecentActivityTimeline';
 import PerformanceCharts from '../../src/components/profile/PerformanceCharts';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
+  const isTeacher = user?.role === 'teacher';
 
   const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [teacherCourses, setTeacherCourses] = useState([]);
+  const [teacherProfile, setTeacherProfile] = useState(null);
+  const [teacherReviews, setTeacherReviews] = useState([]);
   const [stats, setStats] = useState({
     totalCourses: 0,
     coursesCompleted: 0,
@@ -49,29 +56,77 @@ export default function ProfileScreen() {
   const [continueLearning, setContinueLearning] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
   const [profileUser, setProfileUser] = useState(null);
+  const [lastLoadedAt, setLastLoadedAt] = useState(0);
+  const [initialLoaded, setInitialLoaded] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deletingReview, setDeletingReview] = useState(false);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const reviewsLoadedRef = useRef(false);
 
-  useEffect(() => {
-    if (user) {
-      loadProfileData();
+  const STALE_MS = 60 * 1000;
+
+  const ensureReviewsLoaded = useCallback(async (coursesArray = enrolledCourses) => {
+    if (reviewsLoadedRef.current || loadingReviews) return;
+    if (!Array.isArray(coursesArray) || coursesArray.length === 0) {
+      setReviews({});
+      reviewsLoadedRef.current = true;
+      return;
     }
-  }, [user]);
 
-  const loadProfileData = async () => {
+    setLoadingReviews(true);
     try {
-      setLoading(true);
+      const reviewResults = await Promise.all(
+        coursesArray.map(async (course) => {
+          try {
+            const review = await reviewService.getStudentReview(user._id, course._id);
+            return { courseId: course._id, review };
+          } catch (error) {
+            if (error.response?.status !== 401) {
+              console.error('Error loading review:', error);
+            }
+            return { courseId: course._id, review: null };
+          }
+        })
+      );
 
-      const studentProfile = await studentService.getStudentById(user._id);
+      const reviewMap = {};
+      reviewResults.forEach(({ courseId, review }) => {
+        if (review) reviewMap[courseId] = review;
+      });
+      setReviews(reviewMap);
+      reviewsLoadedRef.current = true;
+    } finally {
+      setLoadingReviews(false);
+    }
+  }, [enrolledCourses, loadingReviews, user]);
+
+  const loadProfileData = useCallback(async ({ includeReviews = false, showLoader = false } = {}) => {
+    try {
+      if (showLoader) {
+        setLoading(true);
+      }
+
+      const handleRequestError = (label, fallback) => (error) => {
+        if (error.response?.status !== 401) {
+          console.error(`Error loading ${label}:`, error);
+        }
+        return fallback;
+      };
+
+      const [studentProfile, courses, allProgress] = await Promise.all([
+        studentService.getStudentById(user._id).catch(handleRequestError('student profile', null)),
+        courseService.getEnrolledCourses(user._id, false).catch(handleRequestError('enrolled courses', [])),
+        progressService.getAllProgress(user._id).catch(handleRequestError('progress', [])),
+      ]);
+
       if (studentProfile) {
         setProfileUser(studentProfile);
       }
-      
-      // Load enrolled courses - force fresh data without cache
-      const courses = await courseService.getEnrolledCourses(user._id, false);
+
       const coursesArray = Array.isArray(courses) ? courses : [];
       setEnrolledCourses(coursesArray);
-
-      // Load all progress data at once
-      const allProgress = await progressService.getAllProgress(user._id);
+      reviewsLoadedRef.current = false;
       
       // Create a map of courseId -> progress
       const progressMap = {};
@@ -174,29 +229,94 @@ export default function ProfileScreen() {
         setRecentActivity([]);
       }
 
-      // Fetch existing reviews for enrolled courses
-      if (coursesArray.length > 0) {
-        const reviewResults = await Promise.all(
-          coursesArray.map(async (course) => {
-            const review = await reviewService.getStudentReview(user._id, course._id);
-            return { courseId: course._id, review };
-          })
-        );
-
-        const reviewMap = {};
-        reviewResults.forEach(({ courseId, review }) => {
-          if (review) reviewMap[courseId] = review;
-        });
-        setReviews(reviewMap);
-      } else {
-        setReviews({});
+      if (includeReviews) {
+        await ensureReviewsLoaded(coursesArray);
       }
     } catch (error) {
       console.error('Error loading profile data:', error);
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
+      setInitialLoaded(true);
+      setLastLoadedAt(Date.now());
     }
-  };
+  }, [ensureReviewsLoaded, user]);
+
+  const loadTeacherProfile = useCallback(async ({ showLoader = false } = {}) => {
+    try {
+      if (showLoader) {
+        setLoading(true);
+      }
+
+      const handleRequestError = (label, fallback) => (error) => {
+        if (error.response?.status !== 401) {
+          console.error(`Error loading ${label}:`, error);
+        }
+        return fallback;
+      };
+
+      const teacherByUser = await teacherService
+        .getTeacherByUserId(user._id)
+        .catch(handleRequestError('teacher profile', null));
+
+      if (!teacherByUser) {
+        setTeacherProfile(null);
+        setTeacherCourses([]);
+        setTeacherReviews([]);
+        return;
+      }
+
+      const fullTeacher = await teacherService
+        .getTeacherById(teacherByUser._id)
+        .catch(handleRequestError('teacher details', teacherByUser));
+
+      const teacherData = fullTeacher || teacherByUser;
+      setTeacherProfile(teacherData);
+      setTeacherCourses(Array.isArray(teacherData.courses) ? teacherData.courses : []);
+
+      const reviewTeacherId = teacherData.userId || teacherData._id || user._id;
+      const reviews = await reviewService
+        .getTeacherReviews(reviewTeacherId)
+        .catch(handleRequestError('teacher reviews', []));
+      setTeacherReviews(Array.isArray(reviews) ? reviews : []);
+    } catch (error) {
+      console.error('Error loading teacher profile data:', error);
+    } finally {
+      if (showLoader) {
+        setLoading(false);
+      }
+      setInitialLoaded(true);
+      setLastLoadedAt(Date.now());
+    }
+  }, [user]);
+
+  // Load data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        const now = Date.now();
+        const shouldReload = !initialLoaded || now - lastLoadedAt > STALE_MS;
+        if (isTeacher) {
+          if (shouldReload) {
+            loadTeacherProfile({ showLoader: !initialLoaded });
+          }
+        } else {
+          if (shouldReload) {
+            loadProfileData({ includeReviews: activeTab === 'courses', showLoader: !initialLoaded });
+          } else if (activeTab === 'courses') {
+            ensureReviewsLoaded();
+          }
+        }
+      }
+    }, [user, isTeacher, loadProfileData, loadTeacherProfile, initialLoaded, lastLoadedAt, activeTab, ensureReviewsLoaded])
+  );
+
+  useEffect(() => {
+    if (!isTeacher && activeTab === 'courses') {
+      ensureReviewsLoaded();
+    }
+  }, [activeTab, ensureReviewsLoaded, isTeacher]);
 
   const getCourseProgressData = (course) => {
     const progress = courseProgressMap[course._id];
@@ -233,7 +353,11 @@ export default function ProfileScreen() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadProfileData();
+    if (isTeacher) {
+      await loadTeacherProfile({ showLoader: false });
+    } else {
+      await loadProfileData({ includeReviews: activeTab === 'courses', showLoader: false });
+    }
     setRefreshing(false);
   };
 
@@ -243,7 +367,7 @@ export default function ProfileScreen() {
       {
         text: 'Logout',
         onPress: async () => {
-          await logout();
+          await signOut();
           router.replace('/login');
         },
         style: 'destructive',
@@ -256,27 +380,29 @@ export default function ProfileScreen() {
     setShowReviewModal(true);
   };
 
-  const handleDeleteReview = (reviewId, courseId) => {
-    Alert.alert('Delete Review', 'Are you sure you want to delete your review?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await reviewService.deleteReview(reviewId);
-            setReviews((prev) => {
-              const updated = { ...prev };
-              delete updated[courseId];
-              return updated;
-            });
-          } catch (error) {
-            console.error('Error deleting review:', error);
-            Alert.alert('Error', 'Failed to delete review');
-          }
-        },
-      },
-    ]);
+  const openDeleteReview = (review, course) => {
+    setPendingDelete({ reviewId: review._id, courseId: course._id, courseTitle: course.title });
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDeleteReview = async () => {
+    if (!pendingDelete?.reviewId) return;
+    setDeletingReview(true);
+    try {
+      await reviewService.deleteReview(pendingDelete.reviewId);
+      setReviews((prev) => {
+        const updated = { ...prev };
+        delete updated[pendingDelete.courseId];
+        return updated;
+      });
+      setDeleteModalVisible(false);
+      setPendingDelete(null);
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      Alert.alert('Error', 'Failed to delete review');
+    } finally {
+      setDeletingReview(false);
+    }
   };
 
   const renderCourseCard = (course) => {
@@ -338,10 +464,10 @@ export default function ProfileScreen() {
                 ))}
               </View>
               <TouchableOpacity
-                onPress={() => handleDeleteReview(review._id, course._id)}
-                style={styles.deleteReviewButton}
+                onPress={() => openDeleteReview(review, course)}
+                style={styles.deleteReviewIconButton}
               >
-                <Text style={styles.deleteReviewText}>Delete</Text>
+                <Ionicons name="trash-outline" size={14} color="#EF4444" />
               </TouchableOpacity>
             </View>
           )}
@@ -349,6 +475,71 @@ export default function ProfileScreen() {
       </View>
     </TouchableOpacity>
     );
+  };
+
+  const renderTeacherCourseCard = (course) => (
+    <TouchableOpacity
+      key={course._id}
+      style={styles.teacherCourseCard}
+      onPress={() => router.push(`/course/${course._id}`)}
+    >
+      <Image
+        source={{ uri: getCourseThumbnail(course) }}
+        style={styles.teacherCourseThumbnail}
+      />
+      <View style={styles.teacherCourseInfo}>
+        <Text style={styles.teacherCourseTitle} numberOfLines={2}>
+          {course.title}
+        </Text>
+        <Text style={styles.teacherCourseMeta} numberOfLines={1}>
+          {course.category || 'General'}
+        </Text>
+        <View style={styles.teacherRatingRow}>
+          <Ionicons name="star" size={14} color="#F59E0B" />
+          <Text style={styles.teacherRatingText}>
+            {course.rating ?? course.averageRating ?? 0}
+          </Text>
+          <Text style={styles.teacherRatingSubtext}>
+            ({course.ratingCount ?? 0})
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderTeacherReviews = () => {
+    if (!Array.isArray(teacherReviews) || teacherReviews.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Ionicons name="chatbubble-outline" size={64} color="#D1D5DB" />
+          <Text style={styles.emptyText}>No reviews yet</Text>
+        </View>
+      );
+    }
+
+    return teacherReviews.map((review) => (
+      <View key={review._id} style={styles.teacherReviewCard}>
+        <View style={styles.teacherReviewHeader}>
+          <Image
+            source={{ uri: getUserAvatar(review.studentId) }}
+            style={styles.teacherReviewAvatar}
+          />
+          <View style={styles.teacherReviewMeta}>
+            <Text style={styles.teacherReviewName}>{review.studentId?.name || 'Student'}</Text>
+            <Text style={styles.teacherReviewCourse} numberOfLines={1}>
+              {review.courseId?.title || 'Course'}
+            </Text>
+          </View>
+          <View style={styles.teacherReviewRating}>
+            <Ionicons name="star" size={14} color="#F59E0B" />
+            <Text style={styles.teacherReviewRatingText}>{review.rating}</Text>
+          </View>
+        </View>
+        {review.comment ? (
+          <Text style={styles.teacherReviewComment}>{review.comment}</Text>
+        ) : null}
+      </View>
+    ));
   };
 
   const renderContinueLearning = () => (
@@ -419,11 +610,122 @@ export default function ProfileScreen() {
     </View>
   );
 
-  if (loading) {
+  if (loading && !initialLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4F46E5" />
       </View>
+    );
+  }
+
+  if (isTeacher) {
+    return (
+      <>
+        <ScrollView
+          style={styles.container}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#4F46E5" />
+          }
+        >
+          <View style={styles.header}>
+            <Image
+              source={{ uri: getUserAvatar(teacherProfile || user) }}
+              style={styles.profileImage}
+            />
+            <Text style={styles.userName}>{teacherProfile?.name || user?.name}</Text>
+            <Text style={styles.userEmail}>{teacherProfile?.email || user?.email}</Text>
+            <View style={styles.roleBadgeTeacher}>
+              <Ionicons name="school" size={14} color="#7C3AED" />
+              <Text style={styles.roleBadgeTeacherText}>Teacher</Text>
+            </View>
+            {teacherProfile?.specialization ? (
+              <Text style={styles.teacherSpecialization}>{teacherProfile.specialization}</Text>
+            ) : null}
+            <View style={styles.teacherStatsRow}>
+              <View style={styles.teacherStatChip}>
+                <Text style={styles.teacherStatValue}>{teacherCourses.length}</Text>
+                <Text style={styles.teacherStatLabel}>Courses</Text>
+              </View>
+              <View style={styles.teacherStatChip}>
+                <Text style={styles.teacherStatValue}>{teacherProfile?.rating ?? 0}</Text>
+                <Text style={styles.teacherStatLabel}>Rating</Text>
+              </View>
+              <View style={styles.teacherStatChip}>
+                <Text style={styles.teacherStatValue}>{teacherReviews.length}</Text>
+                <Text style={styles.teacherStatLabel}>Reviews</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.editButton, !teacherProfile && styles.editButtonDisabled]}
+              onPress={() => setShowEditModal(true)}
+              disabled={!teacherProfile}
+            >
+              <Ionicons name="create-outline" size={18} color="#4F46E5" />
+              <Text style={styles.editButtonText}>Edit Profile</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>My Courses</Text>
+            {teacherCourses.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="book-outline" size={64} color="#D1D5DB" />
+                <Text style={styles.emptyText}>No courses yet</Text>
+              </View>
+            ) : (
+              <View style={styles.coursesGrid}>
+                {teacherCourses.map((course) => renderTeacherCourseCard(course))}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Reviews</Text>
+            {renderTeacherReviews()}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Messages</Text>
+            <Text style={styles.messagesText}>
+              Chat with your students from the chat list.
+            </Text>
+            <TouchableOpacity
+              style={styles.messagesButton}
+              onPress={() => router.push('/(tabs)/chat')}
+            >
+              <Ionicons name="chatbubbles" size={18} color="#FFFFFF" />
+              <Text style={styles.messagesButtonText}>Open Chat List</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Settings</Text>
+            <TouchableOpacity style={styles.settingItem}>
+              <Ionicons name="help-circle-outline" size={24} color="#1F2937" />
+              <Text style={styles.settingText}>Help & Support</Text>
+              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={24} color="#EF4444" />
+              <Text style={[styles.settingText, styles.logoutText]}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {showEditModal && (
+          <EditTeacherProfileModal
+            visible={showEditModal}
+            teacher={teacherProfile}
+            onClose={() => setShowEditModal(false)}
+            onUpdate={() => {
+              setShowEditModal(false);
+              handleRefresh();
+            }}
+          />
+        )}
+      </>
     );
   }
 
@@ -455,7 +757,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Stats */}
-        <View style={styles.statsContainer}>
+        {/* <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Ionicons name="book" size={28} color="#4F46E5" />
             <Text style={styles.statValue}>{stats.totalCourses}</Text>
@@ -479,7 +781,7 @@ export default function ProfileScreen() {
             <Text style={styles.statValue}>{stats.overallProgress}%</Text>
             <Text style={styles.statLabel}>Progress</Text>
           </View>
-        </View>
+        </View> */}
 
         {renderContinueLearning()}
 
@@ -599,7 +901,7 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
           
-          <TouchableOpacity style={styles.settingItem}>
+          {/* <TouchableOpacity style={styles.settingItem}>
             <Ionicons name="notifications-outline" size={24} color="#1F2937" />
             <Text style={styles.settingText}>Notifications</Text>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
@@ -609,7 +911,7 @@ export default function ProfileScreen() {
             <Ionicons name="language-outline" size={24} color="#1F2937" />
             <Text style={styles.settingText}>Language</Text>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           
           <TouchableOpacity style={styles.settingItem}>
             <Ionicons name="help-circle-outline" size={24} color="#1F2937" />
@@ -669,6 +971,46 @@ export default function ProfileScreen() {
           }}
         />
       )}
+
+      {/* Delete Review Modal */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalCard}>
+            <View style={styles.deleteIconWrap}>
+              <Ionicons name="trash" size={20} color="#EF4444" />
+            </View>
+            <Text style={styles.deleteModalTitle}>Delete review?</Text>
+            <Text style={styles.deleteModalMessage}>
+              This will remove your review for {pendingDelete?.courseTitle || 'this course'}.
+            </Text>
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity
+                style={styles.deleteCancelButton}
+                onPress={() => setDeleteModalVisible(false)}
+                disabled={deletingReview}
+              >
+                <Text style={styles.deleteCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteConfirmButton}
+                onPress={confirmDeleteReview}
+                disabled={deletingReview}
+              >
+                {deletingReview ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.deleteConfirmText}>Delete</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -706,6 +1048,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2563EB',
   },
+  roleBadgeTeacher: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#EDE9FE',
+    marginBottom: 12,
+  },
+  roleBadgeTeacherText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#7C3AED',
+  },
   profileImage: {
     width: 100,
     height: 100,
@@ -723,6 +1080,11 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginBottom: 16,
   },
+  teacherSpecialization: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 16,
+  },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -730,6 +1092,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: '#EEF2FF',
     borderRadius: 8,
+  },
+  editButtonDisabled: {
+    opacity: 0.6,
   },
   editButtonText: {
     fontSize: 14,
@@ -842,6 +1207,29 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: 16,
   },
+  teacherStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  teacherStatChip: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignItems: 'center',
+    minWidth: 90,
+  },
+  teacherStatValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  teacherStatLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
   emptyState: {
     alignItems: 'center',
     paddingVertical: 40,
@@ -866,6 +1254,45 @@ const styles = StyleSheet.create({
   coursesGrid: {
     gap: 16,
   },
+  teacherCourseCard: {
+    flexDirection: 'row',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  teacherCourseThumbnail: {
+    width: 120,
+    height: 120,
+  },
+  teacherCourseInfo: {
+    flex: 1,
+    padding: 12,
+  },
+  teacherCourseTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 6,
+  },
+  teacherCourseMeta: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  teacherRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  teacherRatingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  teacherRatingSubtext: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
   courseCard: {
     flexDirection: 'row',
     backgroundColor: '#F9FAFB',
@@ -874,7 +1301,50 @@ const styles = StyleSheet.create({
   },
   courseThumbnail: {
     width: 120,
-    height: 100,
+    height: 150,
+  },
+  teacherReviewCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+  },
+  teacherReviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  teacherReviewAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
+  },
+  teacherReviewMeta: {
+    flex: 1,
+  },
+  teacherReviewName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  teacherReviewCourse: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  teacherReviewRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  teacherReviewRatingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  teacherReviewComment: {
+    fontSize: 13,
+    color: '#374151',
   },
   courseInfo: {
     flex: 1,
@@ -939,18 +1409,93 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   reviewInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
   },
   reviewStars: {
     flexDirection: 'row',
     gap: 2,
   },
-  deleteReviewButton: {
-    marginTop: 4,
+  deleteReviewIconButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
   },
-  deleteReviewText: {
-    fontSize: 11,
-    color: '#EF4444',
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  deleteModalCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
+  deleteIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEE2E2',
+    marginBottom: 12,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 6,
+  },
+  deleteModalMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  deleteCancelButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  deleteCancelText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '600',
+  },
+  deleteConfirmButton: {
+    flex: 1,
+    backgroundColor: '#EF4444',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  deleteConfirmText: {
+    fontSize: 14,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   settingItem: {

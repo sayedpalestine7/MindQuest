@@ -6,7 +6,7 @@ import React from "react";
  */
 export default function DashboardLayout({ header, leftPanel, rightPanel }) {
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-slate-50">
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-50 mx-44">
       {/* Full-width header */}
       {header && (
         <div className="flex-shrink-0">

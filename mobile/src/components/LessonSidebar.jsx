@@ -19,17 +19,41 @@ export default function LessonSidebar({
   progress,
   onClose,
   onLessonSelect,
+  onQuizPress,
 }) {
-  const isLessonComplete = (lessonId) => {
-    return progress?.completedLessons?.includes(lessonId) || false;
+  const normalizeId = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (value._id) return value._id.toString();
+    if (value.toString) return value.toString();
+    return '';
   };
 
-  const calculateProgress = () => {
-    if (!course || !progress) return 0;
-    const totalLessons = course.lessonIds?.length || 1;
-    const completedCount = progress?.completedLessons?.length || 0;
-    return Math.round((completedCount / totalLessons) * 100);
+  const getCourseLessonIds = () => {
+    return (course?.lessonIds || [])
+      .map((lesson) => normalizeId(lesson))
+      .filter(Boolean);
   };
+
+  const getCompletedLessonIds = () => {
+    const completed = (progress?.completedLessons || [])
+      .map((lessonId) => normalizeId(lessonId))
+      .filter(Boolean);
+    const inCourse = new Set(getCourseLessonIds());
+    return Array.from(new Set(completed)).filter((lessonId) => inCourse.has(lessonId));
+  };
+
+  const isLessonComplete = (lessonId) => {
+    if (!progress) return false;
+    const targetId = normalizeId(lessonId);
+    return getCompletedLessonIds().includes(targetId);
+  };
+
+  const totalLessons = getCourseLessonIds().length;
+  const completedCount = getCompletedLessonIds().length;
+  const progressPercent = totalLessons
+    ? Math.min(100, Math.round((completedCount / totalLessons) * 100))
+    : 0;
 
   return (
     <Modal
@@ -50,7 +74,7 @@ export default function LessonSidebar({
             <View>
               <Text style={styles.title}>Course Content</Text>
               <Text style={styles.subtitle}>
-                {progress?.completedLessons?.length || 0} of {course?.lessonIds?.length || 0} completed
+                {completedCount} of {totalLessons} completed
               </Text>
             </View>
             <TouchableOpacity onPress={onClose}>
@@ -61,9 +85,9 @@ export default function LessonSidebar({
           {/* Progress Bar */}
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${calculateProgress()}%` }]} />
+              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
             </View>
-            <Text style={styles.progressText}>{calculateProgress()}%</Text>
+            <Text style={styles.progressText}>{progressPercent}%</Text>
           </View>
 
           <ScrollView style={styles.lessonList}>
@@ -120,18 +144,19 @@ export default function LessonSidebar({
                 <View style={styles.divider} />
                 <TouchableOpacity
                   style={styles.quizItem}
-                  disabled={progress?.completedLessons?.length !== course.lessonIds?.length}
+                  disabled={completedCount !== totalLessons}
+                  onPress={onQuizPress}
                 >
                   <View style={styles.quizIcon}>
                     <Ionicons name="trophy" size={20} color="#F59E0B" />
                   </View>
                   <View style={styles.quizInfo}>
                     <Text style={styles.quizTitle}>Final Quiz</Text>
-                    {progress?.completedLessons?.length !== course.lessonIds?.length && (
+                    {completedCount !== totalLessons && (
                       <Text style={styles.quizLocked}>Complete all lessons to unlock</Text>
                     )}
                   </View>
-                  {progress?.completedLessons?.length !== course.lessonIds?.length && (
+                  {completedCount !== totalLessons && (
                     <Ionicons name="lock-closed" size={18} color="#9CA3AF" />
                   )}
                 </TouchableOpacity>

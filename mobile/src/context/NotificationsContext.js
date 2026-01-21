@@ -20,10 +20,9 @@ export const NotificationsProvider = ({ children }) => {
         const token = await tokenStorage.get();
         if (token) {
           connectSocket(token);
+          await fetchNotifications();
+          setupSocketListeners();
         }
-        
-        await fetchNotifications();
-        setupSocketListeners();
       } else {
         // Disconnect socket when user logs out
         disconnectSocket();
@@ -48,7 +47,10 @@ export const NotificationsProvider = ({ children }) => {
         updateUnreadCount(result.data);
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      // Silently handle 401 errors (expired token) - interceptor will handle logout
+      if (error.response?.status !== 401) {
+        console.error('Error fetching notifications:', error);
+      }
     } finally {
       setLoading(false);
     }

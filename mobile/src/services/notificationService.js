@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import storageService from './storageService';
 import { apiClient } from '../api/client';
 
@@ -26,6 +27,15 @@ class NotificationService {
    */
   async registerForPushNotifications() {
     try {
+      // Get projectId from app config
+      const projectId = Constants.expoConfig?.extra?.expoProjectId;
+      
+      // Skip push notification setup if no projectId is configured
+      if (!projectId) {
+        console.log('Push notifications disabled: No Expo projectId configured in app.json');
+        return null;
+      }
+
       if (!Device.isDevice) {
         console.log('Must use physical device for Push Notifications');
         return null;
@@ -44,7 +54,6 @@ class NotificationService {
         return null;
       }
 
-      const projectId = '6f4bd6e1-ad8a-4d3d-87f7-0cb8e065a703'; // Replace with your Expo project ID
       const token = await Notifications.getExpoPushTokenAsync({ projectId });
       
       // Save token to storage

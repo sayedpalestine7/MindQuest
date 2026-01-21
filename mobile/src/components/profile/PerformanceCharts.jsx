@@ -214,7 +214,7 @@ export default function PerformanceCharts({ studentId }) {
       </View>
 
       {/* Weekly Progress Chart */}
-      <View style={styles.chartSection}>
+      {/* <View style={styles.chartSection}>
         <View style={styles.chartHeader}>
           <Ionicons name="calendar" size={20} color="#6366f1" />
           <Text style={styles.chartTitle}>Weekly Activity</Text>
@@ -234,7 +234,7 @@ export default function PerformanceCharts({ studentId }) {
           withShadow={false}
         />
         <Text style={styles.chartCaption}>Lessons completed per day this week</Text>
-      </View>
+      </View> */}
 
       {/* Course Progress Distribution */}
       {data.progressDistribution.some(item => item.population > 0) && (
