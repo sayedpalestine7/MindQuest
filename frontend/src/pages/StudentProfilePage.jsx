@@ -34,7 +34,7 @@ export default function StudentProfilePage() {
   const [messages, setMessages] = useState([]);
   const [teacherSearch, setTeacherSearch] = useState("");
   const [unreadCount, setUnreadCount] = useState({});  // { teacherId: count }
-  
+
   // Pagination states for cursor-based loading
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [oldestCursor, setOldestCursor] = useState(null);
@@ -89,7 +89,7 @@ export default function StudentProfilePage() {
                 progress: Math.min(100, course.progress ?? computedProgress)
               };
             });
-            
+
             console.log('📚 Enrolled courses loaded:', formattedCourses.length, formattedCourses);
             setEnrolledCourses(formattedCourses);
           }
@@ -204,7 +204,7 @@ export default function StudentProfilePage() {
         setMessages(msgs);
         setHasMoreMessages(hasMore);
         setOldestCursor(cursor);
-        
+
         // After initial load, allow auto-scroll for new messages
         // Wait 600ms to ensure all scroll attempts complete (100ms, 350ms, 500ms)
         setTimeout(() => setIsInitialLoad(false), 600);
@@ -258,22 +258,22 @@ export default function StudentProfilePage() {
     if (!selectedTeacher || !studentId || !oldestCursor || isLoadingMoreMessages) return;
 
     const teacherId = selectedTeacher._id || selectedTeacher.id;
-    
+
     try {
       setIsLoadingMoreMessages(true);
-      
+
       const { data } = await axios.get(
         `http://localhost:5000/api/chat/conversation/${teacherId}/${studentId}`,
         {
-          params: { 
+          params: {
             limit: 50,
             before: oldestCursor // Fetch messages older than current oldest
           }
         }
       );
-      
+
       const { messages: fetchedMessages, hasMore, oldestCursor: cursor } = data;
-      
+
       // Backend returns descending, reverse for display
       const olderMsgs = (fetchedMessages || []).reverse().map((m) => ({
         id: m._id,
@@ -284,7 +284,7 @@ export default function StudentProfilePage() {
           minute: "2-digit",
         }),
       }));
-      
+
       // Prepend older messages
       setMessages((prev) => [...olderMsgs, ...prev]);
       setHasMoreMessages(hasMore);
@@ -380,11 +380,11 @@ export default function StudentProfilePage() {
     }).length;
     const overallProgress = totalCourses > 0
       ? Math.min(
-          100,
-          Math.round(
-            enrolledCourses.reduce((a, c) => a + Math.min(100, c.progress || 0), 0) / totalCourses
-          )
+        100,
+        Math.round(
+          enrolledCourses.reduce((a, c) => a + Math.min(100, c.progress || 0), 0) / totalCourses
         )
+      )
       : 0;
 
     return {
@@ -441,7 +441,7 @@ export default function StudentProfilePage() {
     // Compute next incomplete lesson
     const completedSet = new Set((recentProgress.completedLessons || []).map(id => id.toString()));
     const lessons = course.lessonIds || [];
-    
+
     let nextLesson = null;
     let resumeLessonId = null;
 
@@ -474,7 +474,7 @@ export default function StudentProfilePage() {
       totalLessons: course.totalLessons,
       resumeLessonId
     };
-    
+
     console.log('🎯 Continue Learning computed:', result);
     return result;
   }, [enrolledCourses, progressData]);
@@ -562,28 +562,26 @@ export default function StudentProfilePage() {
             }
             mainContent={
               <MainPanel>
-                <div className="space-y-6 px-4 sm:px-6">
-                  {/* Top Row: Continue Learning, Stats, Recent Activity */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="md:col-span-2">
-                      <StudentContinueLearningCard
-                        continueLearning={continueLearning}
-                        recentActivity={[]}
-                      />
-                    </div>
-                    <div>
+                <div className="flex gap-6">
+                  <div className="Learning-Overview w-full">
+                    {/* <div>
                       <StudentStatsPanel stats={stats} />
-                    </div>
+                    </div> */}
                     <div>
-                      <RecentActivity activities={recentActivity} />
+                      <StudentPerformancePanel stats={stats} />
                     </div>
                   </div>
-
-                  {/* Bottom Row: Performance Panel - Full Width */}
-                  {/* <div>
-                    <StudentPerformancePanel stats={stats} />
-                  </div> */}
                 </div>
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <StudentContinueLearningCard
+                    continueLearning={continueLearning}
+                    recentActivity={[]}
+                  />
+                  <div>
+                    <RecentActivity activities={recentActivity} />
+                  </div>
+                </div>
+
               </MainPanel>
             }
           />
@@ -592,7 +590,7 @@ export default function StudentProfilePage() {
           <StudentRightPanel
             // Courses props
             courses={enrolledCourses}
-            
+
             // Chat props
             teachers={filteredTeachers}
             selectedTeacher={selectedTeacher}
@@ -612,7 +610,7 @@ export default function StudentProfilePage() {
           />
         }
       />
-      
+
       {/* Edit Profile Modal */}
       {isEditModalOpen && (
         <EditProfileModal
