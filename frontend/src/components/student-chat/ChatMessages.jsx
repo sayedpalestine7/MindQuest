@@ -105,7 +105,7 @@ export default function ChatMessages({
     <div 
       ref={messagesContainerRef}
       onScroll={handleScroll}
-      className="flex flex-col gap-2 overflow-y-auto h-full"
+      className="flex flex-col gap-3 overflow-y-auto h-full"
     >
       {/* Loading indicator for older messages */}
       {isLoadingMore && (

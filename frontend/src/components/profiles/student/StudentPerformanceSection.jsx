@@ -16,15 +16,15 @@ export default function StudentPerformanceSection({ stats = {} }) {
 
   // Simplified chart data with cold colors
   const chartData = [
-    { label: 'Total Courses', value: totalCourses, max: 20, color: '#546E7A', icon: BookOpen },
-    { label: 'Completed', value: completedCourses, max: 20, color: '#546E7A', icon: Award },
-    { label: 'Progress', value: overallProgress, max: 100, color: '#546E7A', icon: TrendingUp, suffix: '%' },
-    { label: 'Total Points', value: totalPoints, max: (numberOfClasses*10), color: '#546E7A', icon: Award },
+    { label: 'Total Courses', value: totalCourses, max: 20, color: '#e8eaf6', icon: BookOpen },
+    { label: 'Completed', value: completedCourses, max: 20, color: '#e8eaf6', icon: Award },
+    { label: 'Progress', value: overallProgress, max: 100, color: '#e8eaf6', icon: TrendingUp, suffix: '%' },
+    { label: 'Total Points', value: totalPoints, max: (numberOfClasses*10), color: '#e8eaf6', icon: Award },
   ];
 
   return (
     <motion.div
-      className="p-4"
+      className="py-3"
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
@@ -38,17 +38,17 @@ export default function StudentPerformanceSection({ stats = {} }) {
           return (
             <motion.div
               key={index}
-              className="bg-gradient-to-br from-white to-slate-50 rounded-lg p-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + index * 0.1 }}
             >
               <div className="flex items-center gap-3 mb-3">
                 <div 
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: `${item.color}20` }}
+                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: `${item.color}` }}
                 >
-                  <Icon className="w-5 h-5" style={{ color: item.color }} />
+                  <Icon className="w-5 h-5" style={{ color: "#546E7A" }} />
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-slate-500 font-medium">
@@ -64,7 +64,7 @@ export default function StudentPerformanceSection({ stats = {} }) {
               <div className="relative h-2 rounded-full overflow-hidden bg-slate-200">
                 <motion.div
                   className="h-full rounded-full"
-                  style={{ backgroundColor: item.color }}
+                  style={{ backgroundColor: "#2563EB" }}
                   initial={{ width: 0 }}
                   animate={{ width: `${percentage}%` }}
                   transition={{ duration: 0.8, delay: 0.2 + index * 0.1, ease: "easeOut" }}

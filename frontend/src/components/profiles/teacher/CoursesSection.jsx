@@ -242,15 +242,25 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
                 </div>
 
                 <div className="flex items-center gap-3 flex-shrink-0 relative ">
-                  {course.studentCount !== undefined && (
-                    <motion.div whileHover={{ scale: 1.1 }} className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-blue-600">
-                        <Users className="w-4 h-4" />
-                        <span className="font-bold text-lg">{course.studentCount}</span>
-                      </div>
-                      <p className="text-xs mt-1 text-slate-500">Students</p>
-                    </motion.div>
-                  )}
+                  {(() => {
+                    const studentCount =
+                      course.studentCount ??
+                      course.enrollmentCount ??
+                      (Array.isArray(course.students) ? course.students.length : undefined)
+
+                    if (studentCount === undefined) {
+                      return null
+                    }
+
+                    return (
+                      <motion.div className="text-center">
+                        <div className="flex items-center justify-center gap-1 text-blue-600">
+                          <Users className="w-4 h-4" />
+                          <span className="font-bold text-lg">{studentCount}</span>
+                        </div>
+                      </motion.div>
+                    )
+                  })()}
 
                   {course.approvalStatus === "pending" && (
                     <motion.div

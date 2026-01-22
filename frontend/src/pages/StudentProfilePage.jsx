@@ -572,7 +572,7 @@ export default function StudentProfilePage() {
                     </div>
                   </div>
                 </div>
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6">
                   <StudentContinueLearningCard
                     continueLearning={continueLearning}
                     recentActivity={[]}

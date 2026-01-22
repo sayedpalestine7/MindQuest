@@ -54,9 +54,8 @@ export default function StatsSection({ stats, layout = "stack" }) {
           key={i}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 * i }}
-          whileHover={{ scale: 1.02 }}
-          className="mq-card p-4 relative"
+          transition={{ delay: 0.1 + i * 0.1 }}
+          className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
         >
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg" style={{ backgroundColor: stat.iconBg }}>

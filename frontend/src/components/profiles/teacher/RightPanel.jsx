@@ -85,7 +85,7 @@ export default function RightPanel({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
-              className="h-full min-h-0 overflow-y-auto overscroll-contain"
+              className="h-full min-h-0 overflow-y-auto overscroll-contain "
             >
               <CoursesSection 
                 courses={courses} 

@@ -95,11 +95,11 @@ export default function TeacherSidebar({
       style={{ borderRight: '1px solid #E0E0E0', backgroundColor: '#F5F7FA' }}
     >
       {/* Header */}
-      <div className="p-4 text-white" style={{ borderBottom: '1px solid #E0E0E0', background: 'linear-gradient(to right, #3F51B5, #5C6BC0)' }}>
+      {/* <div className="p-4 text-white" style={{ borderBottom: '1px solid #E0E0E0', background: 'linear-gradient(to right, #3F51B5, #5C6BC0)' }}>
         <h3 className="font-bold text-lg flex items-center gap-2">
           <Users className="w-5 h-5" /> Teachers ({filteredUsers.length})
         </h3>
-      </div>
+      </div> */}
 
       {/* Search & Filters */}
       <div className="p-4 space-y-3" style={{ borderBottom: '1px solid #E0E0E0', backgroundColor: '#FFFFFF' }}>
@@ -124,7 +124,7 @@ export default function TeacherSidebar({
               onClick={() => setFilter(f)}
               className="px-3 py-1 rounded-full text-sm font-semibold transition"
               style={{
-                backgroundColor: filter === f ? '#3F51B5' : '#E0E0E0',
+                backgroundColor: filter === f ? '#2563EB' : '#E0E0E0',
                 color: filter === f ? '#FFFFFF' : '#607D8B'
               }}
             >
@@ -137,7 +137,7 @@ export default function TeacherSidebar({
           <div className="flex gap-2 flex-wrap mt-2">
             <button
               className={`px-3 py-1 rounded-full text-sm font-semibold transition ${
-                courseFilter === "" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+                courseFilter === "" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
               }`}
               onClick={() => setCourseFilter("")}
             >
@@ -147,7 +147,7 @@ export default function TeacherSidebar({
               <button
                 key={c}
                 className={`px-3 py-1 rounded-full text-sm font-semibold transition ${
-                  courseFilter === c ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+                  courseFilter === c ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
                 }`}
                 onClick={() => setCourseFilter(c)}
               >
@@ -159,7 +159,7 @@ export default function TeacherSidebar({
       </div>
 
       {/* Teacher List */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-white">
         {filteredUsers.length > 0 ? (
           filteredUsers.map((u, idx) => {
             const isSelected = selectedUser ? getUserId(selectedUser) === getUserId(u) : false;
@@ -180,7 +180,6 @@ export default function TeacherSidebar({
                 style={{
                   borderBottom: '1px solid #E0E0E0',
                   backgroundColor: isSelected ? '#E8EAF6' : 'transparent',
-                  borderLeft: isSelected ? '4px solid #3F51B5' : 'none'
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) e.currentTarget.style.backgroundColor = '#F5F7FA';

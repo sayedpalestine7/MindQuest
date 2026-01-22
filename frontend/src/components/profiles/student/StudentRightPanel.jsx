@@ -81,7 +81,7 @@ export default function StudentRightPanel({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
-              className="h-full min-h-0 overflow-y-auto overscroll-contain p-4"
+              className="h-full min-h-0 overflow-y-auto overscroll-contain"
             >
               {courses && courses.length > 0 ? (
                 <EnrolledCourses courses={courses} />
