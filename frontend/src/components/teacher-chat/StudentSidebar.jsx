@@ -81,14 +81,14 @@ export default function StudentSidebar({
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       className="w-80 h-full min-h-0 flex flex-col"
-      style={{ borderRight: '1px solid #E0E0E0', backgroundColor: '#F5F7FA' }}
+      style={{ borderRight: '1px solid #E0E0E0', backgroundColor: '#FFFFFF' }}
     >
       {/* Header */}
-      <div className="p-4 text-white" style={{ borderBottom: '1px solid #E0E0E0', background: 'linear-gradient(to right, #3F51B5, #5C6BC0)' }}>
+      {/* <div className="p-4 text-white" style={{ borderBottom: '1px solid #E0E0E0', backgroundColor: '#3F51B5' }}>
         <h3 className="font-bold text-lg flex items-center gap-2">
           <Users className="w-5 h-5" /> Students ({filteredStudents.length})
         </h3>
-      </div>
+      </div> */}
 
       {/* Search & Filters */}
       <div className="p-4 space-y-3" style={{ borderBottom: '1px solid #E0E0E0', backgroundColor: '#FFFFFF' }}>
@@ -113,7 +113,7 @@ export default function StudentSidebar({
               onClick={() => setFilter(f)}
               className="px-3 py-1 rounded-full text-sm font-semibold transition"
               style={{
-                backgroundColor: filter === f ? '#3F51B5' : '#E0E0E0',
+                backgroundColor: filter === f ? '#3864dd' : '#E0E0E0',
                 color: filter === f ? '#FFFFFF' : '#607D8B'
               }}
             >
@@ -126,7 +126,7 @@ export default function StudentSidebar({
           <div className="flex gap-2 flex-wrap mt-2">
             <button
               className={`px-3 py-1 rounded-full text-sm font-semibold transition ${
-                courseFilter === "" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+                courseFilter === "" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
               }`}
               onClick={() => setCourseFilter("")}
             >
@@ -136,7 +136,7 @@ export default function StudentSidebar({
               <button
                 key={c}
                 className={`px-3 py-1 rounded-full text-sm font-semibold transition ${
-                  courseFilter === c ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+                  courseFilter === c ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
                 }`}
                 onClick={() => setCourseFilter(c)}
               >
@@ -166,8 +166,8 @@ export default function StudentSidebar({
                 className="w-full text-left p-3 flex items-center gap-3 transition-all"
                 style={{
                   borderBottom: '1px solid #E0E0E0',
-                  backgroundColor: isSelected ? '#E8EAF6' : 'transparent',
-                  borderLeft: isSelected ? '4px solid #3F51B5' : 'none'
+                  backgroundColor: isSelected ? '#eff6ff' : 'transparent',
+                  borderLeft: isSelected ? '4px' : 'none'
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) e.currentTarget.style.backgroundColor = '#F5F7FA';
@@ -185,7 +185,7 @@ export default function StudentSidebar({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white font-bold text-lg" style={{ background: 'linear-gradient(to bottom right, #3F51B5, #5C6BC0)' }}>
+                    <div className="w-full h-full flex items-center justify-center text-white font-bold text-lg" style={{ background: 'linear-gradient(to bottom right, #3864dd, #3864dd)' }}>
                       {s.name?.charAt(0) ?? "?"}
                     </div>
                   )}
@@ -193,7 +193,7 @@ export default function StudentSidebar({
 
                 {/* Student Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate" style={{ color: isSelected ? '#3F51B5' : '#263238' }}>
+                  <p className="font-semibold truncate" style={{ color: isSelected ? '#3864dd' : '#263238' }}>
                     {s.name}
                   </p>
                   <p className="text-xs truncate" style={{ color: '#607D8B' }}>

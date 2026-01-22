@@ -381,7 +381,8 @@ export default function TeacherProfilePage() {
 
   return (
     <>
-    <DashboardLayout
+    
+      <DashboardLayout
       header={<AppHeader subtitle="Teacher Profile" />}
       leftPanel={
         <LeftPanel
@@ -444,6 +445,7 @@ export default function TeacherProfilePage() {
         setProfileData={setProfileData}
       />
     )}
+
     </>
   );
 }

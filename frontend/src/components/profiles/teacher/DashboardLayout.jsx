@@ -6,7 +6,7 @@ import React from "react";
  */
 export default function DashboardLayout({ header, leftPanel, rightPanel }) {
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-slate-50 mx-44">
+    <div className="flex flex-col h-screen overflow-hidden">
       {/* Full-width header */}
       {header && (
         <div className="flex-shrink-0">
@@ -15,7 +15,7 @@ export default function DashboardLayout({ header, leftPanel, rightPanel }) {
       )}
       
       {/* Two-column layout with spacing */}
-      <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden gap-4 p-4">
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden gap-4 px-60 py-4">
         {/* Left Panel - User Dashboard (Profile, Performance, Stats) */}
         <div className="flex-1 lg:max-w-[55%] min-h-0 overflow-hidden mq-card">
           {leftPanel}

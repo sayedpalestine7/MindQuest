@@ -13,10 +13,10 @@ export default function ChatHeader({ student }) {
     <motion.div 
       initial={{ y: -10, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="flex items-center gap-3 p-3 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-violet-50"
+      className="flex items-center gap-3 p-3 border-b border-slate-200 bg-gradient-to-b from-slate-50 to-white"
     >
       {/* Avatar */}
-      <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center ring-2 ring-indigo-200">
+      <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center">
         {hasImage ? (
           <img
             src={student.avatar}

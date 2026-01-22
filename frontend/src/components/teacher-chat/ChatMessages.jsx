@@ -111,7 +111,7 @@ export default function ChatMessages({
       {/* Loading indicator for older messages */}
       {isLoadingMore && (
         <div className="flex justify-center py-2">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
         </div>
       )}
 
@@ -127,7 +127,7 @@ export default function ChatMessages({
           <div
             className={`max-w-xs px-3 py-2 rounded-2xl shadow-sm ${
               msg.sender === "teacher"
-                ? "bg-gradient-to-r from-indigo-700 to-violet-700 text-white rounded-br-none"
+                ? "bg-gradient-to-r from-blue-700 to-blue-700 text-white rounded-br-none"
                 : "bg-slate-200 text-slate-900 rounded-bl-none"
             }`}
           >

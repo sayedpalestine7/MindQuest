@@ -118,11 +118,10 @@ export default function CommentsPanel({ teacherId }) {
           <svg
             key={star}
             xmlns="http://www.w3.org/2000/svg"
-            className={`h-4 w-4 ${
-              star <= rating
+            className={`h-4 w-4 ${star <= rating
                 ? "fill-yellow-400 text-yellow-400"
                 : "fill-gray-200 text-gray-200"
-            }`}
+              }`}
             viewBox="0 0 24 24"
             stroke="currentColor"
             strokeWidth="1"
@@ -139,27 +138,32 @@ export default function CommentsPanel({ teacherId }) {
   };
 
   return (
-    <div className="mq-card p-4 h-full flex flex-col">
+    <div className="p-4 h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-slate-800">
-          Course Reviews
-        </h2>
-        {courses.length > 0 && (
-          <select
-            value={selectedCourse}
-            onChange={(e) => setSelectedCourse(e.target.value)}
-            className="px-3 py-1 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Courses ({reviews.length})</option>
-            {courses.map((course) => (
-              <option key={course} value={course}>
-                {course} (
-                {reviews.filter((r) => r.courseId?.title === course).length})
-              </option>
-            ))}
-          </select>
-        )}
+      <div className="mb-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-slate-900">
+            Course Reviews
+          </h2>
+          {courses.length > 0 && (
+            <select
+              value={selectedCourse}
+              onChange={(e) => setSelectedCourse(e.target.value)}
+              className="px-4 py-2 text-sm border border-slate-200 rounded-lg bg-white hover:border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors shadow-sm"
+            >
+              <option value="all">All Courses ({reviews.length})</option>
+              {courses.map((course) => (
+                <option key={course} value={course}>
+                  {course} (
+                  {reviews.filter((r) => r.courseId?.title === course).length})
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+        <p className="text-xs text-slate-500 mt-2">
+          {filteredReviews.length} review{filteredReviews.length !== 1 ? 's' : ''}
+        </p>
       </div>
 
       {/* Content */}
@@ -197,7 +201,7 @@ export default function CommentsPanel({ teacherId }) {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="mq-card p-3 bg-slate-50 border-slate-200"
+                className="mq-card p-3 shadow-sm "
               >
                 {/* Student & Course Info */}
                 <div className="flex items-start gap-3 mb-2">
@@ -226,7 +230,7 @@ export default function CommentsPanel({ teacherId }) {
                             {new Date(review.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                        
+
                         {/* Three-dot menu */}
                         <div className="relative" ref={(el) => menuRefs.current[review._id] = el}>
                           <button
@@ -247,11 +251,10 @@ export default function CommentsPanel({ teacherId }) {
                                   setShowMenu(null);
                                 }}
                                 disabled={reportedReviews[review._id]}
-                                className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                                  reportedReviews[review._id]
+                                className={`w-full text-left px-4 py-2 text-sm transition-colors ${reportedReviews[review._id]
                                     ? "text-gray-400 cursor-not-allowed"
                                     : "text-red-600 hover:bg-red-50"
-                                }`}
+                                  }`}
                               >
                                 {reportedReviews[review._id] ? "Already Reported" : "Report"}
                               </button>

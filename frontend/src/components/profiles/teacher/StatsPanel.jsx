@@ -9,7 +9,7 @@ export default function StatsPanel({ stats, layout = "stack", title = "Statistic
   const isGrid = layout === "grid";
 
   return (
-    <div className={`mq-card p-4 flex flex-col ${isGrid ? "" : "h-full"}`}>
+    <div className={`p-4 flex flex-col ${isGrid ? "" : "h-full"}`}>
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-bold text-slate-800">{title}</h2>
       </div>

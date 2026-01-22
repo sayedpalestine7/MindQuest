@@ -11,29 +11,29 @@ export default function StatsSection({ stats, layout = "stack" }) {
       title: "Courses", 
       value: stats.totalCourses || 0, 
       icon: BookOpen,
-      iconColor: "#1E88E5", // blue in hex is 
+      iconColor: "#546E7A", // blue in hex is 
       iconBg: "#E8EAF6"
     },
     { 
       title: "Students", 
       value: stats.totalEnrolledStudents || 0, 
       icon: Users,
-      iconColor: "#607D8B", // Blue-gray (neutral)
-      iconBg: "#ECEFF1"
+      iconColor: "#546E7A", // Blue-gray (neutral)
+      iconBg: "#E8EAF6"
     },
     { 
       title: "Rating", 
       value: (stats.rating || 0).toFixed(1), 
       icon: Star,
-      iconColor: "#F9A825", // Gold
-      iconBg: "#FFF9C4"
+      iconColor: "#546E7A", // Gold
+      iconBg: "#E8EAF6"
     },
     { 
       title: "Points", 
       value: stats.totalPoints || 0, 
       icon: Award,
-      iconColor: "#26A69A", // Teal
-      iconBg: "#E0F2F1"
+      iconColor: "#546E7A", // Teal
+      iconBg: "#E8EAF6"
     },
   ];
 

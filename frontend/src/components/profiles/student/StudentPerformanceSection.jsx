@@ -17,9 +17,9 @@ export default function StudentPerformanceSection({ stats = {} }) {
   // Simplified chart data with cold colors
   const chartData = [
     { label: 'Total Courses', value: totalCourses, max: 20, color: '#546E7A', icon: BookOpen },
-    { label: 'Completed', value: completedCourses, max: 20, color: '#78909C', icon: Award },
-    { label: 'Progress', value: overallProgress, max: 100, color: '#90A4AE', icon: TrendingUp, suffix: '%' },
-    { label: 'Total Points', value: totalPoints, max: (numberOfClasses*10), color: '#B0BEC5', icon: Award },
+    { label: 'Completed', value: completedCourses, max: 20, color: '#546E7A', icon: Award },
+    { label: 'Progress', value: overallProgress, max: 100, color: '#546E7A', icon: TrendingUp, suffix: '%' },
+    { label: 'Total Points', value: totalPoints, max: (numberOfClasses*10), color: '#546E7A', icon: Award },
   ];
 
   return (

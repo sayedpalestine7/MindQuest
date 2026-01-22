@@ -160,13 +160,13 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
     <>
       <Toaster position="top" />
       <motion.div
-        className="mq-card overflow-hidden"
+        className="overflow-hidden"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-      <div className="p-4 bg-gradient-to-r from-blue-600 to-blue-500">
-        <div className="flex items-center justify-between mb-3">
+      <div className="p-4 border-b border-gray-200 mb-4">
+        {/* <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <BookOpen className="w-7 h-7 text-white" />
             <h3 className="text-2xl font-bold text-white">Your Courses</h3>
@@ -192,7 +192,7 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
             <Plus className="w-4 h-4" /> New Course
           </motion.button>
           </div>
-        </div>
+        </div> */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-600" />
           <input
@@ -200,7 +200,7 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
             placeholder="Search courses..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-lg bg-white placeholder-slate-500 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className="w-full pl-10 pr-4 py-2 bg-white placeholder-slate-500 text-slate-800 focus:outline-none focus:ring-blue-500 border border-slate-300 rounded-md focus:ring-2 focus:border-transparent"
           />
         </div>
       </div>
@@ -216,7 +216,7 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.05 * i }}
-              className={`p-4 transition-all duration-200 group cursor-pointer border-l-4 ${
+              className={`p-4 m-3 transition-all duration-200 group cursor-pointer mq-card shadow-sm ${
                 isActive ? "bg-blue-50 border-blue-600" : "border-transparent hover:bg-slate-50"
               }`}
               whileHover={{ paddingRight: 24 }}
@@ -234,7 +234,9 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
                   </h4>
                   {course.description && (
                     <p className="text-sm line-clamp-2 text-slate-500">
-                      {course.description}
+                      {course.description.length > 80
+                        ? course.description.substring(0, 80) + "..."
+                        : course.description}
                     </p>
                   )}
                 </div>

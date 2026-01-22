@@ -18,7 +18,7 @@ export default function ChatWindow({
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-indigo-50 to-violet-50"
+        className="flex flex-col items-center justify-center h-full"
       >
         <div className="text-center">
           <div className="text-6xl mb-4">💬</div>
