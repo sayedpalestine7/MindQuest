@@ -7,7 +7,7 @@ const extra = Constants.expoConfig?.extra || {};
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
   extra.apiUrl ||
-  'http://192.168.1.50:5000';
+  'http://192.168.68.52:5000';
 
 export const GOOGLE_OAUTH = {
   expoClientId: process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID || extra.googleExpoClientId || '',

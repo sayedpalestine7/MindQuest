@@ -1,8 +1,9 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import storageService from './storageService';
-import { apiClient } from '../api/client';
+import { apiClient, tokenStorage } from '../api/client';
 
 /**
  * Notification Service for handling push notifications
@@ -26,6 +27,15 @@ class NotificationService {
    */
   async registerForPushNotifications() {
     try {
+      // Get projectId from app config
+      const projectId = Constants.expoConfig?.extra?.expoProjectId;
+      
+      // Skip push notification setup if no projectId is configured
+      if (!projectId) {
+        console.log('Push notifications disabled: No Expo projectId configured in app.json');
+        return null;
+      }
+
       if (!Device.isDevice) {
         console.log('Must use physical device for Push Notifications');
         return null;
@@ -44,7 +54,6 @@ class NotificationService {
         return null;
       }
 
-      const projectId = '6f4bd6e1-ad8a-4d3d-87f7-0cb8e065a703'; // Replace with your Expo project ID
       const token = await Notifications.getExpoPushTokenAsync({ projectId });
       
       // Save token to storage
@@ -174,14 +183,41 @@ class NotificationService {
   /**
    * Get notifications from API
    */
-  async getNotifications() {
+  async getNotifications({ limit, skip, log } = {}) {
     try {
-      const response = await apiClient.get('/notifications');
+      const token = await tokenStorage.get();
+      const params = {};
+      if (Number.isFinite(limit)) params.limit = limit;
+      if (Number.isFinite(skip)) params.skip = skip;
+      if (log) {
+        console.log('Fetching notifications', { limit, skip, hasToken: !!token });
+      }
+      const response = await apiClient.get('/notifications', {
+        params,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (log) {
+        console.log('Notifications response:', response?.data);
+      }
+      const payload = response.data;
+      const raw = Array.isArray(payload)
+        ? payload
+        : payload?.notifications || payload?.data?.notifications || payload?.data || [];
+      const normalized = raw.map((notification) => ({
+        ...notification,
+        read: notification.read ?? notification.isRead ?? false,
+      }));
+      if (log) {
+        console.log('Notifications normalized count:', normalized.length);
+      }
       return {
         success: true,
-        data: response.data.notifications || []
+        data: normalized
       };
     } catch (error) {
+      if (log) {
+        console.log('Notifications error status:', error?.response?.status);
+      }
       console.error('Error fetching notifications:', error);
       return {
         success: false,

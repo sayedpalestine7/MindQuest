@@ -16,6 +16,7 @@ import courseService from '../../src/services/courseService';
 import progressService from '../../src/services/progressService';
 import LessonContent from '../../src/components/LessonContent';
 import LessonSidebar from '../../src/components/LessonSidebar';
+import QuizModal from '../../src/components/quiz/QuizModal';
 
 const { width } = Dimensions.get('window');
 
@@ -30,6 +31,7 @@ export default function LessonScreen() {
   const [progress, setProgress] = useState(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [showQuizModal, setShowQuizModal] = useState(false);
 
   useEffect(() => {
     loadLessonData();
@@ -89,10 +91,13 @@ export default function LessonScreen() {
     try {
       setCompleting(true);
       
-      await progressService.markLessonComplete(user._id, course._id, currentLesson._id);
+      const updatedProgress = await progressService.markLessonComplete(
+        user._id,
+        course._id,
+        currentLesson._id
+      );
       
-      // Update local progress
-      const updatedProgress = await progressService.getProgress(user._id, course._id);
+      // Update local progress immediately
       setProgress(updatedProgress);
 
       // Auto-advance to next lesson
@@ -118,15 +123,44 @@ export default function LessonScreen() {
     router.push(`/lesson/${lessonId}`);
   };
 
+  const handleQuizPress = () => {
+    setShowSidebar(false);
+    setShowQuizModal(true);
+  };
+
+  const normalizeId = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (value._id) return value._id.toString();
+    if (value.toString) return value.toString();
+    return '';
+  };
+
+  const getCourseLessonIds = () => {
+    return (course?.lessonIds || [])
+      .map((lesson) => normalizeId(lesson))
+      .filter(Boolean);
+  };
+
+  const getCompletedLessonIds = () => {
+    const completed = (progress?.completedLessons || [])
+      .map((lessonId) => normalizeId(lessonId))
+      .filter(Boolean);
+    const inCourse = new Set(getCourseLessonIds());
+    return Array.from(new Set(completed)).filter((lessonId) => inCourse.has(lessonId));
+  };
+
   const calculateProgress = () => {
     if (!course || !progress) return 0;
-    const totalLessons = course.lessonIds?.length || 1;
-    const completedCount = progress.completedLessons?.length || 0;
-    return (completedCount / totalLessons) * 100;
+    const totalLessons = getCourseLessonIds().length || 1;
+    const completedCount = getCompletedLessonIds().length;
+    return Math.min(100, (completedCount / totalLessons) * 100);
   };
 
   const isLessonComplete = (lessonId) => {
-    return progress?.completedLessons?.includes(lessonId) || false;
+    if (!progress) return false;
+    const targetId = normalizeId(lessonId);
+    return getCompletedLessonIds().includes(targetId);
   };
 
   if (loading) {
@@ -217,7 +251,20 @@ export default function LessonScreen() {
         progress={progress}
         onClose={() => setShowSidebar(false)}
         onLessonSelect={handleLessonSelect}
+        onQuizPress={handleQuizPress}
       />
+
+      {/* Quiz Modal */}
+      {showQuizModal && course && user && (
+        <QuizModal
+          visible={showQuizModal}
+          courseId={course._id}
+          quizId={course.quizId}
+          studentId={user._id}
+          onClose={() => setShowQuizModal(false)}
+          onComplete={() => setShowQuizModal(false)}
+        />
+      )}
     </View>
   );
 }

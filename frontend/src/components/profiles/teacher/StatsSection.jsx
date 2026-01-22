@@ -11,7 +11,7 @@ export default function StatsSection({ stats, layout = "stack" }) {
       title: "Courses", 
       value: stats.totalCourses || 0, 
       icon: BookOpen,
-      iconColor: "#3F51B5", // Indigo
+      iconColor: "#1E88E5", // blue in hex is 
       iconBg: "#E8EAF6"
     },
     { 

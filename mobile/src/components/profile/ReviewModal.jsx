@@ -8,6 +8,8 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import reviewService from '../../services/reviewService';
@@ -40,9 +42,10 @@ export default function ReviewModal({ visible, course, studentId, onClose, onSuc
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Rate This Course</Text>
@@ -99,6 +102,9 @@ export default function ReviewModal({ visible, course, studentId, onClose, onSuc
               multiline
               numberOfLines={4}
               maxLength={500}
+              blurOnSubmit
+              returnKeyType="done"
+              onSubmitEditing={() => Keyboard.dismiss()}
             />
             <Text style={styles.characterCount}>{comment.length}/500</Text>
           </View>
@@ -115,8 +121,9 @@ export default function ReviewModal({ visible, course, studentId, onClose, onSuc
               <Text style={styles.submitButtonText}>Submit Review</Text>
             )}
           </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }

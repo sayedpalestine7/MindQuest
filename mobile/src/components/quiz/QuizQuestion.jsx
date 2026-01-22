@@ -124,6 +124,8 @@ export default function QuizQuestion({
     );
   };
 
+  const questionText = question?.question || question?.text || '';
+
   return (
     <View style={styles.container}>
       {/* Question Header */}
@@ -138,7 +140,7 @@ export default function QuizQuestion({
       </View>
 
       {/* Question Text */}
-      <Text style={styles.questionText}>{question.question}</Text>
+      <Text style={styles.questionText}>{questionText}</Text>
 
       {/* Answer Options */}
       <View style={styles.optionsContainer}>

@@ -57,7 +57,7 @@ export default function StudentSummaryHeader({ profileData, stats, onEdit }) {
             </button>
           </div>
           <p className="mb-1 text-slate-500">{email}</p>
-          <span className="inline-block text-sm px-3 py-1 rounded-full font-medium mt-2 bg-indigo-50 text-indigo-600">
+          <span className="inline-block text-sm px-3 py-1 rounded-full font-medium mt-2 bg-blue-50 text-blue-600">
             Student
           </span>
         </div>

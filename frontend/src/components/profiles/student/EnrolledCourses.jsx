@@ -120,7 +120,7 @@ export default function EnrolledCourses({ courses }) {
 
                 <div className="w-full h-2 rounded-full mb-3 bg-slate-200">
                   <motion.div
-                    className="h-2 rounded-full bg-indigo-600"
+                    className="h-2 rounded-full bg-blue-600"
                     initial={{ width: 0 }}
                     animate={{ width: `${progress}%` }}
                     transition={{ duration: 0.8, delay: i * 0.1 }}
@@ -128,7 +128,7 @@ export default function EnrolledCourses({ courses }) {
                 </div>
 
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-indigo-600">
+                  <span className="text-sm font-semibold text-blue-600">
                     {progress}% Complete
                   </span>
                 </div>

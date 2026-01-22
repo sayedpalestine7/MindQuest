@@ -11,6 +11,11 @@ export const NotificationsProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const normalizeNotification = (notification) => ({
+    ...notification,
+    read: notification.read ?? notification.isRead ?? false,
+  });
 
   // Initialize socket and fetch notifications when user changes
   useEffect(() => {
@@ -20,10 +25,9 @@ export const NotificationsProvider = ({ children }) => {
         const token = await tokenStorage.get();
         if (token) {
           connectSocket(token);
+          await fetchNotifications();
+          setupSocketListeners();
         }
-        
-        await fetchNotifications();
-        setupSocketListeners();
       } else {
         // Disconnect socket when user logs out
         disconnectSocket();
@@ -37,18 +41,30 @@ export const NotificationsProvider = ({ children }) => {
     };
   }, [user?._id]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async ({ log = false } = {}) => {
     if (!user?._id) return;
 
     setLoading(true);
     try {
-      const result = await notificationService.getNotifications();
+      const result = await notificationService.getNotifications({ log });
       if (result.success) {
-        setNotifications(result.data);
-        updateUnreadCount(result.data);
+        const raw = Array.isArray(result.data)
+          ? result.data
+          : Array.isArray(result.data?.notifications)
+            ? result.data.notifications
+            : [];
+        const normalized = raw.map(normalizeNotification);
+        setNotifications(normalized);
+        updateUnreadCount(normalized);
+        if (log) {
+          console.log('Notifications stored count:', normalized.length);
+        }
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      // Silently handle 401 errors (expired token) - interceptor will handle logout
+      if (error.response?.status !== 401) {
+        console.error('Error fetching notifications:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -61,14 +77,17 @@ export const NotificationsProvider = ({ children }) => {
     if (!socket) return;
 
     // Join user's notification room
-    socket.emit('join_notifications', user._id);
+    socket.emit('join_user_room', user._id);
 
     // Listen for new notifications
-    socket.on('new_notification', (notification) => {
+    socket.on('notification:new', (notification) => {
       console.log('📬 New notification received:', notification);
-      
-      setNotifications(prev => [notification, ...prev]);
-      setUnreadCount(prev => prev + 1);
+      const normalized = normalizeNotification(notification);
+      setNotifications(prev => {
+        const updated = [normalized, ...prev];
+        updateUnreadCount(updated);
+        return updated;
+      });
       
       // Show push notification
       notificationService.showLocalNotification(
@@ -78,13 +97,11 @@ export const NotificationsProvider = ({ children }) => {
     });
 
     // Listen for notification updates
-    socket.on('notification_read', (notificationId) => {
-      setNotifications(prev =>
-        prev.map(n => 
-          n._id === notificationId ? { ...n, read: true } : n
-        )
-      );
-      updateUnreadCount(notifications);
+    socket.on('notification:count', ({ count }) => {
+      setUnreadCount(count);
+      if (count > 0 && notifications.length === 0) {
+        fetchNotifications();
+      }
     });
   };
 
@@ -92,15 +109,12 @@ export const NotificationsProvider = ({ children }) => {
     const socket = getSocket();
     if (!socket) return;
     
-    if (user?._id) {
-      socket.emit('leave_notifications', user._id);
-    }
-    socket.off('new_notification');
-    socket.off('notification_read');
+    socket.off('notification:new');
+    socket.off('notification:count');
   };
 
   const updateUnreadCount = (notificationsList) => {
-    const count = notificationsList.filter(n => !n.read).length;
+    const count = notificationsList.filter(n => !(n.read ?? n.isRead)).length;
     setUnreadCount(count);
   };
 
@@ -111,12 +125,13 @@ export const NotificationsProvider = ({ children }) => {
       const result = await notificationService.markAsRead(notificationId);
       
       if (result.success) {
-        setNotifications(prev =>
-          prev.map(n => 
-            n._id === notificationId ? { ...n, read: true } : n
-          )
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setNotifications(prev => {
+          const updated = prev.map(n =>
+            n._id === notificationId ? { ...n, read: true, isRead: true } : n
+          );
+          updateUnreadCount(updated);
+          return updated;
+        });
       }
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -130,10 +145,11 @@ export const NotificationsProvider = ({ children }) => {
       const result = await notificationService.markAllAsRead();
       
       if (result.success) {
-        setNotifications(prev =>
-          prev.map(n => ({ ...n, read: true }))
-        );
-        setUnreadCount(0);
+        setNotifications(prev => {
+          const updated = prev.map(n => ({ ...n, read: true, isRead: true }));
+          setUnreadCount(0);
+          return updated;
+        });
       }
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
@@ -147,10 +163,11 @@ export const NotificationsProvider = ({ children }) => {
       const result = await notificationService.deleteNotification(notificationId);
       
       if (result.success) {
-        setNotifications(prev => 
-          prev.filter(n => n._id !== notificationId)
-        );
-        updateUnreadCount(notifications.filter(n => n._id !== notificationId));
+        setNotifications(prev => {
+          const updated = prev.filter(n => n._id !== notificationId);
+          updateUnreadCount(updated);
+          return updated;
+        });
       }
     } catch (error) {
       console.error('Error deleting notification:', error);
@@ -161,14 +178,26 @@ export const NotificationsProvider = ({ children }) => {
     fetchNotifications();
   };
 
+  const openNotifications = () => {
+    setIsOpen(true);
+    fetchNotifications({ log: true });
+  };
+
+  const closeNotifications = () => {
+    setIsOpen(false);
+  };
+
   const value = {
     notifications,
     unreadCount,
     loading,
+    isOpen,
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    refresh
+    refresh,
+    openNotifications,
+    closeNotifications
   };
 
   return (

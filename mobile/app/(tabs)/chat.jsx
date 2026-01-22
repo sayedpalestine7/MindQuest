@@ -13,15 +13,23 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/useAuth';
 import courseService from '../../src/services/courseService';
+import chatService from '../../src/services/chatService';
 import { getUserAvatar } from '../../src/utils/imageUtils';
 
 export default function ChatsScreen() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const [teachers, setTeachers] = useState([]);
+  const [chatUsers, setChatUsers] = useState([]);
+  const [emptyState, setEmptyState] = useState({
+    title: 'No Conversations Yet',
+    subtitle: 'Enroll in courses to chat with instructors',
+    actionLabel: 'Browse Courses',
+    actionRoute: '/(tabs)/courses',
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const isTeacher = user?.role === 'teacher';
 
   useEffect(() => {
     if (user) {
@@ -32,30 +40,78 @@ export default function ChatsScreen() {
   const loadTeachers = async () => {
     try {
       setLoading(true);
-      
-      // Get enrolled courses to extract unique teachers - force fresh data
+
+      if (isTeacher) {
+        const chats = await chatService.getStudentChats(user._id);
+        if (Array.isArray(chats) && chats.length > 0) {
+          const mapped = chats.map((chat) => ({
+            _id: chat._id,
+            name: chat.student?.name || 'Student',
+            avatar: chat.student?.profileImage || chat.student?.avatar || null,
+            subtitle: chat.lastMessage || 'No messages yet',
+          }));
+          setChatUsers(mapped);
+          setEmptyState({
+            title: 'No Conversations Yet',
+            subtitle: 'Students will appear here once they message you',
+            actionLabel: null,
+            actionRoute: null,
+          });
+          return;
+        }
+
+        const students = await chatService.getTeacherEnrolledStudents();
+        const mappedStudents = Array.isArray(students)
+          ? students.map((student) => ({
+              _id: student._id,
+              name: student.name || 'Student',
+              avatar: student.avatar || null,
+              subtitle: student.subject || 'Student',
+            }))
+          : [];
+        setChatUsers(mappedStudents);
+        setEmptyState({
+          title: 'No Messages Yet',
+          subtitle: 'You can start a conversation with your enrolled students',
+          actionLabel: null,
+          actionRoute: null,
+        });
+        return;
+      }
+
+      // Student: Get enrolled courses to extract unique teachers - force fresh data
       const enrolledCourses = await courseService.getEnrolledCourses(user._id, false);
-      
+
       // Extract unique teachers
       const uniqueTeachers = [];
       const teacherIds = new Set();
-      
-      // Check if enrolledCourses is an array before iterating
+
       if (Array.isArray(enrolledCourses)) {
         enrolledCourses.forEach((course) => {
           if (course.teacherId && !teacherIds.has(course.teacherId._id)) {
             teacherIds.add(course.teacherId._id);
             uniqueTeachers.push({
-              ...course.teacherId,
-              courseName: course.title,
+              _id: course.teacherId._id,
+              name: course.teacherId.name,
+              avatar: course.teacherId.profileImage || course.teacherId.avatar || null,
+              subtitle: course.title,
             });
           }
         });
       }
-      
-      setTeachers(uniqueTeachers);
+
+      setChatUsers(uniqueTeachers);
+      setEmptyState({
+        title: 'No Conversations Yet',
+        subtitle: 'Enroll in courses to chat with instructors',
+        actionLabel: 'Browse Courses',
+        actionRoute: '/(tabs)/courses',
+      });
     } catch (error) {
-      console.error('Error loading teachers:', error);
+      // Silently handle 401 errors (expired token) - interceptor will handle logout
+      if (error.response?.status !== 401) {
+        console.error('Error loading teachers:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -79,7 +135,7 @@ export default function ChatsScreen() {
       <View style={styles.teacherInfo}>
         <Text style={styles.teacherName}>{item.name}</Text>
         <Text style={styles.courseName} numberOfLines={1}>
-          {item.courseName}
+          {item.subtitle}
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
@@ -94,20 +150,20 @@ export default function ChatsScreen() {
     );
   }
 
-  if (teachers.length === 0) {
+  if (chatUsers.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="chatbubbles-outline" size={80} color="#D1D5DB" />
-        <Text style={styles.emptyText}>No Conversations Yet</Text>
-        <Text style={styles.emptySubtext}>
-          Enroll in courses to chat with instructors
-        </Text>
-        <TouchableOpacity
-          style={styles.browseCoursesButton}
-          onPress={() => router.push('/(tabs)/courses')}
-        >
-          <Text style={styles.browseCoursesButtonText}>Browse Courses</Text>
-        </TouchableOpacity>
+        <Text style={styles.emptyText}>{emptyState.title}</Text>
+        <Text style={styles.emptySubtext}>{emptyState.subtitle}</Text>
+        {emptyState.actionLabel && emptyState.actionRoute ? (
+          <TouchableOpacity
+            style={styles.browseCoursesButton}
+            onPress={() => router.push(emptyState.actionRoute)}
+          >
+            <Text style={styles.browseCoursesButtonText}>{emptyState.actionLabel}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     );
   }
@@ -115,7 +171,7 @@ export default function ChatsScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={teachers}
+        data={chatUsers}
         renderItem={renderTeacherCard}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContent}

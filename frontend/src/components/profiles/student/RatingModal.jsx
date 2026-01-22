@@ -81,9 +81,9 @@ export default function RatingModal({ isOpen, onClose, courseId, courseName, stu
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
             <h2 className="text-2xl font-bold text-white">Rate Course</h2>
-            <p className="text-indigo-100 text-sm mt-1">{courseName}</p>
+            <p className="text-blue-100 text-sm mt-1">{courseName}</p>
           </div>
 
           {/* Form Content */}
@@ -141,7 +141,7 @@ export default function RatingModal({ isOpen, onClose, courseId, courseName, stu
                 placeholder="Share your experience with this course..."
                 rows={4}
                 maxLength={500}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all"
               />
               <div className="flex justify-between items-center mt-2">
                 <p className="text-xs text-gray-500">
@@ -168,7 +168,7 @@ export default function RatingModal({ isOpen, onClose, courseId, courseName, stu
               <button
                 type="submit"
                 disabled={isSubmitting || rating === 0}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
               >
                 {isSubmitting ? "Submitting..." : "Submit Review"}
               </button>

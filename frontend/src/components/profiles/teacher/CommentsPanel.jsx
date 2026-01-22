@@ -149,7 +149,7 @@ export default function CommentsPanel({ teacherId }) {
           <select
             value={selectedCourse}
             onChange={(e) => setSelectedCourse(e.target.value)}
-            className="px-3 py-1 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="px-3 py-1 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All Courses ({reviews.length})</option>
             {courses.map((course) => (
@@ -166,7 +166,7 @@ export default function CommentsPanel({ teacherId }) {
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 borde-blue-600"></div>
           </div>
         ) : filteredReviews.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-center text-slate-400">

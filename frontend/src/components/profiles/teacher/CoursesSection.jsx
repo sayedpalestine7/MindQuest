@@ -133,13 +133,13 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
       <>
         <Toaster position="top-right" />
         <motion.div
-          className="mq-card p-6 border-2 border-dashed bg-indigo-50 border-indigo-200"
+          className="mq-card p-6 border-2 border-dashed bg-blue-50 border-blue-200"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
           <div className="flex items-center justify-center gap-4 mb-4">
-            <BookOpen className="w-10 h-10 text-indigo-600" />
+            <BookOpen className="w-10 h-10 text-blue-600" />
             <h3 className="text-2xl font-semibold text-slate-800">No Courses Yet</h3>
           </div>
           <p className="text-center mb-6 text-slate-500">Start creating your first course to engage with students</p>
@@ -165,7 +165,7 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-      <div className="p-4 bg-gradient-to-r from-indigo-600 to-indigo-500">
+      <div className="p-4 bg-gradient-to-r from-blue-600 to-blue-500">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <BookOpen className="w-7 h-7 text-white" />
@@ -179,28 +179,28 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate("/teacher/studio/:id")}
-            className="mq-btn-outline bg-white text-indigo-600 px-4 py-2"
+            className="mq-btn-outline bg-white text-blue-600 px-4 py-2"
           >
-            <Plus className="w-4 h-4" /> Animation Studio
+            <Plus className="w-4 h-4" />The Studio
           </motion.button>
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate("/teacher/courseBuilder")}
-            className="mq-btn-outline bg-white text-indigo-600 px-4 py-2"
+            className="mq-btn-outline bg-white text-blue-600 px-4 py-2"
           >
             <Plus className="w-4 h-4" /> New Course
           </motion.button>
           </div>
         </div>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-600" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-600" />
           <input
             type="text"
             placeholder="Search courses..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-lg bg-white placeholder-slate-500 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            className="w-full pl-10 pr-4 py-2 rounded-lg bg-white placeholder-slate-500 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
           />
         </div>
       </div>
@@ -217,7 +217,7 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.05 * i }}
               className={`p-4 transition-all duration-200 group cursor-pointer border-l-4 ${
-                isActive ? "bg-indigo-50 border-indigo-600" : "border-transparent hover:bg-slate-50"
+                isActive ? "bg-blue-50 border-blue-600" : "border-transparent hover:bg-slate-50"
               }`}
               whileHover={{ paddingRight: 24 }}
               onClick={() => {
@@ -239,10 +239,10 @@ export default function CoursesSection({ courses = [], activeCourseId, onCourseS
                   )}
                 </div>
 
-                <div className="flex items-center gap-3 flex-shrink-0 relative">
+                <div className="flex items-center gap-3 flex-shrink-0 relative ">
                   {course.studentCount !== undefined && (
                     <motion.div whileHover={{ scale: 1.1 }} className="text-center">
-                      <div className="flex items-center justify-center gap-1 text-indigo-600">
+                      <div className="flex items-center justify-center gap-1 text-blue-600">
                         <Users className="w-4 h-4" />
                         <span className="font-bold text-lg">{course.studentCount}</span>
                       </div>

@@ -26,7 +26,7 @@ export default function UserSummaryHeader({ profileData, stats, onEdit }) {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-white text-3xl font-bold bg-indigo-600">
+              <div className="w-full h-full flex items-center justify-center text-white text-3xl font-bold bg-blue-600">
                 {name?.charAt(0)?.toUpperCase()}
               </div>
             )}
@@ -60,7 +60,7 @@ export default function UserSummaryHeader({ profileData, stats, onEdit }) {
           </div>
           <p className="mb-1 text-slate-500">{email}</p>
           {expertise && (
-            <span className="inline-block text-sm px-3 py-1 rounded-full font-medium bg-indigo-50 text-indigo-600">
+            <span className="inline-block text-sm px-3 py-1 rounded-full font-medium bg-blue-50 text-blue-600">
               {expertise}
             </span>
           )}

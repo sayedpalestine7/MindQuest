@@ -8,7 +8,7 @@ export default function LeftPanel({ userSummary, mainContent }) {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* User Summary - Profile info and key stats */}
-      <div className="border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-violet-50">
+      <div className="border-b border-slate-200 ">
         {userSummary}
       </div>
 

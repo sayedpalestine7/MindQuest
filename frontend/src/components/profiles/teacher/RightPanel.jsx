@@ -48,7 +48,7 @@ export default function RightPanel({
           onClick={() => setActiveTab("courses")}
           className={`flex-1 py-4 px-6 font-semibold transition-all border-b-2 ${
             activeTab === "courses"
-              ? "border-indigo-600 text-indigo-600 bg-slate-50"
+              ? "border-blue-600 text-blue-600 bg-slate-50"
               : "border-transparent text-slate-500"
           }`}
         >
@@ -60,7 +60,7 @@ export default function RightPanel({
           onClick={() => setActiveTab("chat")}
           className={`flex-1 py-4 px-6 font-semibold transition-all relative border-b-2 ${
             activeTab === "chat"
-              ? "border-indigo-600 text-indigo-600 bg-slate-50"
+              ? "border-blue-600 text-blue-600 bg-slate-50"
               : "border-transparent text-slate-500"
           }`}
         >

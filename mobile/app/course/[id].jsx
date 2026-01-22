@@ -22,6 +22,7 @@ export default function CourseDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuth();
+  const isTeacher = user?.role === 'teacher';
 
   const [course, setCourse] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -71,6 +72,11 @@ export default function CourseDetailScreen() {
         { text: 'Cancel' },
         { text: 'Sign In', onPress: () => router.push('/login') },
       ]);
+      return;
+    }
+
+    if (isTeacher) {
+      Alert.alert('Not Allowed', 'Teachers cannot enroll in courses.');
       return;
     }
 
@@ -273,6 +279,10 @@ export default function CourseDetailScreen() {
             <Text style={styles.enrolledButtonText}>Continue Learning</Text>
             <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
           </TouchableOpacity>
+        ) : isTeacher ? (
+          <View style={styles.teacherEnrollBlocked}>
+            <Text style={styles.teacherEnrollBlockedText}>Teachers can’t enroll in courses.</Text>
+          </View>
         ) : (
           <TouchableOpacity
             style={styles.enrollButton}
@@ -520,6 +530,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4B5563',
     lineHeight: 20,
+  },
+  teacherEnrollBlocked: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+  },
+  teacherEnrollBlockedText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '600',
   },
   bottomBar: {
     flexDirection: 'row',

@@ -16,11 +16,13 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/useAuth';
 import chatService from '../../src/services/chatService';
-import { getSocket, connectSocket, disconnectSocket } from '../../src/sockets/socket';
+import teacherService from '../../src/services/teacherService';
+import studentService from '../../src/services/studentService';
+import { connectSocket, disconnectSocket } from '../../src/sockets/socket';
 import { getUserAvatar } from '../../src/utils/imageUtils';
 
 export default function ChatScreen() {
-  const { teacherId } = useLocalSearchParams();
+  const { teacherId: partnerId } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuth();
   const flatListRef = useRef(null);
@@ -30,29 +32,51 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [sending, setSending] = useState(false);
-  const [teacher, setTeacher] = useState(null);
+  const [chatPartner, setChatPartner] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [oldestCursor, setOldestCursor] = useState(null);
+  const isTeacher = user?.role === 'teacher';
+  const teacherId = isTeacher ? user?._id : partnerId;
+  const studentId = isTeacher ? partnerId : user?._id;
+  const senderRole = isTeacher ? 'teacher' : 'student';
 
   useEffect(() => {
-    if (user && teacherId) {
+    if (user && teacherId && studentId) {
       loadMessages();
+      loadChatPartner();
       setupSocketListeners();
     }
 
     return () => {
       disconnectSocket();
     };
-  }, [user, teacherId]);
+  }, [user, teacherId, studentId]);
+
+  const loadChatPartner = async () => {
+    try {
+      if (isTeacher) {
+        const student = await studentService.getStudentById(studentId);
+        setChatPartner(student);
+      } else {
+        const teacher = await teacherService.getTeacherById(teacherId);
+        setChatPartner(teacher);
+      }
+    } catch (error) {
+      if (error.response?.status !== 401) {
+        console.error('Error loading chat partner:', error);
+      }
+    }
+  };
 
   const loadMessages = async () => {
     try {
       setLoading(true);
-      const data = await chatService.getConversation(teacherId, user._id, 50);
+      const data = await chatService.getConversation(teacherId, studentId, 50);
       // Reverse messages so oldest are at top, newest at bottom
       setMessages((data.messages || []).reverse());
       setHasMore(data.hasMore || false);
       setOldestCursor(data.oldestCursor || null);
+      await chatService.markAsRead(teacherId, studentId, senderRole);
     } catch (error) {
       console.error('Error loading messages:', error);
     } finally {
@@ -65,7 +89,7 @@ export default function ChatScreen() {
 
     try {
       setLoadingMore(true);
-      const data = await chatService.getConversation(teacherId, user._id, 50, oldestCursor);
+      const data = await chatService.getConversation(teacherId, studentId, 50, oldestCursor);
       
       // Prepend older messages to the beginning
       const olderMessages = (data.messages || []).reverse();
@@ -84,8 +108,8 @@ export default function ChatScreen() {
 
     socket.on('newMessage', (message) => {
       if (
-        (message.teacher?.toString() === teacherId && message.student?.toString() === user._id) ||
-        (message.student?.toString() === user._id && message.teacher?.toString() === teacherId)
+        (message.teacher?.toString() === teacherId && message.student?.toString() === studentId) ||
+        (message.student?.toString() === studentId && message.teacher?.toString() === teacherId)
       ) {
         setMessages((prev) => [...prev, message]);
         scrollToBottom();
@@ -98,7 +122,7 @@ export default function ChatScreen() {
 
     try {
       setSending(true);
-      const message = await chatService.sendMessage(teacherId, user._id, messageText.trim());
+      const message = await chatService.sendMessage(teacherId, studentId, messageText.trim(), senderRole);
       
       // Optimistically add to UI
       setMessages((prev) => [...prev, message]);
@@ -118,7 +142,7 @@ export default function ChatScreen() {
   };
 
   const renderMessage = ({ item }) => {
-    const isOwnMessage = item.sender === 'student';
+    const isOwnMessage = item.sender === senderRole;
 
     return (
       <View
@@ -129,7 +153,7 @@ export default function ChatScreen() {
       >
         {!isOwnMessage && (
           <Image
-            source={{ uri: getUserAvatar(teacher) }}
+            source={{ uri: getUserAvatar(chatPartner) }}
             style={styles.avatar}
           />
         )}
@@ -160,7 +184,7 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen
         options={{
-          title: teacher?.name || 'Chat',
+          title: chatPartner?.name || 'Chat',
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <Ionicons name="arrow-back" size={24} color="#1F2937" />
