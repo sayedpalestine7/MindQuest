@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Table as TableIcon,
   Maximize2,
+  Download,
 } from "lucide-react"
 import { Button, Input, Textarea, Select, Card } from "./UI"
 import AnimationSelector from "./AnimationSelector"
@@ -22,6 +23,8 @@ import FloatingAddContent from "./FloatingAddContent"
 import { useStickyVisibility } from "../../hooks/useStickyVisibility"
 import { TextAreaInput, FileInput } from "./FieldInputs"
 import { RichTextInput } from "./RichTextInput"
+import { downloadHtml } from "../../utils/courseBuilderUtils"
+import toast from "react-hot-toast"
 
 export default function LessonEditor({
   selectedLesson,
@@ -96,6 +99,7 @@ export default function LessonEditor({
           ) : (
             selectedLesson.fields.map((field) => (
               <div
+                id={`field-${field.id}`}
                 key={field.id}
                 className={`p-4 bg-white rounded-xl border-gray-300 hover:border-2 hover:border-gray-400 ${getFieldHoverBorderColor(field.type)} hover:shadow-md
                   }`} // border here
@@ -339,11 +343,32 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
           />
           {field.content && (
             <p className="text-sm text-gray-500">
-              Selected: {field.content}
+              Selected: {field.htmlFilename ? field.htmlFilename : (field.content && String(field.content).startsWith('data:') ? 'HTML content added' : field.content)}
             </p>
           )}
           {field.content && (
-            <MiniGamePreview src={field.content} title={`${field.type} preview`} />
+            <>
+              <MiniGamePreview src={field.content} title={`${field.type} preview`} />
+              {field.htmlContent && (
+                <Button
+                  onClick={() => {
+                    try {
+                      downloadHtml(
+                        field.htmlContent, 
+                        field.htmlFilename || 'animation.html'
+                      )
+                      toast.success('HTML file downloaded')
+                    } catch (err) {
+                      toast.error('Failed to download HTML')
+                    }
+                  }}
+                  className="w-full gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  <Download className="w-4 h-4" />
+                  Download HTML
+                </Button>
+              )}
+            </>
           )}
         </div>
       )

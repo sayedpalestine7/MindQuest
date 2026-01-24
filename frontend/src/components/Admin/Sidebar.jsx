@@ -7,7 +7,6 @@ const navigation = [
   { name: "Manage Users", href: "/admin/users", icon: Users },
   { name: "Teacher Verification", href: "/admin/verification", icon: FileQuestion },
   { name: "Reported Comments", href: "/admin/reports", icon: AlertTriangle },
-  { name: "Settings", href: "/admin/Settings", icon: Settings },
 ]
 
 function Sidebar() {

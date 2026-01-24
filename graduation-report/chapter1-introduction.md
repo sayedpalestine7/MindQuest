@@ -1,4 +1,5 @@
- 
+# Chapter 1: Introduction
+
 ## 1.1 Statement of the Problem
  
 Contemporary educational environments increasingly rely on online platforms to deliver curricular content and assessments. Despite widespread adoption, many existing digital learning systems present content in a predominantly static manner that fails to actively engage learners. This lack of interactivity reduces student motivation and diminishes opportunities for deeper cognitive processing, particularly for subjects that benefit from visualisation and guided practice. Consequently, learners may experience reduced retention and lower completion rates when interacting with passive instructional materials.

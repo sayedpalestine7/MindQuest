@@ -1,4 +1,4 @@
-# Chapter 4: Results
+# Chapter 4: Results and Analysis
 
 ## 4.1 Common Features
 
@@ -100,7 +100,7 @@ sequenceDiagram
 	Frontend->>Student: Display feedback and report
 ```
 
-### References
+### Implementation Pointers
 
 - Controller and route handlers (high-level): [backend/src/controllers/courseController.js](backend/src/controllers/courseController.js), [backend/src/controllers/lessonController.js](backend/src/controllers/lessonController.js), [backend/src/controllers/quizController.js](backend/src/controllers/quizController.js), [backend/src/controllers/progressController.js](backend/src/controllers/progressController.js), [backend/src/controllers/reportController.js](backend/src/controllers/reportController.js), [backend/src/controllers/studentController.js](backend/src/controllers/studentController.js)
 - Persistence and schema: [backend/prisma/schema.prisma](backend/prisma/schema.prisma), [backend/src/prisma/client.js](backend/src/prisma/client.js)
@@ -121,14 +121,15 @@ This section articulates the principal capabilities exposed to teaching staff wi
 ### 4.3.2 Uploading Animations
 
 - User interaction: Teachers upload animation files or reference external media through the course/lesson editor. The UI provides progress indicators, metadata fields (caption, license, accessibility notes), and options for in-place previewing.
-- Backend handling and storage: Uploaded assets are accepted through authenticated endpoints and stored in a content repository or object store. The backend records asset metadata and links media identifiers to lesson records; transcoding or validation jobs may be invoked asynchronously to ensure compatibility and accessibility.
+- User interaction: Teachers upload animations through the authoring and studio interfaces and attach them to lessons. In addition, the course builder includes an AI-assisted HTML generation tool that produces lesson-ready interactive HTML content (previewable and downloadable) which can be inserted into a lesson as an embedded field.
+- Backend handling and storage: Uploaded assets are accepted through dedicated endpoints and stored as persistent animation documents. For AI-generated HTML, the frontend requests HTML content from an automation webhook and stores it in the course draft as lesson field content (using an embeddable HTML payload) without requiring a separate media upload step.
 - Admin/teacher controls: Access controls determine which assets are sharable across courses. Administrators may configure storage quotas, content retention policies, and automated checks for intellectual property compliance.
 
 ### 4.3.3 Creating Quizzes
 
-- User interaction: Quiz authoring supports a range of item types (multiple-choice, short-answer, code-snippets) with mechanisms for grouping items, setting weightings, and defining feedback and scoring rules. Teachers assign quizzes to lessons or course modules and may set availability windows and attempt limits.
-- Backend handling and storage: Quiz definitions and question banks are persisted as structured records that include scoring schemas, correct responses, and optional explanatory feedback. When students submit attempts, the system records per-question responses and computes scores according to the defined rubric; teacher-entered rubric items can require manual grading workflows.
-- Admin/teacher controls: Teachers can preview and simulate quiz behaviour, restrict attempts, and override automatic scores. Plagiarism checks and item-banking features support assessment quality and reuse.
+- User interaction: Teachers author quizzes inside the course builder and may optionally use AI assistance to generate draft questions from a topic. The implemented AI flow supports the question types used by the system (e.g., MCQ, True/False, short-answer), and the UI can either insert generated questions locally into the current draft or persist them directly into the course quiz.
+- Backend handling and storage: Quiz definitions and question banks are stored as structured records linked to a course. AI generation can be performed either through an external automation webhook (for rapid iteration during authoring) or via a protected backend endpoint that calls the AI service and returns normalized question objects. When persistence is requested, a protected import endpoint validates and normalizes generated questions before inserting them into the question bank and attaching them to an existing (or newly created) quiz.
+- Admin/teacher controls: Teachers retain control over editing, ordering, and deleting generated questions. Server-side validation enforces minimum option counts for MCQs and requires an explicit correct answer before generated questions can be persisted.
 
 ### 4.3.4 Monitoring Student Progress
 
@@ -160,9 +161,11 @@ sequenceDiagram
 	Frontend->>Teacher: Display dashboard and reports
 ```
 
-### References
+### Implementation Pointers
 
 - Representative controller files: [backend/src/controllers/courseController.js](backend/src/controllers/courseController.js), [backend/src/controllers/lessonController.js](backend/src/controllers/lessonController.js), [backend/src/controllers/animationController.js](backend/src/controllers/animationController.js), [backend/src/controllers/uploadController.js](backend/src/controllers/uploadController.js), [backend/src/controllers/quizController.js](backend/src/controllers/quizController.js), [backend/src/controllers/progressController.js](backend/src/controllers/progressController.js), [backend/src/controllers/reportController.js](backend/src/controllers/reportController.js), [backend/src/controllers/teacherController.js](backend/src/controllers/teacherController.js)
+- AI services and endpoints: [backend/src/services/aiService.js](backend/src/services/aiService.js) (server-side generation), [backend/src/routes/courseRoutes.js](backend/src/routes/courseRoutes.js) (`/generate-quiz`, `/import-questions`)
+- Frontend course builder (AI tools): [frontend/src/pages/TeacherCourseBuilder.jsx](frontend/src/pages/TeacherCourseBuilder.jsx), [frontend/src/services/courseService.js](frontend/src/services/courseService.js), [frontend/src/components/courseBuilder/AIGenerateModal.jsx](frontend/src/components/courseBuilder/AIGenerateModal.jsx), [frontend/src/components/courseBuilder/AIHtmlGenerateModal.jsx](frontend/src/components/courseBuilder/AIHtmlGenerateModal.jsx), [frontend/src/components/courseBuilder/HtmlPreviewModal.jsx](frontend/src/components/courseBuilder/HtmlPreviewModal.jsx)
 - Persistence and schema: [backend/prisma/schema.prisma](backend/prisma/schema.prisma), [backend/src/prisma/client.js](backend/src/prisma/client.js)
 
 The exposition deliberately remains at an architectural level to preserve focus on design intent, data provenance, and the teacher’s role within the educational workflow.
@@ -216,7 +219,7 @@ sequenceDiagram
 	Frontend->>Admin: Display updated state and audit trail
 ```
 
-### References
+### Implementation Pointers
 
 - Representative controller files: `backend/src/controllers/userController.js`, `backend/src/controllers/courseController.js`, `backend/src/controllers/lessonController.js`, `backend/src/controllers/reportController.js`, `backend/src/controllers/notificationController.js`, `backend/src/controllers/paymentController.js`.
 - Persistence and schema: `backend/prisma/schema.prisma`, `backend/src/prisma/client.js`.
@@ -225,44 +228,3 @@ sequenceDiagram
 Notes: CSV/PDF export facilities are described here only if present in the codebase; no repository-level export implementation was documented during this iteration and therefore export capabilities are considered future work or out-of-scope for this chapter unless confirmed otherwise.
 
 
-## 4.5 Database Schema
-
-This section provides a high-level description of the system’s data layer, the principal entities that underpin MindQuest, and how the persisted shape of data supports the platform’s functional requirements. The presentation is intentionally descriptive rather than prescriptive: it explains the logical schema, relationship patterns, and access constraints without providing implementation-level DDL or migration scripts.
-
-Database strategy and provenance
-
-- Authoritative store: The relational datastore is presented as the authoritative source of truth for core domain records (user accounts and profiles, course metadata, lesson structure, quiz definitions, progress summaries, and payment state). For the purposes of this exposition the relational store is MySQL (for example, a XAMPP-hosted instance) and serves as the canonical repository for structured, relational data used in reporting and transactional workflows.
-- ORM posture: Prisma is included in the codebase as an application-level abstraction and a candidate for future refactoring. In the current project state Prisma is summarised as partially utilised: it exists to improve type-safety and maintainability over time but does not, at present, fully replace existing controller-level data access patterns.
-- Document-store usage: The implementation also makes use of a document store for high-volume or schemaless artefacts where appropriate (for example event logs, notifications, or large media metadata). Where document collections are present they are used to complement rather than replace relational structures. See [backend/src/db/mongoConnect.js](backend/src/db/mongoConnect.js) for the document-store connection used by the project.
-
-Principal logical entities and relationships
-
-- Users: Central actor records include identity attributes (unique identifier, email), authentication metadata, and a role attribute that governs access (for example, student, teacher, administrator). Role and status fields are used by the access-control layer to determine permitted operations and are recorded alongside core user profile fields. Controller interactions that authoritatively update user records are found in [backend/src/controllers/userController.js](backend/src/controllers/userController.js) and [backend/src/controllers/studentController.js](backend/src/controllers/studentController.js).
-- Roles and permissions: Roles are represented as attributes on the user entity and are enforced by API-layer checks; administrative or elevated operations require role validation and are logged for auditability (see `userController` and middleware in the repository).
-- Courses and lessons: Courses are modelled as top-level entities with referential links to ordered lesson records. Lessons carry sequencing and media references and are associated with course identifiers; controllers responsible for these records include [backend/src/controllers/courseController.js](backend/src/controllers/courseController.js) and [backend/src/controllers/lessonController.js](backend/src/controllers/lessonController.js).
-- Quizzes and questions: Quiz definitions are persisted as structured records that reference a set of question items. Question items include type metadata, scoring weight, and feedback fields. Quiz and question artefacts are authored and read by the quiz controller: [backend/src/controllers/quizController.js](backend/src/controllers/quizController.js).
-- Enrolments and progress: Enrolment relationships associate users with courses and are represented so they can be joined to progress summaries and assessment attempts. Progress summaries aggregate lesson completions, quiz results, and instructor evaluations to produce a normalized view of course progress; the aggregation and read paths are implemented in [backend/src/controllers/progressController.js](backend/src/controllers/progressController.js) and [backend/src/controllers/reportController.js](backend/src/controllers/reportController.js).
-- Payments (state): Payment processing is handled externally via Stripe, with only minimal payment state persisted in the relational database. The persisted payment state captures transactional metadata necessary for reconciliation and enrolment gating (for example: transaction identifier, payment status, timestamp, and association to user and course). Payment interactions and webhook reconciliation logic are implemented in [backend/src/controllers/paymentController.js](backend/src/controllers/paymentController.js) and setup notes appear in [backend/STRIPE_SETUP.md](backend/STRIPE_SETUP.md).
-
-Role-based constraints and integrity
-
-- Uniqueness and referential integrity: The relational design enforces uniqueness for identity attributes (for example, email) and referential integrity between courses, lessons, quizzes and their parent entities. These constraints support consistent joins and reliable aggregation for reporting.
-- Access enforcement: Role-based access is implemented at the API layer and enforced prior to data mutation; administrative changes to role attributes are recorded and take effect immediately with session/token invalidation where required.
-- Auditability: Administrative and financial actions are accompanied by audit metadata (actor, operation, timestamp) to support traceability and compliance reporting.
-
-How relational data supports features
-
-- Transactional operations: Enrolment and payment state updates are handled in transactional sequences to ensure that payment reconciliation and enrolment are consistent (for example, atomically marking an enrolment paid when a confirmed payment is received).
-- Aggregation and reporting: Structured relational joins and materialised aggregates (or cached summaries) supply dashboard views, course progress metrics, and institutional reports. These aggregates are refreshed by backend routines and are exposed through reporting controllers ([backend/src/controllers/reportController.js](backend/src/controllers/reportController.js)).
-- Performance considerations: High-volume event data (fine-grained interaction logs, raw media analytics) may be shunted to the document store to avoid overloading relational tables; the relational store retains summary artefacts required for authoritative reports.
-
-Scope and limitations
-
-- Prisma is described here as a partial abstraction layer retained for future refactoring; the current codebase contains both direct data-access patterns and Prisma client code. The report intentionally avoids asserting that Prisma fully drives controller behaviour.
-- Export formats (CSV/PDF) are described only when present in the codebase; no export schema or generation logic is assumed in this section unless explicit implementation is discovered.
-
-Key references
-
-- Relational schema and client: [backend/prisma/schema.prisma](backend/prisma/schema.prisma), [backend/src/prisma/client.js](backend/src/prisma/client.js)
-- Document-store connection: [backend/src/db/mongoConnect.js](backend/src/db/mongoConnect.js)
-- Controllers (representative): [backend/src/controllers/userController.js](backend/src/controllers/userController.js), [backend/src/controllers/courseController.js](backend/src/controllers/courseController.js), [backend/src/controllers/lessonController.js](backend/src/controllers/lessonController.js), [backend/src/controllers/quizController.js](backend/src/controllers/quizController.js), [backend/src/controllers/progressController.js](backend/src/controllers/progressController.js), [backend/src/controllers/paymentController.js](backend/src/controllers/paymentController.js)

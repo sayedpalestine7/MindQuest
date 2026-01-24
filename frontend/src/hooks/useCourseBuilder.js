@@ -184,7 +184,7 @@ export const useCourseBuilder = (courseId) => {
       fields: [],
       isPreview: false,
     };
-    setLessons([...lessons, newLesson]);
+    setLessons((prev) => [...prev, newLesson]);
     setSelectedLessonId(newLesson.id);
     toast.success("Lesson added");
   };
@@ -241,32 +241,32 @@ export const useCourseBuilder = (courseId) => {
     }
     
     const newField = { id: generateId(), type, content };
-    setLessons(
-      lessons.map((l) =>
+    setLessons((prev) =>
+      prev.map((l) =>
         l.id === selectedLessonId ? { ...l, fields: [...l.fields, newField] } : l
       )
     );
     toast.success(`${type} block added`);
+    return newField.id; // Return the field ID so caller can update it
   };
 
   const deleteField = (fieldId) => {
     if (!selectedLesson) return;
-    const updated = selectedLesson.fields.filter((f) => f.id !== fieldId);
-    setLessons(
-      lessons.map((l) =>
-        l.id === selectedLessonId ? { ...l, fields: updated } : l
+    setLessons((prev) =>
+      prev.map((l) =>
+        l.id === selectedLessonId ? { ...l, fields: (l.fields || []).filter((f) => f.id !== fieldId) } : l
       )
     );
     toast.success("Content block deleted");
   };
 
   const updateField = (fieldId, updates) => {
-    setLessons(
-      lessons.map((l) =>
+    setLessons((prev) =>
+      prev.map((l) =>
         l.id === selectedLessonId
           ? {
               ...l,
-              fields: l.fields.map((f) =>
+              fields: (l.fields || []).map((f) =>
                 f.id === fieldId ? { ...f, ...updates } : f
               ),
             }

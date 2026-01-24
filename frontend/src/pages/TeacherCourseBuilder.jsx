@@ -10,6 +10,8 @@ import LessonEditor from "../components/courseBuilder/LessonEditor"
 import QuizEditor from "../components/courseBuilder/QuizEditor"
 import PreviewModalRefactored from "../components/courseBuilder/PreviewModalRefactored"
 import AIGenerateModal from "../components/courseBuilder/AIGenerateModal"
+import AIHtmlGenerateModal from "../components/courseBuilder/AIHtmlGenerateModal"
+import HtmlPreviewModal from "../components/courseBuilder/HtmlPreviewModal"
 import { ProgressBar } from "../components/courseBuilder/ProgressBar"
 import { ErrorBanner } from "../components/courseBuilder/ErrorBanner"
 import courseService from "../services/courseService"
@@ -29,6 +31,9 @@ export default function TeacherCourseBuilder() {
   const { user, isAuthenticated, isLoading } = useAuth()
   const courseBuilder = useCourseBuilder(courseId)
   const [isAIGenerateOpen, setIsAIGenerateOpen] = useState(false)
+  const [isAIHtmlGenerateOpen, setIsAIHtmlGenerateOpen] = useState(false)
+  const [isHtmlPreviewOpen, setIsHtmlPreviewOpen] = useState(false)
+  const [generatedHtml, setGeneratedHtml] = useState({ content: "", filename: "", topic: "" })
   const [isGenerating, setIsGenerating] = useState(false)
   const [activeEditorTab, setActiveEditorTab] = useState("lessons")
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -365,6 +370,89 @@ export default function TeacherCourseBuilder() {
     }
   }
 
+  const handleAIHtmlGenerateSubmit = async (payload) => {
+    // payload: { topic }
+    try {
+      setIsGenerating(true)
+
+      const n8nUrl = "http://localhost:5678/webhook/generate-html"
+      const n8nPayload = {
+        topic: payload?.topic || "",
+      }
+
+      console.log("n8n HTML generate: POST", n8nUrl, n8nPayload)
+
+      let resp
+      try {
+        resp = await fetch(n8nUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(n8nPayload),
+        })
+      } catch (fetchError) {
+        setIsGenerating(false)
+        const errorMsg = "Cannot connect to n8n. Make sure n8n is running at " + n8nUrl
+        console.error("n8n fetch error:", fetchError)
+        courseBuilder.setErrors([errorMsg])
+        toast.error(errorMsg)
+        return
+      }
+
+      setIsGenerating(false)
+
+      if (!resp.ok) {
+        let errorMsg = `n8n returned error status ${resp.status}`
+        try {
+          const body = await resp.json()
+          errorMsg = body?.message || body?.error || errorMsg
+        } catch (e) { 
+          try {
+            const text = await resp.text()
+            errorMsg = text || errorMsg
+          } catch (e2) { }
+        }
+        console.error("n8n error response:", errorMsg)
+        courseBuilder.setErrors([errorMsg])
+        toast.error(`Generation failed: ${errorMsg}`)
+        return
+      }
+
+      // n8n returns HTML as text
+      let htmlContent
+      try {
+        htmlContent = await resp.text()
+      } catch (e) {
+        toast.error("Failed to read response from n8n")
+        console.error("Failed to read n8n response:", e)
+        return
+      }
+
+      console.log("Received HTML length:", htmlContent?.length)
+
+      if (!htmlContent || htmlContent.trim().length === 0) {
+        toast.error("No HTML returned from n8n")
+        return
+      }
+
+      // Store generated HTML and show preview modal
+      const filename = `${payload.topic.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`
+      setGeneratedHtml({
+        content: htmlContent,
+        filename: filename,
+        topic: payload.topic
+      })
+      setIsHtmlPreviewOpen(true)
+      
+      toast.success(`✅ HTML generated! Preview and download below.`)
+    } catch (err) {
+      setIsGenerating(false)
+      const msg = err?.message || "Failed to generate HTML"
+      courseBuilder.setErrors([msg])
+      toast.error(msg)
+      console.error("n8n HTML generate error:", err)
+    }
+  }
+
   /* ---------- RENDER ---------- */
   // Show loading while auth is initializing
   if (isLoading) {
@@ -476,6 +564,9 @@ export default function TeacherCourseBuilder() {
                   setIsAIGenerateOpen(true)
                   setActiveEditorTab("quiz")
                 }}
+                onOpenAIHtmlGenerate={() => {
+                  setIsAIHtmlGenerateOpen(true)
+                }}
                 isGenerating={isGenerating}
                 // Tab control
                 activeTab={activeEditorTab}
@@ -538,6 +629,53 @@ export default function TeacherCourseBuilder() {
         onClose={() => setIsAIGenerateOpen(false)}
         onSubmit={handleAIGenerateSubmit}
         lessons={courseBuilder.lessons}
+      />
+      <AIHtmlGenerateModal
+        isOpen={isAIHtmlGenerateOpen}
+        onClose={() => setIsAIHtmlGenerateOpen(false)}
+        onSubmit={handleAIHtmlGenerateSubmit}
+        lessons={courseBuilder.lessons}
+      />
+      <HtmlPreviewModal
+        isOpen={isHtmlPreviewOpen}
+        onClose={() => setIsHtmlPreviewOpen(false)}
+        htmlContent={generatedHtml.content}
+        filename={generatedHtml.filename}
+        onAddToLesson={() => {
+          // Check if we have a selected lesson
+          if (!courseBuilder.selectedLessonId) {
+            toast.error("Please select a lesson first")
+            return
+          }
+
+          // Add a new minigame field to the selected lesson
+          const fieldId = courseBuilder.addField("minigame")
+
+          // Create data URL for the field content so iframe preview works and no blob revocation issues
+          const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(generatedHtml.content)}`
+
+          // Update the field content
+          courseBuilder.updateField(fieldId, {
+            content: dataUrl,
+            htmlContent: generatedHtml.content,
+            htmlFilename: generatedHtml.filename,
+          })
+
+          // Switch to lessons tab and close modal
+          setActiveEditorTab("lessons")
+          setIsHtmlPreviewOpen(false)
+          toast.success("HTML animation added to lesson!")
+
+          // Attempt to reveal the new field in the editor
+          setTimeout(() => {
+            try {
+              const el = document.getElementById(`field-${fieldId}`)
+              if (el && typeof el.scrollIntoView === 'function') {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              }
+            } catch (e) { /* ignore */ }
+          }, 300)
+        }}
       />
 
       {/* Save Progress Indicator */}
