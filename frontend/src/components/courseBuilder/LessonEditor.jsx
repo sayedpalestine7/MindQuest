@@ -375,10 +375,39 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
 
     case "animation":
       return (
-        <AnimationSelector
-          selectedAnimationId={field.animationId}
-          onSelect={(animationId) => updateField(field.id, { animationId })}
-        />
+        <div className="space-y-3">
+          <AnimationSelector
+            selectedAnimationId={field.animationId}
+            onSelect={(animationId) => updateField(field.id, { animationId })}
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-gray-600">Playback mode:</span>
+            <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1">
+              <button
+                type="button"
+                onClick={() => updateField(field.id, { animationPreviewMode: "start-stop" })}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition ${
+                  (field.animationPreviewMode || "start-stop") === "start-stop"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                Start/Stop
+              </button>
+              <button
+                type="button"
+                onClick={() => updateField(field.id, { animationPreviewMode: "loop" })}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition ${
+                  (field.animationPreviewMode || "start-stop") === "loop"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                Loop (GIF)
+              </button>
+            </div>
+          </div>
+        </div>
       )
 
     default:

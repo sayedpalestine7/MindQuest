@@ -152,6 +152,7 @@ export const useCourseBuilder = (courseId) => {
               explanation: f.explanation ?? "",
               migratedFromQuestionId: f.migratedFromQuestionId ?? null,
               animationId: f.animationId || null,
+              animationPreviewMode: f.animationPreviewMode || "start-stop",
               order: f.order ?? 0,
             };
           }),
@@ -241,6 +242,9 @@ export const useCourseBuilder = (courseId) => {
     }
     
     const newField = { id: generateId(), type, content };
+    if (type === "animation") {
+      newField.animationPreviewMode = "start-stop";
+    }
     setLessons((prev) =>
       prev.map((l) =>
         l.id === selectedLessonId ? { ...l, fields: [...l.fields, newField] } : l

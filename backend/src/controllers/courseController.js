@@ -81,6 +81,7 @@ export const createCourse = async (req, res) => {
               explanation: explanation,
               migratedFromQuestionId: null,
               animationId: f.animationId || null,
+              animationPreviewMode: f.animationPreviewMode || "start-stop",
               order: idx,
             };
 
@@ -400,6 +401,7 @@ export const getCourseById = async (req, res) => {
             explanation: f.explanation ?? "",
             migratedFromQuestionId: f.migratedFromQuestionId ?? null,
             animationId: f.animationId || null,
+            animationPreviewMode: f.animationPreviewMode || "start-stop",
             order: f.order ?? 0,
           }));
         }
@@ -493,6 +495,7 @@ export const updateCourse = async (req, res) => {
                 explanation: explanation,
                 migratedFromQuestionId: null,
                 animationId: f.animationId || null,
+                animationPreviewMode: f.animationPreviewMode || "start-stop",
                 order: idx,
               });
             }

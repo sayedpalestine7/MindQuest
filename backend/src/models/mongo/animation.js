@@ -12,6 +12,10 @@ const TransitionSchema = new mongoose.Schema(
     scale: { type: Number, default: 1 },
     rotation: { type: Number, default: 0 },
     color: { type: String },
+    fillColor: { type: String },
+    strokeColor: { type: String },
+    borderWidth: { type: Number, default: 2 },
+    openTop: { type: Boolean, default: false },
     text: { type: String },
     opacity: { type: Number, default: 1 },
     easing: { type: String, default: "linear" }
@@ -26,10 +30,11 @@ const AnimationObjectSchema = new mongoose.Schema(
     name: { type: String, required: true },
     type: {
       type: String,
-      enum: ["circle", "square", "triangle", "rectangle", "text"],
+      enum: ["circle", "square", "triangle", "rectangle", "text", "group"],
       required: true
     },
-    transitions: [TransitionSchema]
+    transitions: [TransitionSchema],
+    children: []
   },
   { _id: false }
 );
@@ -45,6 +50,17 @@ const AnimationSchema = new mongoose.Schema(
       required: true
     },
     duration: { type: Number, default: 15 },
+    durationOverride: { type: Number, default: null },
+    canvasWidth: { type: Number, default: null },
+    canvasHeight: { type: Number, default: null },
+    connections: [
+      {
+        fromId: { type: String, required: true },
+        toId: { type: String, required: true },
+        color: { type: String, default: "#facc15" },
+        width: { type: Number, default: 2 }
+      }
+    ],
     objects: [AnimationObjectSchema],
     isPublished: { type: Boolean, default: false },
     tags: [{ type: String }]

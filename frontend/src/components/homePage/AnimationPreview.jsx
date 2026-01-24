@@ -1,4 +1,12 @@
 import React, { useEffect, useState, useRef } from "react"
+import {
+  BASE_SHAPE_SIZE,
+  DEFAULT_ANIMATION_DURATION,
+  getCanvasTransform,
+  getCompoundStatesAtTime,
+  getObjectStateAtTime,
+  normalizeAnimation
+} from "../../utils/animationUtils"
 
 export default function AnimationPreview({ demo, animation }) {
   const [animationState, setAnimationState] = useState(0)
@@ -19,12 +27,13 @@ export default function AnimationPreview({ demo, animation }) {
       if (!canvas) return
 
       const ctx = canvas.getContext('2d')
-      const duration = animation.duration || 10
+      const normalized = normalizeAnimation(animation)
+      const duration = normalized.effectiveDuration || DEFAULT_ANIMATION_DURATION
       
       const animate = () => {
         setCurrentTime((prev) => {
           const next = (prev + 0.05) % duration
-          renderAnimationFrame(ctx, animation.objects, next, duration)
+          renderAnimationFrame(ctx, normalized, next, duration)
           return next
         })
       }
@@ -35,62 +44,138 @@ export default function AnimationPreview({ demo, animation }) {
   }, [animation])
 
   // Render animation frame based on object data
-  const renderAnimationFrame = (ctx, objects, time, duration) => {
+  const renderAnimationFrame = (ctx, normalizedAnimation, time, duration) => {
     if (!ctx) return
     
     const canvas = ctx.canvas
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.fillStyle = "#f3f4f6"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     
+    const objects = normalizedAnimation?.objects
     if (!objects || objects.length === 0) return
     
-    objects.forEach(obj => {
-      const state = getObjectStateAtTime(obj, time)
-      if (!state) return
-      
-      // Skip if opacity is 0 (invisible)
-      if (state.opacity <= 0) return
+    const { scale, offsetX, offsetY } = getCanvasTransform(normalizedAnimation, canvas)
+    ctx.save()
+    ctx.translate(offsetX, offsetY)
+    ctx.scale(scale, scale)
+
+    if (Array.isArray(normalizedAnimation?.connections)) {
+      normalizedAnimation.connections.forEach((conn) => {
+        const fromObj = objects.find((obj) => obj.id === conn.fromId)
+        const toObj = objects.find((obj) => obj.id === conn.toId)
+        if (!fromObj || !toObj) return
+        const fromState = getObjectStateAtTime(fromObj, time)
+        const toState = getObjectStateAtTime(toObj, time)
+        if (!fromState || !toState) return
+
+        const drawArrow = (from, to, color = "#facc15", width = 2) => {
+          const headLength = 10
+          const dx = to.x - from.x
+          const dy = to.y - from.y
+          const angle = Math.atan2(dy, dx)
+
+          ctx.strokeStyle = color
+          ctx.lineWidth = width
+          ctx.beginPath()
+          ctx.moveTo(from.x, from.y)
+          ctx.lineTo(to.x, to.y)
+          ctx.stroke()
+
+          ctx.fillStyle = color
+          ctx.beginPath()
+          ctx.moveTo(to.x, to.y)
+          ctx.lineTo(to.x - headLength * Math.cos(angle - Math.PI / 6), to.y - headLength * Math.sin(angle - Math.PI / 6))
+          ctx.lineTo(to.x - headLength * Math.cos(angle + Math.PI / 6), to.y - headLength * Math.sin(angle + Math.PI / 6))
+          ctx.closePath()
+          ctx.fill()
+        }
+
+        drawArrow(
+          { x: fromState.x ?? 0, y: fromState.y ?? 0 },
+          { x: toState.x ?? 0, y: toState.y ?? 0 },
+          conn.color || "#facc15",
+          conn.width || 2
+        )
+      })
+    }
+
+    const drawShape = (shapeType, state) => {
+      if (!state || state.opacity <= 0) return
       
       ctx.save()
       
       ctx.globalAlpha = Math.max(0, Math.min(1, state.opacity ?? 1))
-      ctx.fillStyle = state.color || "#3b82f6"
-      ctx.strokeStyle = state.color || "#3b82f6"
+      ctx.fillStyle = (state.fillColor ?? state.color) || "#3b82f6"
+      ctx.strokeStyle = (state.strokeColor ?? state.color) || "#3b82f6"
       
       const x = state.x ?? 0
       const y = state.y ?? 0
       const scale = state.scale ?? 1
+      const size = BASE_SHAPE_SIZE * scale
       
       ctx.translate(x, y)
       if (state.rotation) {
         ctx.rotate((state.rotation * Math.PI) / 180)
       }
       
-      switch (obj.type) {
+      switch (shapeType) {
         case "circle":
-          ctx.beginPath()
-          ctx.arc(0, 0, (50 * scale) / 2, 0, Math.PI * 2)
-          ctx.fill()
+          if ((state.fillColor ?? state.color) && state.fillColor !== "transparent") {
+            ctx.beginPath()
+            ctx.arc(0, 0, size / 2, 0, Math.PI * 2)
+            ctx.fill()
+          }
+          if (state.strokeColor) {
+            ctx.lineWidth = state.borderWidth ?? 2
+            ctx.beginPath()
+            ctx.arc(0, 0, size / 2, 0, Math.PI * 2)
+            ctx.stroke()
+          }
           break
 
         case "square":
-          ctx.fillRect(-30 * scale, -30 * scale, 60 * scale, 60 * scale)
+          if ((state.fillColor ?? state.color) && state.fillColor !== "transparent") {
+            ctx.fillRect(-size / 2, -size / 2, size, size)
+          }
+          if (state.strokeColor) {
+            ctx.lineWidth = state.borderWidth ?? 2
+            ctx.strokeRect(-size / 2, -size / 2, size, size)
+          }
           break
 
         case "triangle":
           ctx.beginPath()
-          ctx.moveTo(0, -30 * scale)
-          ctx.lineTo(30 * scale, 30 * scale)
-          ctx.lineTo(-30 * scale, 30 * scale)
+          ctx.moveTo(0, -size / 2)
+          ctx.lineTo(size / 2, size / 2)
+          ctx.lineTo(-size / 2, size / 2)
           ctx.closePath()
-          ctx.fill()
+          if ((state.fillColor ?? state.color) && state.fillColor !== "transparent") {
+            ctx.fill()
+          }
+          if (state.strokeColor) {
+            ctx.lineWidth = state.borderWidth ?? 2
+            ctx.stroke()
+          }
           break
 
-        case "rectangle":
+        case "rectangle": {
           const w = (state.width ?? 100) * scale
           const h = (state.height ?? 60) * scale
-          ctx.fillRect(-w / 2, -h / 2, w, h)
+          if ((state.fillColor ?? state.color) && state.fillColor !== "transparent") {
+            ctx.fillRect(-w / 2, -h / 2, w, h)
+          }
+          if (state.strokeColor) {
+            ctx.lineWidth = state.borderWidth ?? 2
+            ctx.beginPath()
+            ctx.rect(-w / 2, -h / 2, w, h)
+            ctx.stroke()
+            if (state.openTop) {
+              ctx.clearRect(-w / 2 - 1, -h / 2 - 1, w + 2, (state.borderWidth ?? 2) + 2)
+            }
+          }
           break
+        }
 
         case "text":
           ctx.fillStyle = state.color || "#000000"
@@ -105,93 +190,23 @@ export default function AnimationPreview({ demo, animation }) {
       }
       
       ctx.restore()
-    })
-  }
+    }
 
-  const getObjectStateAtTime = (obj, time) => {
-    const transitions = obj.transitions
-    if (!transitions || transitions.length === 0) return null
-
-    for (let i = 0; i < transitions.length; i++) {
-      const trans = transitions[i]
-      const startTime = trans.startTime
-      const duration = trans.duration || 0
-      const endTime = startTime + duration
-
-      // Check if current time is in range for this transition
-      if (time >= startTime && time <= endTime) {
-        // If duration is 0, this is an instant state
-        if (duration === 0) {
-          return {
-            x: trans.x ?? 0,
-            y: trans.y ?? 0,
-            width: trans.width,
-            height: trans.height,
-            scale: trans.scale ?? 1,
-            rotation: trans.rotation ?? 0,
-            opacity: trans.opacity ?? 1,
-            color: trans.color,
-            text: trans.text || "",
-          }
-        }
-
-        // For non-zero duration, interpolate between this and next transition
-        const nextTrans = transitions[i + 1]
-        const progress = (time - startTime) / duration
-        const t = applyEasing(progress, trans.easing || 'linear')
-
-        if (nextTrans) {
-          return {
-            x: lerp(trans.x, nextTrans.x, t),
-            y: lerp(trans.y, nextTrans.y, t),
-            width: trans.width,
-            height: trans.height,
-            scale: lerp(trans.scale ?? 1, nextTrans.scale ?? 1, t),
-            rotation: lerp(trans.rotation ?? 0, nextTrans.rotation ?? 0, t),
-            opacity: lerp(trans.opacity ?? 1, nextTrans.opacity ?? 1, t),
-            color: trans.color || nextTrans.color,
-            text: trans.text || "",
-          }
-        } else {
-          return {
-            x: trans.x ?? 0,
-            y: trans.y ?? 0,
-            width: trans.width,
-            height: trans.height,
-            scale: trans.scale ?? 1,
-            rotation: trans.rotation ?? 0,
-            opacity: trans.opacity ?? 1,
-            color: trans.color,
-            text: trans.text || "",
-          }
-        }
+    objects.forEach(obj => {
+      if (obj.children?.length) {
+        const compound = getCompoundStatesAtTime(obj, time)
+        if (!compound) return
+        obj.children.forEach((child, index) => {
+          drawShape(child.type, compound.children[index])
+        })
+        return
       }
-    }
 
-    // Return last state if time is beyond all transitions
-    const lastTrans = transitions[transitions.length - 1]
-    return {
-      x: lastTrans.x ?? 0,
-      y: lastTrans.y ?? 0,
-      width: lastTrans.width,
-      height: lastTrans.height,
-      scale: lastTrans.scale ?? 1,
-      rotation: lastTrans.rotation ?? 0,
-      opacity: lastTrans.opacity ?? 1,
-      color: lastTrans.color,
-      text: lastTrans.text || "",
-    }
-  }
+      const state = getObjectStateAtTime(obj, time)
+      drawShape(obj.type, state)
+    })
 
-  const lerp = (a, b, t) => a + (b - a) * t
-  
-  const applyEasing = (t, easing) => {
-    switch (easing) {
-      case 'ease-in': return t * t
-      case 'ease-out': return t * (2 - t)
-      case 'ease-in-out': return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
-      default: return t
-    }
+    ctx.restore()
   }
 
   const renderSortingDemo = () => {

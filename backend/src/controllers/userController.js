@@ -216,3 +216,65 @@ export const toggleBanUser = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+export const getSavedObjects = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("savedObjects");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user.savedObjects || []);
+  } catch (err) {
+    console.error("Error fetching saved objects:", err);
+    res.status(500).json({ message: "Failed to fetch saved objects" });
+  }
+};
+
+export const addSavedObject = async (req, res) => {
+  try {
+    const { name, type, transitions, children } = req.body || {};
+    if (!name || !type || !Array.isArray(transitions) || transitions.length === 0) {
+      return res.status(400).json({ message: "Invalid saved object payload" });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const savedObject = {
+      id: `saved_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      name,
+      type,
+      transitions,
+      children: Array.isArray(children) ? children : []
+    };
+
+    user.savedObjects = [...(user.savedObjects || []), savedObject];
+    await user.save();
+
+    res.status(201).json(savedObject);
+  } catch (err) {
+    console.error("Error saving object:", err);
+    res.status(500).json({ message: "Failed to save object" });
+  }
+};
+
+export const deleteSavedObject = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const savedId = req.params.savedId;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const before = (user.savedObjects || []).length;
+    user.savedObjects = (user.savedObjects || []).filter(s => s.id !== savedId);
+    const after = (user.savedObjects || []).length;
+
+    if (before === after) {
+      return res.status(404).json({ message: 'Saved object not found' });
+    }
+
+    await user.save();
+    res.json({ message: 'Saved object deleted', id: savedId });
+  } catch (err) {
+    console.error('Error deleting saved object:', err);
+    res.status(500).json({ message: 'Failed to delete saved object' });
+  }
+};
