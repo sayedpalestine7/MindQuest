@@ -42,10 +42,14 @@ export const normalizeObject = (obj = {}) => {
   const normalizedTransitions = transitions
     .map(normalizeTransition)
     .sort((a, b) => a.startTime - b.startTime);
+  const children = Array.isArray(obj.children)
+    ? obj.children.map(normalizeObject)
+    : [];
 
   return {
     ...obj,
-    transitions: normalizedTransitions
+    transitions: normalizedTransitions,
+    children
   };
 };
 
@@ -195,4 +199,49 @@ export const getObjectStateAtTime = (obj, time) => {
   }
 
   return null;
+};
+
+const transformPoint = (x, y, parentState) => {
+  const scale = parentState?.scale ?? 1;
+  const rotation = (parentState?.rotation ?? 0) * (Math.PI / 180);
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const sx = (x ?? 0) * scale;
+  const sy = (y ?? 0) * scale;
+  const rx = sx * cos - sy * sin;
+  const ry = sx * sin + sy * cos;
+  return {
+    x: (parentState?.x ?? 0) + rx,
+    y: (parentState?.y ?? 0) + ry
+  };
+};
+
+export const composeChildState = (childState, parentState) => {
+  if (!childState || !parentState) return null;
+  const point = transformPoint(childState.x ?? 0, childState.y ?? 0, parentState);
+  return {
+    ...childState,
+    x: point.x,
+    y: point.y,
+    scale: (childState.scale ?? 1) * (parentState.scale ?? 1),
+    rotation: (childState.rotation ?? 0) + (parentState.rotation ?? 0),
+    opacity: (childState.opacity ?? 1) * (parentState.opacity ?? 1)
+  };
+};
+
+export const getCompoundStatesAtTime = (obj, time) => {
+  if (!obj) return null;
+  const parentState = getObjectStateAtTime(obj, time);
+  if (!parentState) return null;
+  if (!Array.isArray(obj.children) || obj.children.length === 0) {
+    return { parent: parentState, children: [] };
+  }
+  const children = obj.children
+    .map((child) => {
+      const childState = getObjectStateAtTime(child, time);
+      return composeChildState(childState, parentState);
+    })
+    .filter(Boolean);
+
+  return { parent: parentState, children };
 };

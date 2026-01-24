@@ -3,6 +3,7 @@ import {
   BASE_SHAPE_SIZE,
   DEFAULT_ANIMATION_DURATION,
   getCanvasTransform,
+  getCompoundStatesAtTime,
   getObjectStateAtTime,
   normalizeAnimation
 } from "../../utils/animationUtils"
@@ -99,12 +100,8 @@ export default function AnimationPreview({ demo, animation }) {
       })
     }
 
-    objects.forEach(obj => {
-      const state = getObjectStateAtTime(obj, time)
-      if (!state) return
-      
-      // Skip if opacity is 0 (invisible)
-      if (state.opacity <= 0) return
+    const drawShape = (shapeType, state) => {
+      if (!state || state.opacity <= 0) return
       
       ctx.save()
       
@@ -122,7 +119,7 @@ export default function AnimationPreview({ demo, animation }) {
         ctx.rotate((state.rotation * Math.PI) / 180)
       }
       
-      switch (obj.type) {
+      switch (shapeType) {
         case "circle":
           if ((state.fillColor ?? state.color) && state.fillColor !== "transparent") {
             ctx.beginPath()
@@ -193,6 +190,20 @@ export default function AnimationPreview({ demo, animation }) {
       }
       
       ctx.restore()
+    }
+
+    objects.forEach(obj => {
+      if (obj.children?.length) {
+        const compound = getCompoundStatesAtTime(obj, time)
+        if (!compound) return
+        obj.children.forEach((child, index) => {
+          drawShape(child.type, compound.children[index])
+        })
+        return
+      }
+
+      const state = getObjectStateAtTime(obj, time)
+      drawShape(obj.type, state)
     })
 
     ctx.restore()

@@ -5,9 +5,11 @@ import AnimationRenderer from '../components/coursePage/AnimationRenderer';
 import {
   BASE_SHAPE_SIZE,
   DEFAULT_ANIMATION_DURATION,
+  composeChildState,
   deriveDurationFromObjects,
   getCanvasTransform,
   getObjectStateAtTime,
+  getCompoundStatesAtTime,
   normalizeAnimation
 } from '../utils/animationUtils';
 
@@ -205,6 +207,17 @@ export default function AnimationStudio() {
 
   const addSavedObjectToCanvas = (savedObject) => {
     if (!savedObject) return;
+    if (Array.isArray(savedObject.children) && savedObject.children.length > 0) {
+      const newObj = {
+        ...savedObject,
+        id: `obj_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        name: `${savedObject.name}_copy`
+      };
+      setObjects(prev => [...prev, newObj]);
+      setSelectedIds([newObj.id]);
+      setSelectedTransitionIndex(0);
+      return;
+    }
     const overrides = buildOverridesFromSaved(savedObject);
     addObject(savedObject.type, 0, overrides, savedObject.name);
   };
@@ -218,21 +231,21 @@ export default function AnimationStudio() {
     return obj.transitions[obj.transitions.length - 1];
   };
 
-  const getObjectBounds = (obj, transition) => {
-    if (!transition) return null;
-    const scale = transition.scale ?? 1;
-    const centerX = transition.x ?? 0;
-    const centerY = transition.y ?? 0;
+  const getStateBounds = (type, state) => {
+    if (!state) return null;
+    const scale = state.scale ?? 1;
+    const centerX = state.x ?? 0;
+    const centerY = state.y ?? 0;
 
     let width = BASE_SHAPE_SIZE * scale;
     let height = BASE_SHAPE_SIZE * scale;
 
-    if (obj.type === 'rectangle') {
-      width = (transition.width ?? 100) * scale;
-      height = (transition.height ?? 60) * scale;
-    } else if (obj.type === 'text') {
-      width = (transition.width ?? 200) * scale;
-      height = (transition.height ?? 40) * scale;
+    if (type === 'rectangle') {
+      width = (state.width ?? 100) * scale;
+      height = (state.height ?? 60) * scale;
+    } else if (type === 'text') {
+      width = (state.width ?? 200) * scale;
+      height = (state.height ?? 40) * scale;
     }
 
     return {
@@ -243,6 +256,39 @@ export default function AnimationStudio() {
       width,
       height
     };
+  };
+
+  const getObjectBounds = (obj, transition) => {
+    if (!obj || !transition) return null;
+    if (Array.isArray(obj.children) && obj.children.length > 0) {
+      const parentState = transition;
+      const childBounds = obj.children
+        .map(child => {
+          const childTransition = getTransitionSnapshot(child) || (child.transitions ? child.transitions[child.transitions.length - 1] : null);
+          const childState = composeChildState(childTransition, parentState);
+          const bounds = getStateBounds(child.type, childState);
+          return bounds;
+        })
+        .filter(Boolean);
+
+      if (childBounds.length === 0) return null;
+
+      const left = Math.min(...childBounds.map(b => b.left));
+      const right = Math.max(...childBounds.map(b => b.right));
+      const top = Math.min(...childBounds.map(b => b.top));
+      const bottom = Math.max(...childBounds.map(b => b.bottom));
+
+      return {
+        left,
+        right,
+        top,
+        bottom,
+        width: Math.max(1, right - left),
+        height: Math.max(1, bottom - top)
+      };
+    }
+
+    return getStateBounds(obj.type, transition);
   };
 
   const mergeSelectedObjects = async () => {
@@ -281,8 +327,6 @@ export default function AnimationStudio() {
     const mergedX = unionLeft + mergedWidth / 2;
     const mergedY = unionTop + mergedHeight / 2;
 
-    const baseTransition = boundsList[0]?.transition || {};
-    const baseColor = baseTransition.strokeColor || baseTransition.color || '#f59e0b';
     const mergedNameBase = 'Merged';
     const mergedCount = objects.filter(o => o.name?.startsWith(`${mergedNameBase}_`)).length + 1;
     const mergedName = `${mergedNameBase}_${mergedCount}`;
@@ -292,25 +336,48 @@ export default function AnimationStudio() {
       duration: 0,
       x: mergedX,
       y: mergedY,
-      width: mergedWidth,
-      height: mergedHeight,
       scale: 1,
       rotation: 0,
-      color: baseColor,
-      fillColor: 'transparent',
-      strokeColor: baseColor,
-      borderWidth: 2,
-      openTop: false,
-      text: mergedName,
       opacity: 1,
       easing: 'linear'
     };
 
+    const children = boundsList.map(({ obj, transition }) => {
+      const relativeX = (transition.x ?? 0) - mergedX;
+      const relativeY = (transition.y ?? 0) - mergedY;
+      return {
+        id: obj.id,
+        name: obj.name,
+        type: obj.type,
+        transitions: [
+          {
+            startTime: 0,
+            duration: 0,
+            x: relativeX,
+            y: relativeY,
+            width: transition.width,
+            height: transition.height,
+            scale: transition.scale ?? 1,
+            rotation: transition.rotation ?? 0,
+            opacity: transition.opacity ?? 1,
+            color: transition.color,
+            fillColor: transition.fillColor ?? null,
+            strokeColor: transition.strokeColor ?? null,
+            borderWidth: transition.borderWidth ?? 2,
+            openTop: transition.openTop ?? false,
+            text: transition.text ?? '',
+            easing: transition.easing || 'linear'
+          }
+        ]
+      };
+    });
+
     const mergedObject = {
       id: `obj_${Date.now()}`,
       name: mergedName,
-      type: 'rectangle',
-      transitions: [mergedTransition]
+      type: 'group',
+      transitions: [mergedTransition],
+      children
     };
 
     setObjects(prev => [
@@ -329,7 +396,8 @@ export default function AnimationStudio() {
           {
             name: mergedObject.name,
             type: mergedObject.type,
-            transitions: mergedObject.transitions
+            transitions: mergedObject.transitions,
+            children: mergedObject.children
           }
         );
         if (response?.data) {
@@ -550,11 +618,13 @@ export default function AnimationStudio() {
       const selected = objects.filter(obj => {
         const lastTrans = obj.transitions[obj.transitions.length - 1];
         if (!lastTrans) return false;
+        const bounds = getObjectBounds(obj, lastTrans);
+        if (!bounds) return false;
         return (
-          lastTrans.x >= selectionBox.x &&
-          lastTrans.x <= selectionBox.x + selectionBox.width &&
-          lastTrans.y >= selectionBox.y &&
-          lastTrans.y <= selectionBox.y + selectionBox.height
+          bounds.right >= selectionBox.x &&
+          bounds.left <= selectionBox.x + selectionBox.width &&
+          bounds.bottom >= selectionBox.y &&
+          bounds.top <= selectionBox.y + selectionBox.height
         );
       }).map(obj => obj.id);
 
@@ -942,7 +1012,8 @@ export default function AnimationStudio() {
           id: obj.id,
           name: obj.name,
           type: obj.type,
-          transitions: obj.transitions
+          transitions: obj.transitions,
+          children: obj.children
         }))
       };
 
@@ -1037,7 +1108,7 @@ export default function AnimationStudio() {
     );
   };
 
-  const renderShape = (obj, state, isGhost = false, transIndex = null) => {
+  const renderShape = (obj, state, isGhost = false, transIndex = null, disableEvents = false) => {
     if (!state) return null;
     const size = 50 * (state.scale ?? 1);
     const isSelected = selectedIds.includes(obj.id) && selectedTransitionIndex === transIndex;
@@ -1062,7 +1133,7 @@ export default function AnimationStudio() {
       textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
       userSelect: 'none',
       whiteSpace: 'pre-wrap',
-      pointerEvents: isGhost ? 'none' : 'auto', // ghost shouldn't block mouse events
+      pointerEvents: isGhost || disableEvents ? 'none' : 'auto', // ghost shouldn't block mouse events
       zIndex: isSelected ? 20 : 5
     };
 
@@ -1100,8 +1171,8 @@ export default function AnimationStudio() {
             backgroundColor: fillColor === 'transparent' ? 'transparent' : fillColor,
             border: strokeColor ? `${borderWidth}px solid ${strokeColor}` : borderStyle
           }}
-          onMouseDown={(e) => handleMouseDown(e, obj.id, transIndex)}
-          onContextMenu={(e) => handleContextMenu(e, obj.id, transIndex)}
+          onMouseDown={disableEvents ? undefined : (e) => handleMouseDown(e, obj.id, transIndex)}
+          onContextMenu={disableEvents ? undefined : (e) => handleContextMenu(e, obj.id, transIndex)}
         >
           {textContent}
           {resizeHandle}
@@ -1118,8 +1189,8 @@ export default function AnimationStudio() {
             backgroundColor: fillColor === 'transparent' ? 'transparent' : fillColor,
             border: strokeColor ? `${borderWidth}px solid ${strokeColor}` : borderStyle
           }}
-          onMouseDown={(e) => handleMouseDown(e, obj.id, transIndex)}
-          onContextMenu={(e) => handleContextMenu(e, obj.id, transIndex)}
+          onMouseDown={disableEvents ? undefined : (e) => handleMouseDown(e, obj.id, transIndex)}
+          onContextMenu={disableEvents ? undefined : (e) => handleContextMenu(e, obj.id, transIndex)}
         >
           {textContent}
           {resizeHandle}
@@ -1140,8 +1211,8 @@ export default function AnimationStudio() {
             border,
             borderTop: state.openTop && strokeColor ? 'none' : undefined
           }}
-          onMouseDown={(e) => handleMouseDown(e, obj.id, transIndex)}
-          onContextMenu={(e) => handleContextMenu(e, obj.id, transIndex)}
+          onMouseDown={disableEvents ? undefined : (e) => handleMouseDown(e, obj.id, transIndex)}
+          onContextMenu={disableEvents ? undefined : (e) => handleContextMenu(e, obj.id, transIndex)}
         >
           {textContent}
           {resizeHandle}
@@ -1152,8 +1223,8 @@ export default function AnimationStudio() {
         <div
           key={`${obj.id}-${transIndex}-${isGhost ? 'ghost' : 'solid'}`}
           style={{ ...baseStyle }}
-          onMouseDown={(e) => handleMouseDown(e, obj.id, transIndex)}
-          onContextMenu={(e) => handleContextMenu(e, obj.id, transIndex)}
+          onMouseDown={disableEvents ? undefined : (e) => handleMouseDown(e, obj.id, transIndex)}
+          onContextMenu={disableEvents ? undefined : (e) => handleContextMenu(e, obj.id, transIndex)}
         >
           <div style={{ width: 0, height: 0, borderLeft: `${size / 2}px solid transparent`, borderRight: `${size / 2}px solid transparent`, borderBottom: `${size}px solid ${fillColor || state.color}`, position: 'relative' }}>
             <span style={{ position: 'absolute', left: '50%', top: `${size * 0.4}px`, transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>{textContent}</span>
@@ -1183,10 +1254,10 @@ export default function AnimationStudio() {
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word'
           }}
-          onMouseDown={(e) => handleMouseDown(e, obj.id, transIndex)}
-          onContextMenu={(e) => handleContextMenu(e, obj.id, transIndex)}
+          onMouseDown={disableEvents ? undefined : (e) => handleMouseDown(e, obj.id, transIndex)}
+          onContextMenu={disableEvents ? undefined : (e) => handleContextMenu(e, obj.id, transIndex)}
           onDoubleClick={() => {
-            if (!isPlaying && !isGhost) {
+            if (!disableEvents && !isPlaying && !isGhost) {
               const newText = prompt('Enter text:', state.text);
               if (newText !== null) {
                 updateTransition(obj.id, transIndex, { text: newText });
@@ -1199,6 +1270,80 @@ export default function AnimationStudio() {
         </div>
       );
     }
+  };
+
+  const getCompoundStatesFromTransition = (obj, parentTransition) => {
+    if (!obj || !parentTransition) return null;
+    const children = (obj.children || [])
+      .map(child => {
+        const childTransition = getTransitionSnapshot(child) || (child.transitions ? child.transitions[child.transitions.length - 1] : null);
+        return composeChildState(childTransition, parentTransition);
+      })
+      .filter(Boolean);
+    return { parent: parentTransition, children };
+  };
+
+  const renderCompound = (obj, state, isGhost = false, transIndex = null) => {
+    if (!obj || !state) return null;
+    const compound = isPlaying
+      ? getCompoundStatesAtTime(obj, currentTime)
+      : getCompoundStatesFromTransition(obj, state);
+    if (!compound) return null;
+
+    const bounds = getObjectBounds(obj, compound.parent);
+    const width = bounds?.width ?? 0;
+    const height = bounds?.height ?? 0;
+    const isSelected = selectedIds.includes(obj.id) && selectedTransitionIndex === transIndex;
+    const borderStyle = isSelected && !isPlaying ? '2px dashed rgba(255,255,255,0.7)' : 'none';
+    const resizeHandle = (!isPlaying && !isGhost && isSelected && bounds) ? (
+      <div
+        style={{
+          position: 'absolute',
+          bottom: -8,
+          right: -8,
+          width: 12,
+          height: 12,
+          backgroundColor: 'white',
+          border: '2px solid #3b82f6',
+          cursor: 'nwse-resize',
+          zIndex: 30
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          handleMouseDown(e, obj.id, transIndex, true);
+        }}
+      />
+    ) : null;
+
+    return (
+      <React.Fragment key={`${obj.id}-${transIndex}-${isGhost ? 'ghost' : 'solid'}`}>
+        {!isGhost && bounds && (
+          <div
+            style={{
+              position: 'absolute',
+              left: `${compound.parent.x}px`,
+              top: `${compound.parent.y}px`,
+              width: `${width}px`,
+              height: `${height}px`,
+              transform: `translate(-50%, -50%) rotate(${compound.parent.rotation ?? 0}deg)`,
+              border: borderStyle,
+              backgroundColor: 'transparent',
+              cursor: isPlaying ? 'default' : 'move',
+              zIndex: isSelected ? 20 : 5
+            }}
+            onMouseDown={(e) => handleMouseDown(e, obj.id, transIndex)}
+            onContextMenu={(e) => handleContextMenu(e, obj.id, transIndex)}
+          >
+            {resizeHandle}
+          </div>
+        )}
+        {obj.children?.map((child, index) => {
+          const childState = compound.children[index];
+          if (!childState) return null;
+          return renderShape(child, childState, isGhost, transIndex, true);
+        })}
+      </React.Fragment>
+    );
   };
 
   const renderParityFrame = () => {
@@ -1224,10 +1369,8 @@ export default function AnimationStudio() {
     ctx.translate(offsetX, offsetY);
     ctx.scale(scale, scale);
 
-    objects.forEach(obj => {
-      const state = getObjectStateAtTime(obj, currentTime);
+    const drawCanvasShape = (shapeType, state) => {
       if (!state || state.opacity <= 0) return;
-
       ctx.save();
       ctx.globalAlpha = Math.max(0, Math.min(1, state.opacity ?? 1));
       const fillColor = state.fillColor ?? state.color;
@@ -1244,7 +1387,7 @@ export default function AnimationStudio() {
         ctx.rotate((state.rotation * Math.PI) / 180);
       }
 
-      switch (obj.type) {
+      switch (shapeType) {
         case 'circle':
           if (fillColor && fillColor !== 'transparent') {
             ctx.fillStyle = fillColor;
@@ -1318,6 +1461,20 @@ export default function AnimationStudio() {
       }
 
       ctx.restore();
+    };
+
+    objects.forEach(obj => {
+      if (obj.children?.length) {
+        const compound = getCompoundStatesAtTime(obj, currentTime);
+        if (!compound) return;
+        obj.children.forEach((child, index) => {
+          drawCanvasShape(child.type, compound.children[index]);
+        });
+        return;
+      }
+
+      const state = getObjectStateAtTime(obj, currentTime);
+      drawCanvasShape(obj.type, state);
     });
 
     ctx.restore();
@@ -1573,9 +1730,11 @@ export default function AnimationStudio() {
               return (
                 <React.Fragment key={obj.id}>
                   {!isPlaying && !useParityPreview && allTransitions.slice(0, -1).map(({ trans, idx }) => (
-                    renderShape(obj, trans, true, idx)
+                    obj.children?.length ? renderCompound(obj, trans, true, idx) : renderShape(obj, trans, true, idx)
                   ))}
-                  {!useParityPreview && renderShape(obj, isPlaying ? getObjectStateAtTime(obj, currentTime) : obj.transitions[obj.transitions.length - 1], false, obj.transitions.length - 1)}
+                  {!useParityPreview && (obj.children?.length
+                    ? renderCompound(obj, isPlaying ? getObjectStateAtTime(obj, currentTime) : obj.transitions[obj.transitions.length - 1], false, obj.transitions.length - 1)
+                    : renderShape(obj, isPlaying ? getObjectStateAtTime(obj, currentTime) : obj.transitions[obj.transitions.length - 1], false, obj.transitions.length - 1))}
                 </React.Fragment>
               );
             })}

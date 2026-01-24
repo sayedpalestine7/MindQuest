@@ -230,7 +230,7 @@ export const getSavedObjects = async (req, res) => {
 
 export const addSavedObject = async (req, res) => {
   try {
-    const { name, type, transitions } = req.body || {};
+    const { name, type, transitions, children } = req.body || {};
     if (!name || !type || !Array.isArray(transitions) || transitions.length === 0) {
       return res.status(400).json({ message: "Invalid saved object payload" });
     }
@@ -242,7 +242,8 @@ export const addSavedObject = async (req, res) => {
       id: `saved_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
       name,
       type,
-      transitions
+      transitions,
+      children: Array.isArray(children) ? children : []
     };
 
     user.savedObjects = [...(user.savedObjects || []), savedObject];

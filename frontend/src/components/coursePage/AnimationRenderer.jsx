@@ -5,6 +5,7 @@ import {
   BASE_SHAPE_SIZE,
   DEFAULT_ANIMATION_DURATION,
   getCanvasTransform,
+  getCompoundStatesAtTime,
   getObjectStateAtTime,
   normalizeAnimation
 } from "../../utils/animationUtils"
@@ -157,20 +158,10 @@ export default function AnimationRenderer({ animationId }) {
       })
     }
 
-    animation.objects.forEach((obj) => {
-      const state = getObjectStateAtTime(obj, currentTime)
-      if (!state) {
-        console.log('No state for object:', obj.id, 'at time:', currentTime)
-        return
-      }
-
-      // Skip if opacity is 0 (invisible)
-      if (state.opacity <= 0) {
-        return
-      }
+    const drawShape = (shapeType, state) => {
+      if (!state || state.opacity <= 0) return
 
       ctx.save()
-
       ctx.globalAlpha = Math.max(0, Math.min(1, state.opacity ?? 1))
       ctx.fillStyle = (state.fillColor ?? state.color) || "#3b82f6"
       ctx.strokeStyle = (state.strokeColor ?? state.color) || "#3b82f6"
@@ -185,7 +176,7 @@ export default function AnimationRenderer({ animationId }) {
         ctx.rotate((state.rotation * Math.PI) / 180)
       }
 
-      switch (obj.type) {
+      switch (shapeType) {
         case "circle":
           if ((state.fillColor ?? state.color) && state.fillColor !== "transparent") {
             ctx.beginPath()
@@ -256,6 +247,24 @@ export default function AnimationRenderer({ animationId }) {
       }
 
       ctx.restore()
+    }
+
+    animation.objects.forEach((obj) => {
+      if (obj.children?.length) {
+        const compound = getCompoundStatesAtTime(obj, currentTime)
+        if (!compound) return
+        obj.children.forEach((child, index) => {
+          drawShape(child.type, compound.children[index])
+        })
+        return
+      }
+
+      const state = getObjectStateAtTime(obj, currentTime)
+      if (!state) {
+        console.log('No state for object:', obj.id, 'at time:', currentTime)
+        return
+      }
+      drawShape(obj.type, state)
     })
 
     ctx.restore()

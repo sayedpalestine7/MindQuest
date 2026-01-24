@@ -52,10 +52,11 @@ const savedObjectSchema = new mongoose.Schema(
         name: { type: String, required: true },
         type: {
             type: String,
-            enum: ["circle", "square", "triangle", "rectangle", "text"],
+            enum: ["circle", "square", "triangle", "rectangle", "text", "group"],
             required: true
         },
-        transitions: [savedTransitionSchema]
+        transitions: [savedTransitionSchema],
+        children: []
     },
     { _id: false }
 );
