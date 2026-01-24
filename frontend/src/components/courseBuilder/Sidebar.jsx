@@ -38,11 +38,8 @@ export default function Sidebar({
           {lessons.map((lesson, index) => (
             <motion.div
               key={lesson.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, lesson.id)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, lesson.id)}
-              onDragEnd={handleDragEnd}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
@@ -55,7 +52,12 @@ export default function Sidebar({
             >
               <div className="flex items-start gap-2">
                 {/* Drag handle */}
-                <div className="pt-1 text-gray-400 cursor-grab active:cursor-grabbing hover:text-gray-600 transition flex-shrink-0">
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, lesson.id)}
+                  onDragEnd={handleDragEnd}
+                  className="pt-1 text-gray-400 cursor-grab active:cursor-grabbing hover:text-gray-600 transition flex-shrink-0"
+                >
                   <GripVertical className="w-4 h-4" />
                 </div>
 
