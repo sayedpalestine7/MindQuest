@@ -1,4 +1,6 @@
-### 5.1 Evaluation of Problem Resolution
+# Chapter 5: Discussion
+
+## 5.1 Evaluation of Problem Resolution
 
 The principal problem identified in Chapter 1 is the limited interactivity of many contemporary online learning environments and the consequent decline in student engagement and formative feedback. MindQuest was conceived to address this deficiency by integrating interactive media, formative assessment mechanisms, and explicit progress feedback within a single learning platform. The following evaluation considers the extent to which the project’s design and prototype resolve the problem, and it does so with an objective appraisal of strengths and remaining gaps.
 
@@ -12,7 +14,7 @@ Moreover, practical limitations temper the platform’s immediate impact. The pr
 
 In summary, MindQuest substantially mitigates the original problem by offering a unified environment that supports interactive media, formative assessment, and instructor authoring. The project succeeds in producing a viable engineering prototype and a coherent design that directly confronts the lack of interactivity identified in Chapter 1. Nonetheless, the extent of problem resolution should be judged as preliminary: the platform now provides the mechanisms required for increased engagement, but full validation of educational outcomes and production-grade operational robustness remain tasks for further work.
 
-### 5.2 Project Contributions
+## 5.2 Project Contributions
 
 This project delivered a consolidated prototype that materially advances the state of an instructional platform by integrating interactive content, assessment, and governance into a single environment. The principal contributions are as follows.
 
@@ -23,7 +25,7 @@ This project delivered a consolidated prototype that materially advances the sta
 
 Collectively these contributions emphasise integration and operational utility: the novelty of MindQuest arises from combining established pedagogical affordances into a maintainable platform that supports the instructor-to-learner lifecycle. The design choices prioritise extensibility and pragmatic deployment rather than algorithmic novelty.
 
-### 5.3 Implications of the Results
+## 5.3 Implications of the Results
 
 The results reported in Chapter 4 carry several logical implications for educational practice, platform engineering, and future research. First, by demonstrating a prototype that integrates animations, formative assessment, and progress reporting within unified learning flows, MindQuest suggests that improved student engagement is attainable through the deliberate coupling of media and assessment. This implication is principally pedagogical: educators may obtain greater learner attention and faster corrective feedback when course materials are designed as interactive, assessment‑embedded sequences rather than as isolated content items.
 
@@ -35,7 +37,7 @@ Fourth, the project aligns with current trends in e‑learning that prioritise m
 
 Finally, the implications are tempered by the prototype nature of the work: measurable gains in learning outcomes remain to be established empirically, and operational adoption will require attention to scalability, content moderation, and institutional workflows. Nonetheless, the design demonstrates a credible route from pedagogical intent to deployable software, and thus merits further study in controlled instructional experiments and pilot deployments.
 
-### 5.4 Limitations and Further Study
+## 5.4 Limitations and Further Study
 
 Limitations
 

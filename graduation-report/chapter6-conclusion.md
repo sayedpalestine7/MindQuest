@@ -1,4 +1,4 @@
-(# Chapter 6: Conclusions and Recommendations)
+# Chapter 6: Conclusions and Recommendations
 
 ## 6.1 Conclusions
 
