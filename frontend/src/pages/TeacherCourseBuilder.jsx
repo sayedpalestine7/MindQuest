@@ -1,7 +1,6 @@
 // /src/pages/TeacherCourseBuilder.jsx
 import React, { useEffect, useState } from "react"
 import { useParams } from "react-router"
-import Header from "../components/courseBuilder/Header"
 import AppHeader from "../components/shared/AppHeader"
 import Breadcrumb from "../components/courseBuilder/Breadcrumb"
 import WorkflowProgress from "../components/courseBuilder/WorkflowProgress"
@@ -405,20 +404,16 @@ export default function TeacherCourseBuilder() {
 
   return (
     <div className="min-h-screen bg-black-20">
-      <AppHeader subtitle="Course Builder" />
-      {/* Course Builder Toolbar */}
-      <Header
-        saveStatus={courseBuilder.isSaving ? "saving" : courseBuilder.saveStatus}
-        onPreview={() => courseBuilder.setIsPreviewOpen(true)}
-        onSave={handleSave}
-        isSaving={courseBuilder.isSaving}
-        isLoading={courseBuilder.isLoading}
-        isSidebarCollapsed={isSidebarCollapsed}
-        onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      <AppHeader
+        subtitle="Course Builder"
+        courseBuilderControls={{
+          saveStatus: courseBuilder.isSaving ? "saving" : courseBuilder.saveStatus,
+          onPreview: () => courseBuilder.setIsPreviewOpen(true),
+          onSave: handleSave,
+          isSidebarCollapsed,
+          onToggleSidebar: () => setIsSidebarCollapsed(!isSidebarCollapsed),
+        }}
       />
-
-
-
       {/* Main Layout */}
       {!courseBuilder.isLoading ? (
         <div className="container mx-auto px-6 py-8 space-y-6">

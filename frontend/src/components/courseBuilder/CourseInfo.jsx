@@ -21,9 +21,9 @@ export default function CourseInfo({ course, setCourse, handleImageUpload }) {
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-md">
+          {/* <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-md">
             <BookOpen className="w-5 h-5 text-white" />
-          </div>
+          </div> */}
           <div>
             <h2 className="text-xl font-bold text-gray-900">Course Information</h2>
             {isCollapsed && course.title && (

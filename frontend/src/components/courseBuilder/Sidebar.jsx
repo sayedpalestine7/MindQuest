@@ -25,7 +25,7 @@ export default function Sidebar({
         <Button
           size="sm"
           onClick={addLesson}
-          className="w-full gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+          className="w-full gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
         >
           <Plus className="w-4 h-4" />
           Add Lesson
@@ -47,7 +47,7 @@ export default function Sidebar({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
               className={`group/item p-3 rounded-lg border-2 transition-all cursor-pointer ${selectedLessonId === lesson.id
-                ? "bg-gradient-to-r from-blue-100 to-purple-100 border-blue-500 shadow-md"
+                ? "bg-blue-50 border-blue-300 shadow-md"
                 : "bg-gray-50 border-gray-200 hover:border-blue-400 hover:bg-blue-50"
                 } ${draggedLessonId === lesson.id ? "opacity-40" : ""
                 }`}

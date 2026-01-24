@@ -29,7 +29,7 @@ export function Button({
     "inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2"
   const variants = {
     default:
-      "px-4 py-2 bg-white shadow-sm focus:ring-teal-500",
+      "px-4 py-2 bg-blue-500 shadow-sm focus:ring-teal-500",
     outline:
       "px-3 py-1.5 border-2 bg-transparent text-foreground hover:bg-opacity-5",
     ghost: "px-2 py-1 bg-transparent hover:bg-gray-100",

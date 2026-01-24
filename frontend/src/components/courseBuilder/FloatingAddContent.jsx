@@ -8,6 +8,7 @@ import {
   Gamepad2,
   Sparkles,
   ChevronLeft,
+  Plus
 } from "lucide-react"
 import { Button } from "./UI"
 import { motion, AnimatePresence } from "framer-motion"
@@ -100,11 +101,11 @@ export default function FloatingAddContent({ addField, selectedLesson }) {
                 </div>
 
                 {/* Divider */}
-                <div className="mt-3 pt-3 border-t border-gray-200">
+                {/* <div className="mt-3 pt-3 border-t border-gray-200">
                   <p className="text-xs text-gray-500 px-2">
                     💡 <span className="font-semibold">Quick Tip:</span> Scroll or collapse to save space
                   </p>
-                </div>
+                </div> */}
               </motion.div>
             )}
           </AnimatePresence>
@@ -127,7 +128,7 @@ export default function FloatingAddContent({ addField, selectedLesson }) {
               {isExpanded ? (
                 <ChevronLeft className="w-6 h-6" />
               ) : (
-                <Sparkles className="w-6 h-6" />
+                <Plus className="w-6 h-6" />
               )}
             </motion.div>
           </motion.button>
@@ -139,7 +140,7 @@ export default function FloatingAddContent({ addField, selectedLesson }) {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 10 }}
               transition={{ delay: 0.1 }}
-              className="absolute right-20 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white px-3 py-1.5 rounded-lg whitespace-nowrap text-sm font-semibold shadow-xl pointer-events-none"
+              className="absolute right-16 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white px-3 py-1.5 rounded-lg whitespace-nowrap text-sm font-semibold shadow-xl pointer-events-none"
             >
               Add Content
               <div className="absolute right-0 top-1/2 transform translate-x-2 -translate-y-1/2 border-l-8 border-t-4 border-b-4 border-l-gray-900 border-t-transparent border-b-transparent"></div>

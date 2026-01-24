@@ -53,10 +53,10 @@ export default function StudentSidebar({
                 const isCompleted = completedSet.has(String(lesson.id))
                 const isActive = String(currentLessonId) === String(lesson.id)
                 
-                // In preview mode, lock lessons that aren't marked as preview
+                // In preview mode, all lessons should be accessible
                 // In student mode, lock lessons if not enrolled
-                const isLocked = isPreviewMode 
-                  ? !lesson.isPreview 
+                const isLocked = isPreviewMode
+                  ? false
                   : (!isEnrolled && !lesson.isPreview)
                 
                 return (

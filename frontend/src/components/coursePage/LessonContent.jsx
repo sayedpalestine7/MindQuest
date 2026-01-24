@@ -61,7 +61,6 @@ export default function LessonContent({
         <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 mb-4">
           <p className="text-sm text-blue-800">
             <span className="font-semibold">Preview Mode</span> - This is how students will see this lesson
-            {!lesson.isPreview && " (locked for non-enrolled students)"}
           </p>
         </div>
       )}

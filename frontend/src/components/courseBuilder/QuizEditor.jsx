@@ -82,7 +82,8 @@ export default function QuizEditor({
                             <div className="mt-3">
                                 <Button
                                     onClick={addQuizQuestion}
-                                    className="w-full gap-2 bg-yellow-600 hover:bg-yellow-700 text-white shadow-md hover:shadow-lg transition-all"
+                                    className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white shadow-md hover:shadow-lg transition-all"
+                                    variant="defualt"
                                 >
                                     <Plus className="w-4 h-4" />
                                     Add Quiz Question
@@ -298,18 +299,18 @@ export default function QuizEditor({
                         <p className="text-sm text-gray-600 mb-4 max-w-sm mx-auto">
                             Test your students' understanding with a variety of question types: Multiple Choice, True/False, and Short Answer.
                         </p>
-                        <p className="text-xs text-gray-500">👆 Click "Add Quiz Question" above to create your first question</p>
+                        <p className="text-xs text-gray-500">Click "Add Quiz Question" above to create your first question</p>
                     </div>
                 )}
             </div>
 
             {/* Workflow Navigation */}
             <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">
-              <p className="text-sm text-gray-600">✅ <span className="font-semibold">Quiz ready?</span> Go back to edit lessons or save your course.</p>
+              <p className="text-sm text-gray-600"><span className="font-semibold">Quiz ready?</span> Go back to edit lessons or save your course.</p>
               <Button
                 onClick={onNavigateToLessons}
-                variant="outline"
-                className="gap-2 text-gray-700 hover:bg-blue-50"
+                variant="defualt"
+                className="gap-2 text-white bg-amber-600 hover:bg-amber-700"
               >
                 <BookOpen className="w-4 h-4" />
                 Back to Lessons

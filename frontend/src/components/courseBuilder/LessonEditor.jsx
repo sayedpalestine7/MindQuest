@@ -83,7 +83,7 @@ export default function LessonEditor({
         {/* Fields List */}
         <div className="space-y-4">
           {selectedLesson.fields.length === 0 ? (
-            <div className="text-center py-16 px-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border-2 border-dashed border-gray-300">
+            <div className="text-center py-16 px-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
                 <BookOpen className="w-8 h-8 text-blue-600" />
               </div>
@@ -91,7 +91,7 @@ export default function LessonEditor({
               <p className="text-sm text-gray-600 mb-4 max-w-sm mx-auto">
                 Add content blocks to create engaging educational material. You can mix text, images, videos, code, and interactive elements!
               </p>
-              <p className="text-xs text-gray-500">👆 Pick a content type above to begin</p>
+              <p className="text-xs text-gray-500">Pick a content type above to begin</p>
             </div>
           ) : (
             selectedLesson.fields.map((field) => (
@@ -140,7 +140,7 @@ export default function LessonEditor({
 
         {/* Workflow Navigation */}
         <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">
-          <p className="text-sm text-gray-600">📚 <span className="font-semibold">Lessons done?</span> Create a quiz to test your students.</p>
+          <p className="text-sm text-gray-600"><span className="font-semibold">Lessons done?</span> Create a quiz to test your students.</p>
           <Button
             onClick={onNavigateToQuiz}
             className="gap-2 bg-blue-600 hover:from-blue-600 hover:to-blur-700 text-white shadow-md hover:shadow-lg transition-all"

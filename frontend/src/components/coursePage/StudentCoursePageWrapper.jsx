@@ -640,7 +640,7 @@ export default function StudentCoursePageWrapper({
   // Get effective user for header
   const effectiveUser = isPreviewMode ? previewUser : user
   
-  // In preview mode, treat as enrolled for UI purposes but respect lesson locks
+  // In preview mode, treat as enrolled for UI purposes
   const effectiveEnrollment = isPreviewMode ? true : isEnrolled
   
   return (
@@ -648,14 +648,16 @@ export default function StudentCoursePageWrapper({
       {!hideHeader && (
         <>
           <AppHeader subtitle={course?.title || "Course"} />
-          <StudentHeader
-            courseTitle={course?.title}
-            progress={progress}
-            onRestart={handleRestartCourse}
-            userAvatar={effectiveUser?.profileImage || effectiveUser?.avatar}
-            userName={effectiveUser?.name}
-            userId={effectiveUser?._id}
-          />
+          {!isPreviewMode && (
+            <StudentHeader
+              courseTitle={course?.title}
+              progress={progress}
+              onRestart={handleRestartCourse}
+              userAvatar={effectiveUser?.profileImage || effectiveUser?.avatar}
+              userName={effectiveUser?.name}
+              userId={effectiveUser?._id}
+            />
+          )}
         </>
       )}
       
