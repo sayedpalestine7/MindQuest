@@ -56,7 +56,7 @@ export default function CourseInfo({ course, setCourse, handleImageUpload }) {
                     <img
                       src={course.thumbnail}
                       alt="Thumbnail preview"
-                      className="w-full max-h-64 object-cover rounded-lg border-2 border-gray-300 shadow-sm hover:shadow-md transition-shadow"
+                      className="h-48 w-96 object-cover rounded-lg border-2 border-gray-300 shadow-sm hover:shadow-md transition-shadow"
                     />
                   ) : (
                     <div className="w-full h-36 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center hover:border-gray-400 transition-colors">

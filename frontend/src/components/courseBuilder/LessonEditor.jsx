@@ -14,6 +14,7 @@ import {
   GripVertical,
   ChevronRight,
   Table as TableIcon,
+  Maximize2,
 } from "lucide-react"
 import { Button, Input, Textarea, Select, Card } from "./UI"
 import AnimationSelector from "./AnimationSelector"
@@ -341,15 +342,8 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
               Selected: {field.content}
             </p>
           )}
-          {field.htmlContent && (
-            <div className="mt-3 rounded-lg border-2 border-gray-300 overflow-hidden">
-              <iframe
-                srcDoc={field.htmlContent}
-                className="w-full min-h-[500px] bg-white"
-                title={`${field.type} preview`}
-                sandbox="allow-scripts"
-              />
-            </div>
+          {field.content && (
+            <MiniGamePreview src={field.content} title={`${field.type} preview`} />
           )}
         </div>
       )
@@ -365,6 +359,41 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
     default:
       return null
   }
+}
+
+function MiniGamePreview({ src, title }) {
+  const iframeRef = useRef(null)
+
+  const handleFullscreen = () => {
+    const el = iframeRef.current
+    if (!el) return
+    const request = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen
+    if (request) request.call(el)
+  }
+
+  return (
+    <div className="mt-3 rounded-lg border-2 border-gray-300 overflow-hidden relative">
+      <div className="absolute bottom-2 right-2 z-10">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={handleFullscreen}
+          className="bg-black/60 hover:bg-black/75 text-white border border-white/20 shadow-sm h-9 w-9 p-0"
+          aria-label="Full screen"
+        >
+          <Maximize2 className="w-4 h-4" />
+        </Button>
+      </div>
+      <iframe
+        ref={iframeRef}
+        src={src}
+        className="w-full min-h-[500px] bg-white"
+        title={title}
+        sandbox="allow-scripts"
+        allow="fullscreen"
+      />
+    </div>
+  )
 }
 
 /* --- Table Editor Component --- */

@@ -1,11 +1,12 @@
 // /src/components/PreviewModal.jsx
-import React from "react"
+import React, { useRef } from "react"
 import {
   X,
   Eye,
   BookOpen,
   Youtube,
   HelpCircle,
+  Maximize2,
 } from "lucide-react"
 import AnimationRenderer from "../coursePage/AnimationRenderer"
 import { Card, Button } from "./UI"
@@ -166,13 +167,33 @@ function FieldPreview({ field }) {
       )
 
     case "minigame":
+      const iframeRef = useRef(null)
+      const handleFullscreen = () => {
+        const el = iframeRef.current
+        if (!el) return
+        const request = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen
+        if (request) request.call(el)
+      }
       return (
-        <div className="rounded-lg border-2 border-gray-300 overflow-hidden">
+        <div className="rounded-lg border-2 border-gray-300 overflow-hidden relative">
+          <div className="absolute bottom-2 right-2 z-10">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleFullscreen}
+              className="bg-black/60 hover:bg-black/75 text-white border border-white/20 shadow-sm h-9 w-9 p-0"
+              aria-label="Full screen"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </Button>
+          </div>
           <iframe
-            srcDoc={field.htmlContent}
+            ref={iframeRef}
+            src={field.content}
             className="w-full min-h-[600px] bg-white"
             title="Mini-game"
             sandbox="allow-scripts"
+            allow="fullscreen"
           />
         </div>
       )

@@ -12,8 +12,8 @@ const uploadMiddleware = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (![".jpg", ".jpeg", ".png", ".gif", ".pdf"].includes(ext)) {
-      return cb(new Error("Only image or PDF files are allowed"));
+    if (![".jpg", ".jpeg", ".png", ".gif", ".pdf", ".html", ".htm"].includes(ext)) {
+      return cb(new Error("Only image, PDF, or HTML files are allowed"));
     }
     cb(null, true);
   },
@@ -28,7 +28,18 @@ const handleMulterAny = (req, res, next) => {
 };
 
 // Upload a file - accepts file in any field name
-router.post("/", uploadMiddleware.any(), handleMulterAny, uploadFile);
+const uploadAny = uploadMiddleware.any();
+router.post("/", (req, res, next) => {
+  uploadAny(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || "File upload failed",
+      });
+    }
+    handleMulterAny(req, res, () => uploadFile(req, res, next));
+  });
+});
 
 // Get image by ID from database
 router.get("/:imageId", getImage);

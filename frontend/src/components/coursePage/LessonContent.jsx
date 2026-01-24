@@ -1,5 +1,5 @@
 // /src/components/LessonContent.jsx
-import React, { useState } from "react"
+import React, { useState, useRef } from "react"
 import {
   ImageIcon,
   Youtube,
@@ -9,6 +9,7 @@ import {
   Sparkles,
   CheckCircle2,
   XCircle,
+  Maximize2,
 } from "lucide-react"
 import axios from "axios"
 import { Card, Button, Textarea, Input, Select } from "../courseBuilder/UI"
@@ -238,13 +239,33 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit, onAnswerChange
       )
 
     case "minigame":
+      const iframeRef = useRef(null)
+      const handleFullscreen = () => {
+        const el = iframeRef.current
+        if (!el) return
+        const request = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen
+        if (request) request.call(el)
+      }
       return (
-        <div className="rounded-lg border-2 border-gray-300 overflow-hidden">
+        <div className="rounded-lg border-2 border-gray-300 overflow-hidden relative">
+          <div className="absolute bottom-2 right-2 z-10">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleFullscreen}
+              className="bg-black/60 hover:bg-black/75 text-white border border-white/20 shadow-sm h-9 w-9 p-0"
+              aria-label="Full screen"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </Button>
+          </div>
           <iframe
-            srcDoc={field.htmlContent}
+            ref={iframeRef}
+            src={field.content}
             className="w-full min-h-[500px] bg-white"
             title={field.type}
             sandbox="allow-scripts"
+            allow="fullscreen"
           />
         </div>
       )
