@@ -53,11 +53,11 @@ export default function LeftPanel({
             icon: <HelpCircle className="w-4 h-4" />,
             badge: course.finalQuiz?.questions?.length || 0,
         },
-        // {
-        //     id: "ai",
-        //     label: "AI Tools",
-        //     icon: <Sparkles className="w-4 h-4" />,
-        // },
+        {
+            id: "ai",
+            label: "AI Tools",
+            icon: <Sparkles className="w-4 h-4" />,
+        },
     ]
 
     return (
@@ -204,11 +204,11 @@ export default function LeftPanel({
                     </div>
                 )}
 
-                {/* {activeTab === "ai" && (
+                {activeTab === "ai" && (
                     <div className="h-full overflow-y-auto p-4">
                         
                     </div>
-                )} */}
+                )}
             </div>
         </div>
     )

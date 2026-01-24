@@ -77,7 +77,7 @@ function LoginForm() {
       login(data.user, data.token);
       localStorage.setItem("userId", data.user._id);
 
-      toast.success(`Welcome back, ${data.user.name}! 👋`);
+      toast.success(`Welcome back, ${data.user.name}!`);
 
       // Redirect after login
       if (data.user.role === "teacher") {
@@ -121,7 +121,7 @@ const handleGoogleSignIn = async () => {
     login(data.user, data.token);
     localStorage.setItem("userId", data.user._id);
 
-    toast.success(`Welcome back, ${data.user.name}! 👋`);
+    toast.success(`Welcome back, ${data.user.name}!`);
 
     // 4️⃣ Redirect
     if (data.user.role === "teacher") {
