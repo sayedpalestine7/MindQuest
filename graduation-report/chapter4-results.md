@@ -120,24 +120,29 @@ This section articulates the principal capabilities exposed to teaching staff wi
 
 ### 4.3.2 Uploading Animations
 
-- User interaction: Teachers upload animation files or reference external media through the course/lesson editor. The UI provides progress indicators, metadata fields (caption, license, accessibility notes), and options for in-place previewing.
-- User interaction: Teachers upload animations through the authoring and studio interfaces and attach them to lessons. In addition, the course builder includes an AI-assisted HTML generation tool that produces lesson-ready interactive HTML content (previewable and downloadable) which can be inserted into a lesson as an embedded field.
+- User interaction: Teachers add animations to lessons either by uploading files / referencing external media in the authoring interface, or by creating assets in the Animation Studio and attaching them to lesson content. The UI provides progress indicators, basic metadata fields, and in-place previewing to ensure correctness before publishing. In addition, the course builder includes an AI-assisted HTML generation tool that produces lesson-ready interactive HTML content (previewable and downloadable) which can be inserted into a lesson as an embedded field.
 - Backend handling and storage: Uploaded assets are accepted through dedicated endpoints and stored as persistent animation documents. For AI-generated HTML, the frontend requests HTML content from an automation webhook and stores it in the course draft as lesson field content (using an embeddable HTML payload) without requiring a separate media upload step.
 - Admin/teacher controls: Access controls determine which assets are sharable across courses. Administrators may configure storage quotas, content retention policies, and automated checks for intellectual property compliance.
 
-### 4.3.3 Creating Quizzes
+### 4.3.3 Animation Studio (Authoring Interactive Visualisations)
+
+- User interaction: The studio provides a dedicated workspace for designing algorithm visualisations. Teachers create and edit animations using a timeline- and canvas-based editor, define stages/steps and transitions, preview playback, and iteratively refine artefacts until they are suitable for embedding in a lesson. Saved animations can subsequently be selected in the course builder and attached to lesson fields, enabling reuse across multiple lessons or courses.
+- Backend handling and storage: Studio saves are transmitted as authenticated requests that contain the animation structure (e.g., stages, scene components, and editor metadata). The backend persists the animation as a document associated with the teacher identity and updates modification timestamps to support version recency. Retrieval endpoints allow the studio and course builder to list a teacher’s saved animations, fetch individual animations for editing/preview, and update or delete assets as part of normal content lifecycle management.
+- Admin/teacher controls: Edit and deletion operations are restricted to the owning teacher (and administrators where applicable). Administrative policy may enforce moderation requirements (e.g., review before publication) or apply retention/size limits. The platform can surface audit-relevant metadata (creator, last updated time) to support traceability when animations are reused across lessons.
+
+### 4.3.4 Creating Quizzes
 
 - User interaction: Teachers author quizzes inside the course builder and may optionally use AI assistance to generate draft questions from a topic. The implemented AI flow supports the question types used by the system (e.g., MCQ, True/False, short-answer), and the UI can either insert generated questions locally into the current draft or persist them directly into the course quiz.
 - Backend handling and storage: Quiz definitions and question banks are stored as structured records linked to a course. AI generation can be performed either through an external automation webhook (for rapid iteration during authoring) or via a protected backend endpoint that calls the AI service and returns normalized question objects. When persistence is requested, a protected import endpoint validates and normalizes generated questions before inserting them into the question bank and attaching them to an existing (or newly created) quiz.
 - Admin/teacher controls: Teachers retain control over editing, ordering, and deleting generated questions. Server-side validation enforces minimum option counts for MCQs and requires an explicit correct answer before generated questions can be persisted.
 
-### 4.3.4 Monitoring Student Progress
+### 4.3.5 Monitoring Student Progress
 
 - User interaction: Teachers access dashboards and detailed student views showing enrolment lists, completion rates, per-student assessment attempts, and heatmaps of concept mastery. Interfaces support filtering, cohort comparisons, and ad hoc drill-down into attempt-level data.
 - Backend handling and storage: Monitoring relies on aggregated artefacts derived from event logs (lesson visits, media interactions), assessment attempts, and instructor-evaluated items. Aggregation pipelines compute derived metrics (completion percentages, mastery estimations, time-on-task) that are cached for responsive retrieval and historical analysis.
 - Admin/teacher controls: Teachers may flag students for intervention, assign remedial content, or adjust course pacing. Administrators can export reports for institutional review and configure thresholds that trigger automated notifications to students or staff.
 
-### 4.3.5 High-level Interaction Flow (Teacher)
+### 4.3.6 High-level Interaction Flow (Teacher)
 
 The sequence below summarises the typical teacher workflow for authoring, publishing, and monitoring:
 
@@ -148,9 +153,9 @@ sequenceDiagram
 	participant Backend
 	participant Database
 
-	Teacher->>Frontend: Create course / Upload animation / Author quiz
+	Teacher->>Frontend: Create course / Use studio or upload animation / Author quiz
 	Frontend->>Backend: Authenticated authoring request
-	Backend->>Database: Persist course/lesson/asset/quiz records
+	Backend->>Database: Persist course/lesson/animation/quiz records
 	Backend->>Frontend: Confirmation / preview link
 	Teacher->>Frontend: Publish / Schedule
 	Backend->>Database: Update lifecycle state (published)
@@ -164,6 +169,7 @@ sequenceDiagram
 ### Implementation Pointers
 
 - Representative controller files: [backend/src/controllers/courseController.js](backend/src/controllers/courseController.js), [backend/src/controllers/lessonController.js](backend/src/controllers/lessonController.js), [backend/src/controllers/animationController.js](backend/src/controllers/animationController.js), [backend/src/controllers/uploadController.js](backend/src/controllers/uploadController.js), [backend/src/controllers/quizController.js](backend/src/controllers/quizController.js), [backend/src/controllers/progressController.js](backend/src/controllers/progressController.js), [backend/src/controllers/reportController.js](backend/src/controllers/reportController.js), [backend/src/controllers/teacherController.js](backend/src/controllers/teacherController.js)
+- Studio (animation authoring UI) and persistence: [frontend/src/pages/AnimationStudio.jsx](frontend/src/pages/AnimationStudio.jsx), [frontend/src/components/Studio/CanvasStudio.jsx](frontend/src/components/Studio/CanvasStudio.jsx), [backend/src/routes/animationRoutes.js](backend/src/routes/animationRoutes.js), [backend/src/controllers/animationController.js](backend/src/controllers/animationController.js), [backend/src/models/mongo/animation.js](backend/src/models/mongo/animation.js)
 - AI services and endpoints: [backend/src/services/aiService.js](backend/src/services/aiService.js) (server-side generation), [backend/src/routes/courseRoutes.js](backend/src/routes/courseRoutes.js) (`/generate-quiz`, `/import-questions`)
 - Frontend course builder (AI tools): [frontend/src/pages/TeacherCourseBuilder.jsx](frontend/src/pages/TeacherCourseBuilder.jsx), [frontend/src/services/courseService.js](frontend/src/services/courseService.js), [frontend/src/components/courseBuilder/AIGenerateModal.jsx](frontend/src/components/courseBuilder/AIGenerateModal.jsx), [frontend/src/components/courseBuilder/AIHtmlGenerateModal.jsx](frontend/src/components/courseBuilder/AIHtmlGenerateModal.jsx), [frontend/src/components/courseBuilder/HtmlPreviewModal.jsx](frontend/src/components/courseBuilder/HtmlPreviewModal.jsx)
 - Persistence and schema: [backend/prisma/schema.prisma](backend/prisma/schema.prisma), [backend/src/prisma/client.js](backend/src/prisma/client.js)

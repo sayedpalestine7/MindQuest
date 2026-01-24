@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
+import { Facebook, Linkedin, Twitter, Github, Globe, Instagram, Youtube, Mail, Phone } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import courseService from "../services/courseService";
 import DashboardLayout from "../components/profiles/teacher/DashboardLayout";
@@ -12,6 +13,67 @@ import ExpertiseTags from "../components/profiles/treacherInfo/ExpertiseTags";
 import CoursesList from "../components/profiles/treacherInfo/CoursesList";
 import ReviewsList from "../components/profiles/treacherInfo/ReviewsList";
 import Header from "../components/profiles/treacherInfo/Header";
+
+// Helper function to detect link type and return appropriate icon
+const getLinkIcon = (url) => {
+  const urlLower = url.toLowerCase();
+  
+  // Email detection
+  if (urlLower.startsWith('mailto:') || (urlLower.includes('@') && !urlLower.includes('/'))) {
+    return { Icon: Mail, color: 'text-red-600 hover:text-red-700', name: 'Email' };
+  }
+  
+  // Phone detection
+  if (urlLower.startsWith('tel:')) {
+    return { Icon: Phone, color: 'text-green-600 hover:text-green-700', name: 'Phone' };
+  }
+  
+  // Social media platforms
+  if (urlLower.includes('facebook.com') || urlLower.includes('fb.com')) {
+    return { Icon: Facebook, color: 'text-blue-600 hover:text-blue-700', name: 'Facebook' };
+  }
+  if (urlLower.includes('linkedin.com')) {
+    return { Icon: Linkedin, color: 'text-blue-700 hover:text-blue-800', name: 'LinkedIn' };
+  }
+  if (urlLower.includes('twitter.com') || urlLower.includes('x.com')) {
+    return { Icon: Twitter, color: 'text-sky-500 hover:text-sky-600', name: 'Twitter/X' };
+  }
+  if (urlLower.includes('github.com')) {
+    return { Icon: Github, color: 'text-gray-800 hover:text-gray-900', name: 'GitHub' };
+  }
+  if (urlLower.includes('instagram.com')) {
+    return { Icon: Instagram, color: 'text-pink-600 hover:text-pink-700', name: 'Instagram' };
+  }
+  if (urlLower.includes('youtube.com') || urlLower.includes('youtu.be')) {
+    return { Icon: Youtube, color: 'text-red-600 hover:text-red-700', name: 'YouTube' };
+  }
+  
+  return { Icon: Globe, color: 'text-gray-600 hover:text-gray-700', name: 'Website' };
+};
+
+// Helper to normalize links (add https:// if needed, handle mailto: and tel:)
+const normalizeLink = (link) => {
+  const trimmed = link.trim();
+  
+  // Already has protocol
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || 
+      trimmed.startsWith('mailto:') || trimmed.startsWith('tel:')) {
+    return trimmed;
+  }
+  
+  // Email without mailto:
+  if (trimmed.includes('@') && !trimmed.includes('/')) {
+    return `mailto:${trimmed}`;
+  }
+  
+  // Phone-like pattern (contains mostly digits, +, -, (), spaces)
+  if (/^[\d\s\+\-\(\)]+$/.test(trimmed)) {
+    return `tel:${trimmed.replace(/\s/g, '')}`;
+  }
+  
+  // Website - add https://
+  return trimmed.startsWith('www.') ? `https://${trimmed}` : `https://${trimmed}`;
+};
 
 export default function TeacherPage() {
   const { id } = useParams();
@@ -235,6 +297,41 @@ export default function TeacherPage() {
                       <span className="text-slate-500 font-medium min-w-[100px]">Reviews:</span>
                       <span className="text-slate-700">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</span>
                     </div>
+                    
+                    {/* Social Links / Contact Links */}
+                    {teacher.link && (() => {
+                      const links = String(teacher.link)
+                        .split(/[,\s]+/)
+                        .map((l) => l.trim())
+                        .filter(Boolean);
+
+                      if (links.length === 0) return null;
+
+                      return (
+                        <div className="pt-3 mt-3 border-t border-slate-200">
+                          <span className="text-slate-500 font-medium block mb-2">Connect:</span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {links.map((link, idx) => {
+                              const { Icon, color, name } = getLinkIcon(link);
+                              const fullUrl = normalizeLink(link);
+                              
+                              return (
+                                <a
+                                  key={`${link}-${idx}`}
+                                  href={fullUrl}
+                                  target={fullUrl.startsWith('mailto:') || fullUrl.startsWith('tel:') ? '_self' : '_blank'}
+                                  rel={fullUrl.startsWith('http') ? 'noopener noreferrer' : undefined}
+                                  className={`inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 transition-all ${color}`}
+                                  title={name}
+                                >
+                                  <Icon size={18} />
+                                </a>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
