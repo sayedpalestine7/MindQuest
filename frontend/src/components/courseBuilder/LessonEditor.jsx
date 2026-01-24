@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Table as TableIcon,
   Maximize2,
+  Download,
 } from "lucide-react"
 import { Button, Input, Textarea, Select, Card } from "./UI"
 import AnimationSelector from "./AnimationSelector"
@@ -22,6 +23,8 @@ import FloatingAddContent from "./FloatingAddContent"
 import { useStickyVisibility } from "../../hooks/useStickyVisibility"
 import { TextAreaInput, FileInput } from "./FieldInputs"
 import { RichTextInput } from "./RichTextInput"
+import { downloadHtml } from "../../utils/courseBuilderUtils"
+import toast from "react-hot-toast"
 
 export default function LessonEditor({
   selectedLesson,
@@ -343,7 +346,28 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
             </p>
           )}
           {field.content && (
-            <MiniGamePreview src={field.content} title={`${field.type} preview`} />
+            <>
+              <MiniGamePreview src={field.content} title={`${field.type} preview`} />
+              {field.htmlContent && (
+                <Button
+                  onClick={() => {
+                    try {
+                      downloadHtml(
+                        field.htmlContent, 
+                        field.htmlFilename || 'animation.html'
+                      )
+                      toast.success('HTML file downloaded')
+                    } catch (err) {
+                      toast.error('Failed to download HTML')
+                    }
+                  }}
+                  className="w-full gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  <Download className="w-4 h-4" />
+                  Download HTML
+                </Button>
+              )}
+            </>
           )}
         </div>
       )

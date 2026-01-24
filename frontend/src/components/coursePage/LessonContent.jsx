@@ -10,10 +10,13 @@ import {
   CheckCircle2,
   XCircle,
   Maximize2,
+  Download,
 } from "lucide-react"
 import axios from "axios"
 import { Card, Button, Textarea, Input, Select } from "../courseBuilder/UI"
 import AnimationRenderer from "./AnimationRenderer"
+import { downloadHtml } from "../../utils/courseBuilderUtils"
+import toast from "react-hot-toast"
 
 export default function LessonContent({
   lesson,
@@ -246,26 +249,49 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit, onAnswerChange
         if (request) request.call(el)
       }
       return (
-        <div className="rounded-lg border-2 border-gray-300 overflow-hidden relative">
-          <div className="absolute bottom-2 right-2 z-10">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleFullscreen}
-              className="bg-black/60 hover:bg-black/75 text-white border border-white/20 shadow-sm h-9 w-9 p-0"
-              aria-label="Full screen"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </Button>
+        <div className="space-y-2">
+          <div className="rounded-lg border-2 border-gray-300 overflow-hidden relative">
+            <div className="absolute bottom-2 right-2 z-10 flex gap-2">
+              {field.htmlContent && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    try {
+                      downloadHtml(
+                        field.htmlContent,
+                        field.htmlFilename || 'animation.html'
+                      )
+                      toast.success('HTML file downloaded')
+                    } catch (err) {
+                      toast.error('Failed to download HTML')
+                    }
+                  }}
+                  className="bg-purple-600/90 hover:bg-purple-700 text-white border border-white/20 shadow-sm h-9 px-3"
+                  aria-label="Download HTML"
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleFullscreen}
+                className="bg-black/60 hover:bg-black/75 text-white border border-white/20 shadow-sm h-9 w-9 p-0"
+                aria-label="Full screen"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </Button>
+            </div>
+            <iframe
+              ref={iframeRef}
+              src={field.content}
+              className="w-full min-h-[500px] bg-white"
+              title={field.type}
+              sandbox="allow-scripts"
+              allow="fullscreen"
+            />
           </div>
-          <iframe
-            ref={iframeRef}
-            src={field.content}
-            className="w-full min-h-[500px] bg-white"
-            title={field.type}
-            sandbox="allow-scripts"
-            allow="fullscreen"
-          />
         </div>
       )
 

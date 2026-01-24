@@ -304,3 +304,32 @@ export const sanitizeQuizForAPI = (quiz) => {
     points: quiz.points || 100,
   };
 };
+
+/**
+ * Download HTML content as a file
+ * @param {string} htmlContent - The HTML content to download
+ * @param {string} filename - The filename (defaults to 'animation.html')
+ */
+export const downloadHtml = (htmlContent, filename = 'animation.html') => {
+  try {
+    // Create a blob from the HTML content
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    
+    // Create a temporary URL for the blob
+    const url = URL.createObjectURL(blob);
+    
+    // Create a temporary anchor element and trigger download
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    
+    // Cleanup
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error downloading HTML:', error);
+    throw new Error('Failed to download HTML file');
+  }
+};

@@ -1,6 +1,6 @@
 // /src/components/courseBuilder/LeftPanel.jsx
 import React, { useState } from "react"
-import { BookMarked, HelpCircle, Sparkles } from "lucide-react"
+import { BookMarked, HelpCircle, Sparkles, Code2 } from "lucide-react"
 import TabNavigation from "./TabNavigation"
 import Sidebar from "./Sidebar"
 
@@ -33,6 +33,7 @@ export default function LeftPanel({
     updateQuizSettings,
     // AI Tools props
     onOpenAIGenerate,
+    onOpenAIHtmlGenerate,
     isGenerating,
     // Tab control
     activeTab = "lessons",
@@ -206,7 +207,107 @@ export default function LeftPanel({
 
                 {activeTab === "ai" && (
                     <div className="h-full overflow-y-auto p-4">
-                        
+                        <div className="space-y-4">
+                            {/* AI Quiz Generation */}
+                            <div className="p-4 rounded-lg border-2 border-gray-200">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                                        <Sparkles className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">
+                                            AI Quiz Generation
+                                        </h3>
+                                        <p className="text-sm text-gray-700 mb-4">
+                                            Automatically generate quiz questions from your course content using AI.
+                                        </p>
+                                        <button
+                                            onClick={onOpenAIGenerate}
+                                            disabled={isGenerating}
+                                            className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                                        >
+                                            {isGenerating ? (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    Generating...
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <Sparkles className="w-4 h-4" />
+                                                    Generate Questions
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* AI HTML Generation */}
+                            <div className="p-4 rounded-lg border-2 border-gray-200">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center flex-shrink-0">
+                                        <Code2 className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2">
+                                            AI HTML Animation
+                                        </h3>
+                                        <p className="text-sm text-gray-700 mb-4">
+                                            Generate interactive HTML visualizations and animations for your lessons.
+                                        </p>
+                                        <button
+                                            onClick={onOpenAIHtmlGenerate}
+                                            disabled={isGenerating}
+                                            className="w-full px-4 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                                        >
+                                            {isGenerating ? (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    Generating...
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <Code2 className="w-4 h-4" />
+                                                    Generate HTML
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* AI Features List */}
+                            <div className="space-y-3">
+                                <h4 className="text-sm font-semibold text-gray-700">AI Features:</h4>
+                                <div className="space-y-2">
+                                    {[
+                                        "Quiz questions with multiple types",
+                                        "Interactive HTML animations",
+                                        "Topic-based generation",
+                                        "Instant preview and editing",
+                                    ].map((feature, idx) => (
+                                        <div key={idx} className="flex items-start gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <svg
+                                                    className="w-3 h-3 text-green-600"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M5 13l4 4L19 7"
+                                                    />
+                                                </svg>
+                                            </div>
+                                            <p className="text-sm text-gray-600">{feature}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

@@ -247,6 +247,7 @@ export const useCourseBuilder = (courseId) => {
       )
     );
     toast.success(`${type} block added`);
+    return newField.id; // Return the field ID so caller can update it
   };
 
   const deleteField = (fieldId) => {
