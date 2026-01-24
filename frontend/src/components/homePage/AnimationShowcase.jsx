@@ -17,7 +17,7 @@ export default function AnimationShowcase() {
   // ========== CONFIGURATION: Select animations to showcase ==========
   // Add your animation IDs here to display them on the homepage
   const FEATURED_ANIMATION_IDS = [
-    "69641d7e6bed96066c5e9ce1",  // Example: Sorting Algorithm Animation
+    "69750d58d5ff4535efb7e055",  // Example: Sorting Algorithm Animation
     "693824017097b18472cbfd9a",  // Example: Binary Tree Traversal
     "693823717097b18472cbfd98",  // Example: Graph BFS/DFS
   ]

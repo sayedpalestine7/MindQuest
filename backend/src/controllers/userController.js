@@ -255,3 +255,26 @@ export const addSavedObject = async (req, res) => {
     res.status(500).json({ message: "Failed to save object" });
   }
 };
+
+export const deleteSavedObject = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const savedId = req.params.savedId;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const before = (user.savedObjects || []).length;
+    user.savedObjects = (user.savedObjects || []).filter(s => s.id !== savedId);
+    const after = (user.savedObjects || []).length;
+
+    if (before === after) {
+      return res.status(404).json({ message: 'Saved object not found' });
+    }
+
+    await user.save();
+    res.json({ message: 'Saved object deleted', id: savedId });
+  } catch (err) {
+    console.error('Error deleting saved object:', err);
+    res.status(500).json({ message: 'Failed to delete saved object' });
+  }
+};

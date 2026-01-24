@@ -21,6 +21,7 @@ const fieldSchema = new mongoose.Schema(
         // If migrated from a Question doc, keep reference for audit/rollback
         migratedFromQuestionId: { type: mongoose.Schema.Types.ObjectId, ref: "Question", default: null },
         animationId: { type: mongoose.Schema.Types.ObjectId, ref: "Animation" }, // Reference to saved animation
+        animationPreviewMode: { type: String, enum: ["start-stop", "loop"], default: "start-stop" },
         order: { type: Number, default: 0 },
     },
     { timestamps: true }

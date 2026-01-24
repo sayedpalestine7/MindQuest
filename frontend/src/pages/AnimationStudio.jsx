@@ -45,6 +45,7 @@ export default function AnimationStudio() {
   const [connections, setConnections] = useState([]);
   const [savedObjects, setSavedObjects] = useState([]);
   const [isLoadingSavedObjects, setIsLoadingSavedObjects] = useState(false);
+  const [deleteMergedFromLibrary, setDeleteMergedFromLibrary] = useState(false);
 
   const animationRef = useRef(null);
   const canvasRef = useRef(null);
@@ -211,15 +212,36 @@ export default function AnimationStudio() {
       const newObj = {
         ...savedObject,
         id: `obj_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-        name: `${savedObject.name}_copy`
+        name: `${savedObject.name}_copy`,
+        _sourceSavedId: savedObject.id
       };
       setObjects(prev => [...prev, newObj]);
       setSelectedIds([newObj.id]);
       setSelectedTransitionIndex(0);
       return;
     }
-    const overrides = buildOverridesFromSaved(savedObject);
-    addObject(savedObject.type, 0, overrides, savedObject.name);
+    // Create a canvas object that preserves the saved transitions and tracks source saved id
+    const newObj = {
+      id: `obj_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      name: `${savedObject.name}_copy`,
+      type: savedObject.type,
+      transitions: (savedObject.transitions || []).map(t => ({ ...t })),
+      _sourceSavedId: savedObject.id
+    };
+    setObjects(prev => [...prev, newObj]);
+    setSelectedIds([newObj.id]);
+    setSelectedTransitionIndex(0);
+  };
+
+  const deleteSavedObject = async (savedId) => {
+    const userId = localStorage.getItem('userId');
+    if (!userId || !savedId) return;
+    try {
+      await axios.delete(`http://localhost:5000/api/admin/users/${userId}/saved-objects/${savedId}`);
+      setSavedObjects(prev => prev.filter(s => s.id !== savedId));
+    } catch (err) {
+      console.error('Failed to delete saved object', err);
+    }
   };
 
   const getTransitionSnapshot = (obj) => {
@@ -307,16 +329,6 @@ export default function AnimationStudio() {
       return;
     }
 
-    const intersectLeft = Math.max(...boundsList.map(b => b.bounds.left));
-    const intersectRight = Math.min(...boundsList.map(b => b.bounds.right));
-    const intersectTop = Math.max(...boundsList.map(b => b.bounds.top));
-    const intersectBottom = Math.min(...boundsList.map(b => b.bounds.bottom));
-
-    if (intersectRight <= intersectLeft || intersectBottom <= intersectTop) {
-      setSaveMessage('✗ Selected objects must overlap to merge');
-      return;
-    }
-
     const unionLeft = Math.min(...boundsList.map(b => b.bounds.left));
     const unionRight = Math.max(...boundsList.map(b => b.bounds.right));
     const unionTop = Math.min(...boundsList.map(b => b.bounds.top));
@@ -329,7 +341,9 @@ export default function AnimationStudio() {
 
     const mergedNameBase = 'Merged';
     const mergedCount = objects.filter(o => o.name?.startsWith(`${mergedNameBase}_`)).length + 1;
-    const mergedName = `${mergedNameBase}_${mergedCount}`;
+    const defaultMergedName = `${mergedNameBase}_${mergedCount}`;
+    const userProvidedName = prompt('Enter a name for the merged object:', defaultMergedName);
+    const mergedName = (userProvidedName && userProvidedName.trim()) ? userProvidedName.trim() : defaultMergedName;
 
     const mergedTransition = {
       startTime: 0,
@@ -404,6 +418,19 @@ export default function AnimationStudio() {
           setSavedObjects(prev => [...prev, response.data]);
         }
         setSaveMessage('✓ Merged and saved to your library');
+
+        // If user requested, delete original saved items from their library
+        if (deleteMergedFromLibrary) {
+          const savedIdsToDelete = selected.map(s => s._sourceSavedId).filter(Boolean);
+          for (const sid of savedIdsToDelete) {
+            try {
+              await axios.delete(`http://localhost:5000/api/admin/users/${userId}/saved-objects/${sid}`);
+              setSavedObjects(prev => prev.filter(s => s.id !== sid));
+            } catch (delErr) {
+              console.error('Failed to delete original saved object', sid, delErr);
+            }
+          }
+        }
       } catch (error) {
         console.error('Error saving merged object:', error);
         setSaveMessage('✗ Merged, but failed to save to your library');
@@ -1644,14 +1671,22 @@ export default function AnimationStudio() {
               ) : savedObjects.length > 0 ? (
                 <div className="grid grid-cols-2 gap-2">
                   {savedObjects.map((saved) => (
-                    <button
-                      key={saved.id}
-                      onClick={() => addSavedObjectToCanvas(saved)}
-                      className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-                      title={saved.name}
-                    >
-                      {saved.name}
-                    </button>
+                    <div key={saved.id} className="flex items-center justify-between bg-gray-800 rounded">
+                      <button
+                        onClick={() => addSavedObjectToCanvas(saved)}
+                        className="flex-1 text-left px-2 py-2 hover:bg-gray-700 rounded-l text-xs"
+                        title={saved.name}
+                      >
+                        {saved.name}
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); if (confirm('Delete saved object from library?')) deleteSavedObject(saved.id); }}
+                        className="px-2 py-2 hover:bg-red-700 rounded-r text-xs bg-transparent"
+                        title="Delete from library"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -1675,13 +1710,19 @@ export default function AnimationStudio() {
                 >
                   Clear
                 </button>
-                <button
-                  onClick={mergeSelectedObjects}
-                  disabled={selectedIds.length < 2}
-                  className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs disabled:opacity-50 col-span-2"
-                >
-                  Merge (Overlap)
-                </button>
+                <div className="col-span-2 flex items-center gap-2">
+                  <label className="flex items-center text-xs">
+                    <input type="checkbox" className="mr-2" checked={deleteMergedFromLibrary} onChange={(e) => setDeleteMergedFromLibrary(e.target.checked)} />
+                    Delete originals from library
+                  </label>
+                  <button
+                    onClick={mergeSelectedObjects}
+                    disabled={selectedIds.length < 2}
+                    className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs disabled:opacity-50 ml-auto"
+                  >
+                    Merge (Overlap)
+                  </button>
+                </div>
               </div>
               <p className="text-[10px] text-gray-500 mt-2">Connect uses the first two selected objects.</p>
             </div>

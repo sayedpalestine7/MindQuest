@@ -38,6 +38,7 @@ export default function PreviewModalRefactored({ course, lessons, onClose, hideH
         type: field.type,
         content: content,
         animationId: field.animationId || null,
+        animationPreviewMode: field.animationPreviewMode || "start-stop",
         correctAnswer: field.correctAnswer || field.answer || "",
         questionType: field.questionType || null,
         options: field.options || [],

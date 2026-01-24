@@ -78,6 +78,7 @@ export default function LessonContent({
             <FieldRenderer
               key={field.id}
               field={field}
+              isPreviewMode={isPreviewMode}
               feedback={feedback[field.id]}
               answer={answers[field.id]}
               onAnswerSubmit={handleAnswerSubmit}
@@ -129,7 +130,8 @@ export default function LessonContent({
 
 /* ---------------- FIELD RENDERER ---------------- */
 
-function FieldRenderer({ field, feedback, answer, onAnswerSubmit, onAnswerChange }) {
+function FieldRenderer({ field, feedback, answer, onAnswerSubmit, onAnswerChange, isPreviewMode }) {
+
   switch (field.type) {
     case "paragraph":
       return (
@@ -297,10 +299,13 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit, onAnswerChange
 
     case "animation":
       console.log('Rendering animation field:', { field })
+      const playbackMode = field.animationPreviewMode || "start-stop"
       return (
         <div className="space-y-2">
-          {/* <div className="text-xs text-gray-500">Animation ID: <span className="font-mono text-sm text-gray-700">{field.animationId || '—'}</span></div> */}
-          <AnimationRenderer animationId={field.animationId} />
+          <AnimationRenderer
+            animationId={field.animationId}
+            playbackMode={playbackMode}
+          />
         </div>
       )
 

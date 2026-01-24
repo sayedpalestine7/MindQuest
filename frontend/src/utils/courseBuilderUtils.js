@@ -263,7 +263,7 @@ export const sanitizeFieldForAPI = (field) => {
     case "minigame":
       return { ...base, content: field.content };
     case "animation":
-      return { ...base, content: field.content, animationId: field.animationId };
+      return { ...base, content: field.content, animationId: field.animationId, animationPreviewMode: field.animationPreviewMode || "start-stop" };
     case "table":
       return { ...base, content: field.content };
     default:

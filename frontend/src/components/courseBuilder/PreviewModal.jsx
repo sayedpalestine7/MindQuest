@@ -225,7 +225,10 @@ function FieldPreview({ field }) {
       return (
         <div className="rounded-lg border-2 border-gray-300 overflow-hidden p-4 bg-white">
           <div className="text-xs text-gray-500 mb-2">Animation ID: <span className="font-mono text-sm text-gray-700">{field.animationId || '—'}</span></div>
-          <AnimationRenderer animationId={field.animationId} />
+          <AnimationRenderer
+            animationId={field.animationId}
+            playbackMode={field.animationPreviewMode || "start-stop"}
+          />
         </div>
       )
 

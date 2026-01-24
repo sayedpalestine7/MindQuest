@@ -143,6 +143,7 @@ export default function StudentCoursePageWrapper({
                 type: f.type,
                 content: content,
                 animationId: f.animationId || null,
+                animationPreviewMode: f.animationPreviewMode || "start-stop",
                 correctAnswer: f.correctAnswer ?? f.answer ?? "",
               }
             }),

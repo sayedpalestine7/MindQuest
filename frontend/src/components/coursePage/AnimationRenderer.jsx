@@ -10,7 +10,7 @@ import {
   normalizeAnimation
 } from "../../utils/animationUtils"
 
-export default function AnimationRenderer({ animationId }) {
+export default function AnimationRenderer({ animationId, playbackMode = "start-stop" }) {
   useEffect(() => {
     console.log('AnimationRenderer mounted; animationId=', animationId)
   }, [animationId])
@@ -21,6 +21,8 @@ export default function AnimationRenderer({ animationId }) {
   const [currentTime, setCurrentTime] = useState(0)
   const canvasRef = useRef(null)
   const animationFrameRef = useRef(null)
+
+  const isLoopMode = playbackMode === "loop"
 
   useEffect(() => {
     if (!animationId) {
@@ -71,6 +73,9 @@ export default function AnimationRenderer({ animationId }) {
       setCurrentTime((prev) => {
         const next = prev + deltaSec
         if (next >= duration) {
+          if (isLoopMode && duration > 0) {
+            return next % duration
+          }
           // stop playback at exact duration
           setIsPlaying(false)
           return duration
@@ -88,7 +93,16 @@ export default function AnimationRenderer({ animationId }) {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [isPlaying, animation?.effectiveDuration, animation?.duration])
+  }, [isPlaying, isLoopMode, animation?.effectiveDuration, animation?.duration])
+
+  useEffect(() => {
+    if (isLoopMode) {
+      setIsPlaying(true)
+    } else {
+      setIsPlaying(false)
+    }
+    setCurrentTime(0)
+  }, [isLoopMode, animationId])
 
   useEffect(() => {
     if (!canvasRef.current || !animation) {
@@ -127,7 +141,7 @@ export default function AnimationRenderer({ animationId }) {
 
     const ctx = canvas.getContext("2d")
     ctx.setTransform(1, 0, 0, 1, 0, 0)
-    ctx.fillStyle = "#f3f4f6"
+    ctx.fillStyle = isLoopMode ? "#ffffff" : "#f3f4f6"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     if (!animation?.objects || animation.objects.length === 0) {
@@ -297,7 +311,7 @@ export default function AnimationRenderer({ animationId }) {
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border-2 border-gray-300 overflow-hidden bg-gray-50">
+      <div className={isLoopMode ? "overflow-hidden bg-white" : "rounded-lg border-2 border-gray-300 overflow-hidden bg-gray-50"}>
         <canvas
           ref={canvasRef}
           width={1400}
@@ -306,33 +320,35 @@ export default function AnimationRenderer({ animationId }) {
         />
       </div>
 
-      <div className="flex items-center gap-4 px-4 py-3 bg-gray-100 rounded-lg">
-        <button
-          onClick={() => setIsPlaying(!isPlaying)}
-          className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition"
-        >
-          {isPlaying ? <Pause size={18} /> : <Play size={18} />}
-        </button>
+      {!isLoopMode && (
+        <div className="flex items-center gap-4 px-4 py-3 bg-gray-100 rounded-lg">
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition"
+          >
+            {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+          </button>
 
-        <div className="flex-1">
-          <input
-            type="range"
-            min="0"
-            max={animation?.duration || 15}
-            step="0.016"
-            value={currentTime}
-            onChange={(e) => {
-              setCurrentTime(parseFloat(e.target.value))
-              setIsPlaying(false)
-            }}
-            className="w-full cursor-pointer"
-          />
+          <div className="flex-1">
+            <input
+              type="range"
+              min="0"
+              max={animation?.duration || 15}
+              step="0.016"
+              value={currentTime}
+              onChange={(e) => {
+                setCurrentTime(parseFloat(e.target.value))
+                setIsPlaying(false)
+              }}
+              className="w-full cursor-pointer"
+            />
+          </div>
+
+          <span className="text-sm font-semibold whitespace-nowrap text-gray-700">
+            {currentTime.toFixed(2)}s / {animation?.duration || 15}s
+          </span>
         </div>
-
-        <span className="text-sm font-semibold whitespace-nowrap text-gray-700">
-          {currentTime.toFixed(2)}s / {animation?.duration || 15}s
-        </span>
-      </div>
+      )}
     </div>
   )
 }
