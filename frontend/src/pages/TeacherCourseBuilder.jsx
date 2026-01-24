@@ -650,22 +650,31 @@ export default function TeacherCourseBuilder() {
 
           // Add a new minigame field to the selected lesson
           const fieldId = courseBuilder.addField("minigame")
-          
-          // Create blob URL for the field
-          const blob = new Blob([generatedHtml.content], { type: 'text/html' })
-          const blobUrl = URL.createObjectURL(blob)
+
+          // Create data URL for the field content so iframe preview works and no blob revocation issues
+          const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(generatedHtml.content)}`
 
           // Update the field content
-          courseBuilder.updateField(fieldId, { 
-            content: blobUrl,
+          courseBuilder.updateField(fieldId, {
+            content: dataUrl,
             htmlContent: generatedHtml.content,
-            htmlFilename: generatedHtml.filename
+            htmlFilename: generatedHtml.filename,
           })
 
           // Switch to lessons tab and close modal
           setActiveEditorTab("lessons")
           setIsHtmlPreviewOpen(false)
           toast.success("HTML animation added to lesson!")
+
+          // Attempt to reveal the new field in the editor
+          setTimeout(() => {
+            try {
+              const el = document.getElementById(`field-${fieldId}`)
+              if (el && typeof el.scrollIntoView === 'function') {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              }
+            } catch (e) { /* ignore */ }
+          }, 300)
         }}
       />
 

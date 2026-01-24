@@ -99,6 +99,7 @@ export default function LessonEditor({
           ) : (
             selectedLesson.fields.map((field) => (
               <div
+                id={`field-${field.id}`}
                 key={field.id}
                 className={`p-4 bg-white rounded-xl border-gray-300 hover:border-2 hover:border-gray-400 ${getFieldHoverBorderColor(field.type)} hover:shadow-md
                   }`} // border here
@@ -342,7 +343,7 @@ function FieldContent({ field, updateField, handleImageUpload, handleHtmlFileUpl
           />
           {field.content && (
             <p className="text-sm text-gray-500">
-              Selected: {field.content}
+              Selected: {field.htmlFilename ? field.htmlFilename : (field.content && String(field.content).startsWith('data:') ? 'HTML content added' : field.content)}
             </p>
           )}
           {field.content && (

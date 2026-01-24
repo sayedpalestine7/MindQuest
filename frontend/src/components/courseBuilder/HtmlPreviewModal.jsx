@@ -30,9 +30,8 @@ export default function HtmlPreviewModal({ isOpen, onClose, htmlContent, filenam
     }
   };
 
-  // Create blob URL for preview
-  const blob = new Blob([htmlContent], { type: "text/html" });
-  const blobUrl = URL.createObjectURL(blob);
+  // Create data URL for preview (avoids blob iframe restrictions)
+  const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -69,10 +68,10 @@ export default function HtmlPreviewModal({ isOpen, onClose, htmlContent, filenam
           </div>
           <iframe
             ref={iframeRef}
-            src={blobUrl}
+            src={dataUrl}
             className="w-full h-full bg-white"
             title="HTML Preview"
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin"
             allow="fullscreen"
           />
         </div>
