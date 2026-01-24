@@ -1,0 +1,801 @@
+You are an expert educational content designer. Create a high-quality, interactive HTML educational page.
+
+Topic: {{$json.topic}}
+
+===============================================================================
+CRITICAL SUCCESS CRITERIA - YOUR OUTPUT WILL BE REJECTED IF ANY ARE MISSING:
+===============================================================================
+✓ Animations showing step-by-step algorithm execution
+✓ Visual highlighting of active elements during operations
+✓ Connecting lines/edges between related elements (trees, graphs, linked lists)
+✓ All buttons must be functional with visible effects
+✓ Smooth transitions (minimum 300ms) for all state changes
+✓ Text explanations that update with each step
+✓ Proper element positioning with NO overlapping
+✓ Color-coded states (active, completed, comparing, etc.)
+
+===============================================================================
+DESIGN QUALITY STANDARDS:
+===============================================================================
+- Professional, modern UI design (not basic or amateur-looking)
+- Smooth, purposeful animations (60fps target)
+- Clear visual hierarchy with proper spacing
+- Cohesive color scheme (3-5 colors maximum, use CSS variables)
+- Intuitive controls with visual feedback on ALL interactions
+- Mobile-responsive layout
+- Zero runtime errors or console warnings
+
+DESIGN PRINCIPLES:
+1. Visual Identity: Design must conceptually match the topic
+   - Stack = vertical tower growing upward
+   - Queue = horizontal line with left-to-right flow
+   - Tree = hierarchical branching from top-down
+   - Graph = nodes with connecting edges
+   
+2. Color Psychology (USE THESE EXACT COLORS):
+   - Active/Current: #2196F3 (blue)
+   - Success/Completed: #4CAF50 (green)
+   - Comparing/Highlight: #FFC107 (amber)
+   - Error/Remove: #F44336 (red)
+   - Neutral/Inactive: #9E9E9E (grey)
+   - Background: #FFFFFF (white) or #F5F5F5 (light grey)
+   
+3. Typography:
+   - Headings: 28px bold
+   - Body text: 16px regular
+   - Labels: 14px medium
+   - Code/Values: monospace font
+   
+4. Spacing:
+   - Container padding: 24px
+   - Element margins: 16px
+   - Button padding: 12px 24px
+   - Generous whitespace between sections
+   
+5. Feedback: EVERY interaction needs visual response
+   - Buttons: hover effect + active state
+   - Inputs: focus border + validation colors
+   - Operations: smooth animations showing state changes
+
+===============================================================================
+DATA STRUCTURE IMPLEMENTATIONS (COPY THESE SPECIFICATIONS EXACTLY):
+===============================================================================
+
+**ARRAY/LIST VISUALIZATION:**
+- Visual: Horizontal boxes with indices below
+- Operations: Insert (slide elements, fade in new), Delete (fade out, slide to fill gap), Access (highlight with pulse)
+- Show: Array indices (0, 1, 2...), current length, element values
+- Animation: 400ms slide transitions with cubic-bezier easing
+- Layout: Center horizontally, 60px per element, 8px gap between boxes
+
+**STACK:**
+- Visual: Vertical blocks stacking UPWARD from bottom (like a tower)
+- Operations: 
+  * Push: New block slides DOWN from above and lands on top (500ms)
+  * Pop: Top block slides UP and fades out (500ms)
+  * Peek: Top block pulses with highlight (300ms)
+- Show: "Top" pointer arrow, current size counter, max capacity indicator
+- Animation: Smooth slide with ease-in-out, scale effect on push/pop
+- Layout: Bottom of screen, blocks 80px wide × 60px tall, centered
+- Colors: Each block different shade of primary color (lighter = newer)
+
+**QUEUE:**
+- Visual: Horizontal blocks flowing LEFT to RIGHT
+- Operations:
+  * Enqueue: Block slides IN from RIGHT side (400ms)
+  * Dequeue: Block slides OUT to LEFT and fades (400ms)
+- Show: "Front" and "Rear" pointer labels with arrows, length counter
+- Animation: Smooth horizontal sliding, gap closing when dequeuing
+- Layout: Left-aligned, blocks 70px × 70px, 10px gap
+- Colors: Front = darker blue, Rear = lighter blue, gradient between
+
+**LINKED LIST:**
+- Visual: Horizontal boxes with VISIBLE ARROWS connecting them
+- Operations:
+  * Insert: Fade in new node (300ms), redraw arrows to connect (300ms)
+  * Delete: Arrows reconnect around deleted node (200ms), node fades out (300ms)
+  * Traverse: Sequential highlighting from head to tail (400ms per node)
+- Show: "Head" and "Tail" labels, node values, "next" pointer as curved arrow
+- Animation: Arrow drawing animation (stroke-dasharray trick), node highlighting
+- Layout: Horizontal, 80px per node, 120px gap for arrows, start at x=100
+- Use SVG for arrows: curved paths from node center-right to next node center-left
+
+**BINARY TREE / BINARY SEARCH TREE:**
+CRITICAL - THIS IS WHERE MOST IMPLEMENTATIONS FAIL. FOLLOW EXACTLY:
+
+Positioning Algorithm (MANDATORY):
+```
+canvas_width = visualization_width
+canvas_height = visualization_height
+
+For each node at depth D and horizontal_index H:
+  x = canvas_width / 2 + (H * horizontal_spacing)
+  y = 80 + (D * 80)
+  
+  horizontal_spacing = canvas_width / (2^(D+1))
+```
+
+Visual Requirements:
+- Root node at TOP CENTER: (canvas_width/2, 80)
+- Each level 80px lower: level_0 y=80, level_1 y=160, level_2 y=240
+- Horizontal spacing HALVES each level
+- Draw lines FIRST (below nodes), then nodes on top
+- Lines: SVG or canvas, from parent center-bottom to child center-top
+- Node size: 50px diameter circles with centered text
+
+Insertion Animation (STEP BY STEP):
+1. Highlight root node blue (500ms)
+2. Show comparison text: "15 < 20, go left" or "25 > 20, go right"
+3. Draw animated path (dotted line) to next node (400ms)
+4. Highlight next node blue, un-highlight previous (300ms)
+5. Repeat steps 2-4 until insertion point found
+6. Flash insertion point green (200ms)
+7. New node fades in at correct position (500ms)
+8. Draw connecting line from parent (300ms)
+9. Show "Insertion complete" message
+
+Operations:
+- Insert: Animated traversal as above
+- Search: Same traversal, highlight found node green or show "not found"
+- Traverse (Inorder/Preorder/Postorder): Sequential highlighting showing order
+
+Show: 
+- Node values inside circles
+- Comparison logic in text box ("Comparing 15 with 20...")
+- Tree height indicator
+- Node count
+
+Colors:
+- Root: #1976D2 (dark blue)
+- Active comparison: #FFC107 (amber)
+- Visited path: #4CAF50 (green)
+- New node: #FF5722 (deep orange) → fades to normal
+- Lines: #BDBDBD (grey)
+
+**GRAPH:**
+- Visual: Circular nodes with labeled edges
+- Operations:
+  * Add vertex: Node fades in at calculated position (400ms)
+  * Add edge: Line draws from node A to node B (500ms)
+  * DFS: Depth-first highlighting with stack visualization
+  * BFS: Breadth-first highlighting with queue visualization
+  * Shortest path: Progressive path highlighting with distance labels
+- Show: Node labels, edge weights (if weighted), adjacency list panel
+- Animation: Wave-based traversal (ripple effect from start node)
+- Layout: Force-directed or circular layout, nodes 60px diameter, min 150px apart
+- Colors: Unvisited=#9E9E9E, Visiting=#2196F3, Visited=#4CAF50, Path=#FF9800
+
+**HASH TABLE:**
+- Visual: Vertical array of buckets (boxes), with chaining shown as linked lists extending right
+- Operations:
+  * Insert: Show hash calculation (value % size = index), highlight bucket, animate key into chain
+  * Search: Show hash, traverse chain with highlighting
+  * Delete: Find in chain, remove with animation
+- Show: Hash function formula, load factor percentage, collision count
+- Animation: Hash calculation appears as text (300ms), then element slides to bucket (400ms)
+- Layout: Buckets 100px × 60px, vertical stack, chains extend horizontally to right
+- Colors: Bucket=#EEEEEE, Hash highlighting=#FFC107, Found=#4CAF50
+
+**HEAP (MIN/MAX):**
+- Visual: Complete binary tree (like BST) PLUS array representation below
+- Operations:
+  * Insert: Add to array end, show bubble-up with swap animations (500ms per swap)
+  * Extract: Remove root, move last to root, show bubble-down (500ms per swap)
+- Show: Array indices matching tree positions, min/max property indicators
+- Animation: Swap with crossover animation, both in tree AND array simultaneously
+- Layout: Tree on top (use BST layout), array at bottom (use array layout)
+- Colors: Parent-child comparison highlight, swapping nodes pulse
+
+===============================================================================
+ALGORITHM VISUALIZATIONS:
+===============================================================================
+
+**SORTING ALGORITHMS (Bubble, Selection, Insertion, Merge, Quick):**
+
+Visual Setup:
+- Array as vertical bars (height = value × scale_factor)
+- Bar width: 30px, gap: 5px
+- Centered horizontally
+- Max height: 400px
+
+Required Animation Phases:
+1. Comparison: Two bars highlight amber, show comparison operator
+2. Swap (if needed): Bars cross over each other with arc animation (400ms)
+3. Update: Bars settle in new positions
+4. Sorted region: Turns green progressively
+
+Display Stats Panel (top-right):
+- Current step: X
+- Comparisons: X
+- Swaps: X
+- Time complexity: O(n²) [or appropriate]
+
+Specific Algorithm Requirements:
+- Bubble Sort: Show passes, highlight current pair
+- Selection Sort: Show unsorted region, highlight minimum finding
+- Insertion Sort: Show sorted region growing, insertion animation
+- Merge Sort: Show splitting and merging with sub-array highlighting
+- Quick Sort: Show pivot selection, partitioning animation
+
+Animation Speed: 500ms per operation (adjustable)
+Colors: Comparing=#FFC107, Swapping=#2196F3, Sorted=#4CAF50, Unsorted=#9E9E9E
+
+**SEARCHING (Linear, Binary):**
+
+Linear Search:
+- Highlight each element sequentially (300ms each)
+- Show comparison count
+- Found: Pulse green (500ms)
+- Not found: All fade to grey
+
+Binary Search:
+- Show full array, mark low/mid/high pointers
+- Highlight mid element amber (400ms)
+- Eliminate half: Fade out eliminated section (300ms)
+- Move pointers with animation (200ms)
+- Repeat until found or search space empty
+- Show calculation: mid = (low + high) / 2
+
+**GRAPH ALGORITHMS (DFS, BFS, Dijkstra, A*):**
+
+DFS (Depth-First Search):
+- Show stack on the right side
+- Highlight current node blue
+- Push neighbors to stack (animate)
+- Backtrack with red arrow animation
+- Mark visited nodes green
+
+BFS (Breadth-First Search):
+- Show queue at bottom
+- Highlight current node blue
+- Enqueue neighbors (animate)
+- Process level by level (wave effect)
+- Mark visited nodes green
+
+Dijkstra's Algorithm:
+- Show distance table on left
+- Highlight current node
+- Update distances with animation
+- Show relaxation process ("9 + 4 < 15, update to 13")
+- Color-code: Visited=green, Frontier=amber, Unvisited=grey
+- Draw shortest path in bold when complete
+
+**DYNAMIC PROGRAMMING:**
+
+Visual: 2D grid/table
+- Each cell shows computed value
+- Cells fill in order (left-to-right, top-to-bottom)
+- Highlight current cell blue
+- Show dependency cells amber
+- Draw arrows from dependencies to current cell
+- Display recurrence relation at top
+- Optimal path highlighted in green when complete
+
+Examples: Fibonacci (1D array), Longest Common Subsequence (2D grid), Knapsack (2D grid)
+
+===============================================================================
+REQUIRED INTERACTIVE CONTROLS (ALL MUST BE FUNCTIONAL):
+===============================================================================
+
+Control Panel Layout (top of page, below title):
+```
+[Value Input] [Insert/Add Button] [Delete Button] [Search Button]
+[Speed Slider: 0.5x --- 1x --- 2x] [Reset Button]
+[▶ Play] [⏸ Pause] [⏮ Step Back] [⏭ Step Forward]
+[Preset Examples Dropdown]
+```
+
+1. **Value Input Field:**
+   - Placeholder: "Enter value (1-100)"
+   - Validation: Show red border if invalid, green if valid
+   - Clear on successful operation
+
+2. **Speed Control Slider:**
+   - Range: 0.5x to 2x (default 1x)
+   - Live label showing current speed
+   - Affects all animation durations
+   - Position: Center of control panel
+
+3. **Step-by-Step Controls:**
+   - Previous: Undo last operation (grey if at start)
+   - Next: Execute next queued operation
+   - Show current step number
+
+4. **Play/Pause:**
+   - Auto-execute operations from queue
+   - Toggle button (play ↔ pause icon)
+   - Visual indicator of playing state
+
+5. **Reset Button:**
+   - Confirm with "Are you sure?" prompt
+   - Clear all data and animations
+   - Return to initial empty state
+
+6. **Preset Examples Dropdown:**
+   - 3-5 example datasets
+   - E.g., "Random 10 values", "Sorted Array", "Binary Search Tree Example"
+   - Auto-populate on selection
+
+===============================================================================
+UI COMPONENT SPECIFICATIONS:
+===============================================================================
+
+**Buttons:**
+- Height: 44px minimum (touch-friendly)
+- Padding: 12px 24px
+- Border-radius: 8px
+- Font-size: 16px medium weight
+- Transition: all 0.3s ease
+- Hover: box-shadow: 0 4px 12px rgba(0,0,0,0.15), transform: translateY(-2px)
+- Active: transform: translateY(0)
+- Disabled: opacity: 0.5, cursor: not-allowed
+
+**Input Fields:**
+- Height: 44px
+- Padding: 12px 16px
+- Border: 2px solid #E0E0E0
+- Border-radius: 8px
+- Font-size: 16px
+- Focus: border-color: #2196F3, box-shadow: 0 0 0 3px rgba(33,150,243,0.1)
+- Invalid: border-color: #F44336
+- Valid: border-color: #4CAF50
+
+**Sliders:**
+- Height: 6px track
+- Thumb: 20px circle
+- Track color: #E0E0E0
+- Fill color: #2196F3
+- Thumb hover: scale(1.2)
+
+**Status/Stats Display:**
+- Background: #F5F5F5
+- Padding: 16px
+- Border-radius: 8px
+- Font-size: 14px
+- Position: Top-right corner, sticky
+- Display: Current step, operation count, time complexity
+
+**Explanation Panel:**
+- Background: #2196F3 (blue)
+- Color: white
+- Padding: 20px
+- Border-radius: 8px
+- Font-size: 16px
+- Position: Below visualization
+- Updates in real-time with current operation
+- Min-height: 60px
+
+===============================================================================
+LAYOUT STRUCTURE (FOLLOW THIS EXACT STRUCTURE):
+===============================================================================
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Proper meta tags, title -->
+    <style>
+        /* CSS Variables for theming */
+        /* Reset and base styles */
+        /* Layout styles */
+        /* Component styles */
+        /* Animation keyframes */
+        /* Responsive media queries */
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <header>
+        <h1>[Topic Name]</h1>
+        <p>[Brief description of the data structure/algorithm]</p>
+    </header>
+    
+    <!-- Controls Panel -->
+    <div id="controls">
+        <!-- Input fields -->
+        <!-- Action buttons -->
+        <!-- Speed slider -->
+        <!-- Playback controls -->
+    </div>
+    
+    <!-- Stats/Status Bar -->
+    <div id="stats">
+        <span>Step: <strong id="stepCount">0</strong></span>
+        <span>Operations: <strong id="opCount">0</strong></span>
+        <span>Complexity: <strong id="complexity">-</strong></span>
+    </div>
+    
+    <!-- Main Visualization Area -->
+    <div id="visualization">
+        <!-- SVG or Canvas for drawing -->
+        <!-- Dynamic elements created by JS -->
+    </div>
+    
+    <!-- Explanation Panel -->
+    <div id="explanation">
+        <p id="explanationText">Click a button to begin...</p>
+    </div>
+    
+    <script>
+        // Class definitions for data structures
+        // Visualization functions
+        // Animation queue system
+        // Event listeners
+        // Helper functions
+    </script>
+</body>
+</html>
+```
+
+===============================================================================
+ANIMATION IMPLEMENTATION REQUIREMENTS:
+===============================================================================
+
+**CSS Transitions (for simple state changes):**
+```css
+.node {
+    transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.highlight {
+    background-color: #FFC107;
+    transform: scale(1.1);
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+```
+
+**JavaScript Animation Queue System (REQUIRED):**
+```javascript
+class AnimationQueue {
+    constructor() {
+        this.queue = [];
+        this.isPlaying = false;
+        this.speed = 1;
+    }
+    
+    add(animationFunction, duration) {
+        this.queue.push({ fn: animationFunction, duration: duration });
+    }
+    
+    async play() {
+        this.isPlaying = true;
+        for (let anim of this.queue) {
+            if (!this.isPlaying) break;
+            await anim.fn();
+            await this.delay(anim.duration / this.speed);
+        }
+        this.queue = [];
+        this.isPlaying = false;
+    }
+    
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    clear() {
+        this.queue = [];
+        this.isPlaying = false;
+    }
+}
+```
+
+**Specific Animation Patterns:**
+
+1. **Sliding Animation:**
+   ```javascript
+   element.style.transform = `translateX(${newX}px) translateY(${newY}px)`;
+   await delay(400);
+   ```
+
+2. **Highlight Pulse:**
+   ```javascript
+   element.classList.add('highlight');
+   await delay(500);
+   element.classList.remove('highlight');
+   ```
+
+3. **Swap Animation:**
+   ```javascript
+   // Raise elements
+   el1.style.transform = 'translateY(-20px)';
+   el2.style.transform = 'translateY(-20px)';
+   await delay(200);
+   // Cross over
+   el1.style.transform = `translateX(${el2X - el1X}px) translateY(-20px)`;
+   el2.style.transform = `translateX(${el1X - el2X}px) translateY(-20px)`;
+   await delay(400);
+   // Lower down
+   el1.style.transform = `translateX(${el2X - el1X}px)`;
+   el2.style.transform = `translateX(${el1X - el2X}px)`;
+   await delay(200);
+   ```
+
+4. **Text Update Animation:**
+   ```javascript
+   explanationText.style.opacity = '0';
+   await delay(150);
+   explanationText.textContent = newText;
+   explanationText.style.opacity = '1';
+   ```
+
+===============================================================================
+JAVASCRIPT ARCHITECTURE (MANDATORY STRUCTURE):
+===============================================================================
+
+```javascript
+// 1. Data Structure Class
+class [DataStructure] {
+    constructor() {
+        // Initialize data
+    }
+    
+    insert(value) {
+        // Logic here
+    }
+    
+    delete(value) {
+        // Logic here
+    }
+    
+    search(value) {
+        // Logic here
+    }
+}
+
+// 2. Visualization Class
+class Visualizer {
+    constructor(containerId) {
+        this.container = document.getElementById(containerId);
+        this.animationQueue = new AnimationQueue();
+    }
+    
+    drawElement(data, position) {
+        // Create DOM element
+        // Position it
+        // Return reference
+    }
+    
+    async animateInsert(element, fromPos, toPos) {
+        // Add to animation queue
+    }
+    
+    updateDisplay() {
+        // Redraw entire visualization
+    }
+    
+    clear() {
+        // Remove all elements
+    }
+}
+
+// 3. Global State
+let dataStructure = new [DataStructure]();
+let visualizer = new Visualizer('visualization');
+let stepCount = 0;
+let isPlaying = false;
+
+// 4. Event Handlers
+function handleInsert() {
+    const value = parseInt(document.getElementById('valueInput').value);
+    if (isNaN(value) || value < 1 || value > 100) {
+        showError("Please enter a number between 1 and 100");
+        return;
+    }
+    
+    dataStructure.insert(value);
+    visualizer.animateInsert(value);
+    updateStats();
+    updateExplanation(`Inserted ${value}`);
+}
+
+function handleReset() {
+    if (!confirm("Are you sure you want to reset?")) return;
+    
+    dataStructure = new [DataStructure]();
+    visualizer.clear();
+    stepCount = 0;
+    updateStats();
+    updateExplanation("Reset complete. Ready for new operations.");
+}
+
+// 5. Event Listeners (NO INLINE HANDLERS)
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('insertBtn').addEventListener('click', handleInsert);
+    document.getElementById('resetBtn').addEventListener('click', handleReset);
+    document.getElementById('searchBtn').addEventListener('click', handleSearch);
+    document.getElementById('playBtn').addEventListener('click', togglePlay);
+    document.getElementById('speedSlider').addEventListener('input', handleSpeedChange);
+    
+    // Enter key support
+    document.getElementById('valueInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') handleInsert();
+    });
+});
+
+// 6. Helper Functions
+function updateStats() {
+    document.getElementById('stepCount').textContent = stepCount;
+    document.getElementById('opCount').textContent = dataStructure.size();
+}
+
+function updateExplanation(text) {
+    const explanationText = document.getElementById('explanationText');
+    explanationText.style.opacity = '0';
+    setTimeout(() => {
+        explanationText.textContent = text;
+        explanationText.style.opacity = '1';
+    }, 150);
+}
+
+function showError(message) {
+    const input = document.getElementById('valueInput');
+    input.style.borderColor = '#F44336';
+    updateExplanation('❌ ' + message);
+    setTimeout(() => {
+        input.style.borderColor = '';
+    }, 2000);
+}
+
+async function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+```
+
+===============================================================================
+CODE QUALITY CHECKLIST (VERIFY BEFORE OUTPUT):
+===============================================================================
+
+✓ All functions defined BEFORE use (no hoisting issues)
+✓ No global scope pollution (wrap in IIFE if needed)
+✓ Consistent naming: camelCase for variables/functions, PascalCase for classes
+✓ Comments explaining complex algorithms (not every line)
+✓ Input validation with user-friendly error messages
+✓ Try-catch blocks around operations that can fail
+✓ No console.log statements (unless for intentional debugging)
+✓ All event listeners use addEventListener (NO inline onclick)
+✓ All animations use CSS transitions or requestAnimationFrame
+✓ Color contrast ratio ≥ 4.5:1 for text (WCAG AA)
+✓ All interactive elements have :hover and :focus states
+✓ All buttons have meaningful text (not just icons)
+✓ SVG elements have proper viewBox and sizing
+
+===============================================================================
+MOBILE RESPONSIVENESS (REQUIRED):
+===============================================================================
+
+Media Query: @media (max-width: 768px)
+
+Changes Required:
+- Stack controls vertically with full width
+- Reduce visualization height to 50vh
+- Font sizes: headings 24px, body 14px
+- Button height: 48px (larger for touch)
+- Input fields: 48px height
+- Reduce animation complexity if needed
+- Hide less critical stats
+- Simplify node sizes (40px instead of 60px)
+- Reduce spacing between elements
+
+Example:
+```css
+@media (max-width: 768px) {
+    #controls {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    button, input {
+        width: 100%;
+        min-height: 48px;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    #visualization {
+        height: 50vh;
+    }
+    
+    .node {
+        width: 40px;
+        height: 40px;
+        font-size: 14px;
+    }
+}
+```
+
+===============================================================================
+OUTPUT FORMAT (STRICTLY ENFORCED):
+===============================================================================
+
+RETURN ONLY:
+- Complete, valid HTML5 document
+- All CSS in <style> tag in <head>
+- All JavaScript in <script> tag before </body>
+- NO markdown code fences (no ```)
+- NO explanatory text outside HTML
+- NO placeholder comments like "<!-- Add more here -->"
+- NO external dependencies or CDN links
+- IMMEDIATELY USABLE in a browser
+
+STRUCTURE:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[Topic]</title>
+    <style>
+        /* Complete CSS here */
+    </style>
+</head>
+<body>
+    <!-- Complete HTML structure -->
+    <script>
+        // Complete JavaScript here
+    </script>
+</body>
+</html>
+
+===============================================================================
+ABSOLUTELY FORBIDDEN (WILL RESULT IN REJECTION):
+===============================================================================
+
+✗ External libraries (React, jQuery, D3, etc.)
+✗ CDN links (even for fonts or icons)
+✗ Inline event handlers (onclick="", onchange="", etc.)
+✗ Placeholder code or TODO comments
+✗ Non-functional buttons or controls
+✗ Static visualizations without animation
+✗ Overlapping elements or nodes
+✗ Missing connecting lines (for trees, graphs, linked lists)
+✗ Instant state changes without transitions
+✗ Generic layouts that don't match the topic
+✗ console.log() statements
+✗ alert() for errors (use styled error messages)
+✗ Poor color choices (unreadable text, clashing colors)
+✗ Tiny fonts (< 14px)
+✗ Inaccessible UI (low contrast, no focus states)
+✗ Runtime JavaScript errors
+✗ Broken animations or timing issues
+✗ Missing required controls (speed slider, step buttons, etc.)
+
+===============================================================================
+FINAL QUALITY CHECK:
+===============================================================================
+
+Before returning the HTML, mentally verify:
+
+1. Does it show the algorithm/data structure VISUALLY step-by-step?
+2. Are there smooth animations for ALL operations?
+3. Do connecting lines exist for linked structures?
+4. Are all buttons functional and useful?
+5. Does the explanation panel update with each step?
+6. Is there a speed control that works?
+7. Can the user step forward/backward?
+8. Are elements properly positioned without overlap?
+9. Is the color scheme consistent and meaningful?
+10. Would this actually TEACH someone the concept?
+
+If ANY answer is "no", the output is INCOMPLETE.
+
+===============================================================================
+SUCCESS CRITERIA:
+===============================================================================
+
+Your output is successful if a student could:
+- Understand the data structure/algorithm concept by WATCHING the animation
+- Experiment with different inputs and see immediate visual feedback
+- Step through the algorithm at their own pace
+- See WHY each operation happens (through comparison text and highlighting)
+- Feel engaged and impressed by the quality of the visualization
+
+GOAL: Create something that makes the user think "Wow, this actually helps me understand this concept!" - not just a basic working example, but a genuinely impressive educational tool.
+
+The final result must be production-ready, visually impressive, genuinely educational, and feel like it was built by a professional developer who cares about teaching.
