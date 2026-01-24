@@ -24,6 +24,42 @@ const studentDataSchema = new mongoose.Schema({
     courseProgress: [courseProgressSchema],
 }, { _id: false });
 
+const savedTransitionSchema = new mongoose.Schema(
+    {
+        startTime: { type: Number, required: true },
+        duration: { type: Number, required: true },
+        x: { type: Number },
+        y: { type: Number },
+        width: { type: Number },
+        height: { type: Number },
+        scale: { type: Number, default: 1 },
+        rotation: { type: Number, default: 0 },
+        color: { type: String },
+        fillColor: { type: String },
+        strokeColor: { type: String },
+        borderWidth: { type: Number, default: 2 },
+        openTop: { type: Boolean, default: false },
+        text: { type: String },
+        opacity: { type: Number, default: 1 },
+        easing: { type: String, default: "linear" }
+    },
+    { _id: false }
+);
+
+const savedObjectSchema = new mongoose.Schema(
+    {
+        id: { type: String, required: true },
+        name: { type: String, required: true },
+        type: {
+            type: String,
+            enum: ["circle", "square", "triangle", "rectangle", "text"],
+            required: true
+        },
+        transitions: [savedTransitionSchema]
+    },
+    { _id: false }
+);
+
 const userSchema = new mongoose.Schema(
     {
         name: { type: String, required: true },
@@ -52,6 +88,7 @@ const userSchema = new mongoose.Schema(
 
         teacherData: teacherDataSchema,
         studentData: studentDataSchema,
+        savedObjects: { type: [savedObjectSchema], default: [] },
     },
     { timestamps: true }
 );
