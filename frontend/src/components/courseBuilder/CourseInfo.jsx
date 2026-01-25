@@ -171,9 +171,9 @@ export default function CourseInfo({ course, setCourse, handleImageUpload }) {
                     onChange={(e) => setCourse({ ...course, difficulty: e.target.value })}
                     className="border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                   >
-                    <option value="beginner">🟢 Beginner</option>
-                    <option value="intermediate">🟡 Intermediate</option>
-                    <option value="advanced">🔴 Advanced</option>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
                   </Select>
                 </div>
               </div>

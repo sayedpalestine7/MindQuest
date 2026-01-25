@@ -49,13 +49,16 @@ export default function CoursesScreen() {
 
       const data = await courseService.getCourses(params);
 
+      const coursesData = Array.isArray(data) ? data : (data.courses || []);
+
       if (append) {
-        setCourses(prev => [...prev, ...(data.courses || [])]);
+        setCourses(prev => [...prev, ...coursesData]);
       } else {
-        setCourses(data.courses || []);
+        setCourses(coursesData);
       }
 
-      setHasMore(data.hasMore || false);
+      const nextHasMore = data?.pagination?.hasMore ?? data?.hasMore ?? false;
+      setHasMore(nextHasMore);
       setPage(pageNum);
     } catch (error) {
       console.error('Error loading courses:', error);
