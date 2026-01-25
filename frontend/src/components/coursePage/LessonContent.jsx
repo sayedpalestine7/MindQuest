@@ -143,7 +143,7 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit, onAnswerChange
 
     case "image":
       return (
-        <div className="w-full max-h-[600px] h-[360px] md:h-[520px] rounded-lg overflow-hidden flex items-center justify-center bg-white">
+        <div className="w-full h-full rounded-lg overflow-hidden flex items-center justify-center bg-white">
           <img
             src={field.content}
             alt="Lesson visual"

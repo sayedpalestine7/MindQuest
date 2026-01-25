@@ -115,7 +115,7 @@ function FieldPreview({ field }) {
 
     case "image":
       return (
-        <div className="w-full max-h-[600px] h-[400px] md:h-[600px] rounded-lg overflow-hidden flex items-center justify-center bg-white">
+        <div className="w-full h-full rounded-lg overflow-hidden flex items-center justify-center bg-white">
           <img
             src={field.content || "/placeholder.svg"}
             alt="Lesson content"
