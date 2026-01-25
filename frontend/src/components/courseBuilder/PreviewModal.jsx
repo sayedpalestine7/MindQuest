@@ -115,11 +115,14 @@ function FieldPreview({ field }) {
 
     case "image":
       return (
-        <img
-          src={field.content || "/placeholder.svg"}
-          alt="Lesson content"
-          className="w-full rounded-lg border-2 border-gray-300"
-        />
+        <div className="w-full max-h-[600px] h-[400px] md:h-[600px] rounded-lg overflow-hidden flex items-center justify-center bg-white">
+          <img
+            src={field.content || "/placeholder.svg"}
+            alt="Lesson content"
+            className="h-full w-auto max-w-full object-contain"
+            style={{ display: 'block' }}
+          />
+        </div>
       )
 
     case "youtube":
@@ -148,7 +151,7 @@ function FieldPreview({ field }) {
 
     case "question":
       return (
-        <div className="p-4 rounded-lg border-2 border-orange-200 bg-orange-50">
+        <div className="p-4 rounded-lg bg-orange-50">
           <div className="flex items-start gap-2 mb-3">
             <HelpCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
             <p className="text-gray-900 font-medium">
