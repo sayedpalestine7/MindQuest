@@ -8,7 +8,7 @@ This section describes the core features that are available to all authorised us
 
 	Purpose and benefits: Establishes secure, verifiable user identity and enables personalised access to content and services. Reliable authentication protects user data and enables accountability through audit logs.
 
-	Role-specific access: All roles (students, teachers, administrators) authenticate via the same mechanism; role attributes determine permitted operations after authentication.
+	Role-specific access: All roles (students, teachers, administrators) authin tenticate via the same mechanism; role attributes determine permitted operations after authentication.
 
 	Data flow and validation: Credentials or registration data are collected on the client, validated for syntactic correctness (e.g., email format, password strength) on the frontend, and transmitted to the backend over TLS. The server enforces additional validation (input sanitation, duplicate account checks) and issues a signed authentication token upon successful verification.
 
@@ -120,24 +120,29 @@ This section articulates the principal capabilities exposed to teaching staff wi
 
 ### 4.3.2 Uploading Animations
 
-- User interaction: Teachers upload animation files or reference external media through the course/lesson editor. The UI provides progress indicators, metadata fields (caption, license, accessibility notes), and options for in-place previewing.
-- User interaction: Teachers upload animations through the authoring and studio interfaces and attach them to lessons. In addition, the course builder includes an AI-assisted HTML generation tool that produces lesson-ready interactive HTML content (previewable and downloadable) which can be inserted into a lesson as an embedded field.
+- User interaction: Teachers add animations to lessons either by uploading files / referencing external media in the authoring interface, or by creating assets in the Animation Studio and attaching them to lesson content. The UI provides progress indicators, basic metadata fields, and in-place previewing to ensure correctness before publishing. In addition, the course builder includes an AI-assisted HTML generation tool that produces lesson-ready interactive HTML content (previewable and downloadable) which can be inserted into a lesson as an embedded field.
 - Backend handling and storage: Uploaded assets are accepted through dedicated endpoints and stored as persistent animation documents. For AI-generated HTML, the frontend requests HTML content from an automation webhook and stores it in the course draft as lesson field content (using an embeddable HTML payload) without requiring a separate media upload step.
 - Admin/teacher controls: Access controls determine which assets are sharable across courses. Administrators may configure storage quotas, content retention policies, and automated checks for intellectual property compliance.
 
-### 4.3.3 Creating Quizzes
+### 4.3.3 Animation Studio (Authoring Interactive Visualisations)
+
+- User interaction: The studio provides a dedicated workspace for designing algorithm visualisations. Teachers create and edit animations using a timeline- and canvas-based editor, define stages/steps and transitions, preview playback, and iteratively refine artefacts until they are suitable for embedding in a lesson. Saved animations can subsequently be selected in the course builder and attached to lesson fields, enabling reuse across multiple lessons or courses.
+- Backend handling and storage: Studio saves are transmitted as authenticated requests that contain the animation structure (e.g., stages, scene components, and editor metadata). The backend persists the animation as a document associated with the teacher identity and updates modification timestamps to support version recency. Retrieval endpoints allow the studio and course builder to list a teacher’s saved animations, fetch individual animations for editing/preview, and update or delete assets as part of normal content lifecycle management.
+- Admin/teacher controls: Edit and deletion operations are restricted to the owning teacher (and administrators where applicable). Administrative policy may enforce moderation requirements (e.g., review before publication) or apply retention/size limits. The platform can surface audit-relevant metadata (creator, last updated time) to support traceability when animations are reused across lessons.
+
+### 4.3.4 Creating Quizzes
 
 - User interaction: Teachers author quizzes inside the course builder and may optionally use AI assistance to generate draft questions from a topic. The implemented AI flow supports the question types used by the system (e.g., MCQ, True/False, short-answer), and the UI can either insert generated questions locally into the current draft or persist them directly into the course quiz.
 - Backend handling and storage: Quiz definitions and question banks are stored as structured records linked to a course. AI generation can be performed either through an external automation webhook (for rapid iteration during authoring) or via a protected backend endpoint that calls the AI service and returns normalized question objects. When persistence is requested, a protected import endpoint validates and normalizes generated questions before inserting them into the question bank and attaching them to an existing (or newly created) quiz.
 - Admin/teacher controls: Teachers retain control over editing, ordering, and deleting generated questions. Server-side validation enforces minimum option counts for MCQs and requires an explicit correct answer before generated questions can be persisted.
 
-### 4.3.4 Monitoring Student Progress
+### 4.3.5 Monitoring Student Progress
 
 - User interaction: Teachers access dashboards and detailed student views showing enrolment lists, completion rates, per-student assessment attempts, and heatmaps of concept mastery. Interfaces support filtering, cohort comparisons, and ad hoc drill-down into attempt-level data.
 - Backend handling and storage: Monitoring relies on aggregated artefacts derived from event logs (lesson visits, media interactions), assessment attempts, and instructor-evaluated items. Aggregation pipelines compute derived metrics (completion percentages, mastery estimations, time-on-task) that are cached for responsive retrieval and historical analysis.
 - Admin/teacher controls: Teachers may flag students for intervention, assign remedial content, or adjust course pacing. Administrators can export reports for institutional review and configure thresholds that trigger automated notifications to students or staff.
 
-### 4.3.5 High-level Interaction Flow (Teacher)
+### 4.3.6 High-level Interaction Flow (Teacher)
 
 The sequence below summarises the typical teacher workflow for authoring, publishing, and monitoring:
 
@@ -148,9 +153,9 @@ sequenceDiagram
 	participant Backend
 	participant Database
 
-	Teacher->>Frontend: Create course / Upload animation / Author quiz
+	Teacher->>Frontend: Create course / Use studio or upload animation / Author quiz
 	Frontend->>Backend: Authenticated authoring request
-	Backend->>Database: Persist course/lesson/asset/quiz records
+	Backend->>Database: Persist course/lesson/animation/quiz records
 	Backend->>Frontend: Confirmation / preview link
 	Teacher->>Frontend: Publish / Schedule
 	Backend->>Database: Update lifecycle state (published)
@@ -164,6 +169,7 @@ sequenceDiagram
 ### Implementation Pointers
 
 - Representative controller files: [backend/src/controllers/courseController.js](backend/src/controllers/courseController.js), [backend/src/controllers/lessonController.js](backend/src/controllers/lessonController.js), [backend/src/controllers/animationController.js](backend/src/controllers/animationController.js), [backend/src/controllers/uploadController.js](backend/src/controllers/uploadController.js), [backend/src/controllers/quizController.js](backend/src/controllers/quizController.js), [backend/src/controllers/progressController.js](backend/src/controllers/progressController.js), [backend/src/controllers/reportController.js](backend/src/controllers/reportController.js), [backend/src/controllers/teacherController.js](backend/src/controllers/teacherController.js)
+- Studio (animation authoring UI) and persistence: [frontend/src/pages/AnimationStudio.jsx](frontend/src/pages/AnimationStudio.jsx), [frontend/src/components/Studio/CanvasStudio.jsx](frontend/src/components/Studio/CanvasStudio.jsx), [backend/src/routes/animationRoutes.js](backend/src/routes/animationRoutes.js), [backend/src/controllers/animationController.js](backend/src/controllers/animationController.js), [backend/src/models/mongo/animation.js](backend/src/models/mongo/animation.js)
 - AI services and endpoints: [backend/src/services/aiService.js](backend/src/services/aiService.js) (server-side generation), [backend/src/routes/courseRoutes.js](backend/src/routes/courseRoutes.js) (`/generate-quiz`, `/import-questions`)
 - Frontend course builder (AI tools): [frontend/src/pages/TeacherCourseBuilder.jsx](frontend/src/pages/TeacherCourseBuilder.jsx), [frontend/src/services/courseService.js](frontend/src/services/courseService.js), [frontend/src/components/courseBuilder/AIGenerateModal.jsx](frontend/src/components/courseBuilder/AIGenerateModal.jsx), [frontend/src/components/courseBuilder/AIHtmlGenerateModal.jsx](frontend/src/components/courseBuilder/AIHtmlGenerateModal.jsx), [frontend/src/components/courseBuilder/HtmlPreviewModal.jsx](frontend/src/components/courseBuilder/HtmlPreviewModal.jsx)
 - Persistence and schema: [backend/prisma/schema.prisma](backend/prisma/schema.prisma), [backend/src/prisma/client.js](backend/src/prisma/client.js)
@@ -173,58 +179,42 @@ The exposition deliberately remains at an architectural level to preserve focus 
 
 ## 4.4 Admin Features
 
-This section describes administrative capabilities provided by MindQuest. It focuses on user account governance, content approval and moderation, system usage monitoring, and oversight of payment activities. For each feature the user-facing controls, backend processing, role-based constraints, and system behaviour are explained with an emphasis on data provenance and auditability.
+This section describes administrative capabilities provided by MindQuest. It focuses on user account governance, course oversight, teacher verification, content moderation, and system usage monitoring. For each feature the user-facing controls, backend processing, role-based constraints, and system behaviour are explained with an emphasis on data provenance and auditability.
 
-### 4.4.1 User Management
+### 4.4.1 Dashboard and System Monitoring
 
-- User interaction: Administrators manage the user lifecycle via an administrative console. Typical actions include creating accounts, editing profile and role attributes, suspending or deleting accounts, and resetting credentials. The UI provides audit-aware forms and confirmation flows to prevent accidental privilege changes.
-- Data processing and storage: Admin actions are executed as authenticated, audited transactions. Requests validate administrative privileges and persist changes to the canonical user store; audit records capture the actor, target, operation, and timestamp. Role assignments are stored as attributes on user records and drive downstream access control checks.
-- Role-based access: Only accounts with administrative roles may perform these actions; role checks are enforced at the API layer and logged for traceability. Administrative changes propagate to session and token services to ensure immediate enforcement of new privileges.
+- User interaction: The administrative dashboard presents real-time system-wide metrics including total user counts, active students, course statistics, and platform health indicators. Administrators access an overview of key performance indicators, recent activities, and alerts requiring attention. The interface supports navigation to detailed management views for each administrative domain.
+- Data processing and storage: Dashboard metrics are computed through aggregation pipelines that consume event logs (authentication events, enrolments, content accesses) and produce derived metrics cached for responsive retrieval. Summary statistics (total users, active students, published courses) are retrieved from the primary data stores via optimised queries that count documents matching specific criteria.
+- Role-based access: Access to the dashboard and system metrics is restricted to administrative roles and audited. All administrative navigation and view access is logged for compliance and retrospective analysis.
 
-### 4.4.2 Content Approval Workflow
+### 4.4.2 Manage Users
 
-- User interaction: Administrators and designated reviewers examine content submitted by teachers (courses, lessons, media) through a moderation interface. Items may be approved, returned for revision, or rejected with explanatory comments. The interface supports bulk operations and filtered queues (e.g., pending, flagged, scheduled).
-- Data processing and storage: Moderation actions update the lifecycle state of content artefacts (pending, approved, published, rejected) and record reviewer notes. The backend enforces policy checks before publishing and may enqueue auxiliary jobs (notifications, indexing) on approval. All moderation events are retained for compliance and reporting.
-- Role-based access: Approval workflows respect delegated permissions; teachers may be required to submit content for review depending on organisational policies. Administrators can configure policy parameters that govern whether content is auto-published or held for human review.
+- User interaction: Administrators manage the user lifecycle via a dedicated user management interface. The UI provides searchable, paginated tables of all users with filtering by role (student, teacher, admin), status (active, pending, banned), and search capabilities. Typical actions include viewing user profiles, editing role attributes, banning or unbanning accounts, and reviewing user activity. The interface supports bulk operations and includes audit-aware confirmation flows to prevent accidental privilege changes.
+- Data processing and storage: User management requests are executed as authenticated, audited transactions. The backend validates administrative privileges and persists changes to the canonical user store; role changes, status updates, and ban actions are recorded with metadata capturing the actor, target, operation, and timestamp. User records store role assignments (student, teacher, admin) and status flags (active, pending, banned) that drive downstream access control checks and email notifications.
+- Role-based access: Only accounts with administrative roles may perform user management actions; role checks are enforced at the API layer and logged for traceability. Status changes (ban/unban) trigger automated email notifications to affected users and propagate to session and token services to ensure immediate enforcement of new restrictions.
 
-### 4.4.3 Monitoring System Usage
+### 4.4.3 Manage Courses
 
-- User interaction: Administrative dashboards present system-wide metrics (active users, course uptake, resource utilisation), alerting thresholds, and logs for forensic inspection. Administrators can filter by time windows, cohorts, or resource types and export views for institutional reporting where supported.
-- Data processing and storage: Monitoring is supplied by aggregation pipelines that consume event logs (authentication events, enrolments, content accesses, assessment attempts) and produce derived metrics that are cached for efficient retrieval. High-volume event data may be retained in a document store with configured retention policies, while summary aggregates are persisted in relational tables for reporting.
-- Role-based access: Access to monitoring and logs is restricted to administrative roles and audited. Fine-grained controls may limit visibility to specific organisational units or cohorts.
+- User interaction: Administrators oversee all courses through a course management interface that displays published and draft courses across all instructors. Administrators can view course metadata, enrolment statistics, lesson structures, and associated media. Actions may include publishing teacher-submitted courses, retiring outdated content, or resolving reported issues with course materials.
+- Data processing and storage: Course management operations update course lifecycle states (draft, published, archived) and record administrative actions. The backend enforces validation checks before publishing and maintains referential integrity between courses, lessons, quizzes, and media assets. All moderation and lifecycle events are persisted for compliance and historical tracking.
+- Role-based access: Administrative course actions are restricted to admin roles and logged. While teachers retain primary authorship control, administrators may override visibility, enrolment capacity, or content flags based on organisational policies or compliance requirements.
+
+### 4.4.4 Teacher Verification
+
+- User interaction: Administrators review and process teacher registration requests through a verification interface. Pending teacher accounts are listed with submitted credentials, certificates, or professional documentation. Administrators can approve applications (activating the teacher account and granting content authoring privileges) or reject applications with a reason that is communicated to the applicant via email.
+- Data processing and storage: Teacher verification requests are stored with a pending status in the user record. Approval actions update the user status to active and send automated approval emails via the email service; rejection actions record the rejection reason, send rejection emails, and may archive the application for audit purposes. All verification decisions are logged with administrator identity and timestamp.
+- Role-based access: Verification actions are restricted to administrators. The workflow enforces policy compliance by preventing teacher accounts from authoring or publishing content until approval is granted. Verification state transitions are auditable and traceable.
+
+### 4.4.5 Reported Comments (Content Moderation)
+
+- User interaction: Administrators manage user-reported reviews and comments through a moderation interface. Reported items are aggregated and ranked by report count and recency; each entry displays the review content, associated course, reporting users, and reasons provided. Administrators can review the context, delete inappropriate content, or dismiss reports deemed unfounded.
+- Data processing and storage: User-submitted reports are stored as discrete records linking the review, reporter, reason, and timestamp. Aggregation pipelines group reports by review identifier to produce counts and reason summaries. Deletion actions remove the review from the public view and cascade to associated report records; all moderation decisions are retained for compliance and to prevent repeat offences.
+- Role-based access: Content moderation is restricted to administrative roles and audited. Moderation actions (delete review, dismiss report) are logged with the administrator identity, and significant events may trigger notifications to content authors or reporting users as per organisational policy.
 
 
-### 4.4.4 System Behaviour for Admin Actions
+### 4.4.6 System Behaviour for Admin Actions
 
-- Transactional and audit-first: Administrative actions are treated as transactions with associated audit records. Rollback or compensating actions are handled according to the operation type (for example, revoking access tokens after account suspension).
-- Immediate enforcement: Role and policy changes take effect promptly; sessions and distributed caches are invalidated or re-evaluated to ensure enforcement of new permissions.
-- Notifications and escalation: Significant administrative events (mass deactivations, payment disputes, content takedowns) trigger notification workflows to affected users and optionally escalate to higher-level administrators.
-
-### High-level Interaction Flow (Admin)
-
-```mermaid
-sequenceDiagram
-	participant Admin
-	participant Frontend
-	participant Backend
-	participant Database
-	participant PaymentProvider
-
-	Admin->>Frontend: Create/edit user, review content, request refund
-	Frontend->>Backend: Authenticated admin request
-	Backend->>Database: Persist changes, write audit record
-	Note right of Backend: Enforce policy checks and role validation
-	Backend->>PaymentProvider: (if payment) reconcile / refund
-	Backend->>Frontend: Confirmation / report data
-	Frontend->>Admin: Display updated state and audit trail
-```
-
-### Implementation Pointers
-
-- Representative controller files: `backend/src/controllers/userController.js`, `backend/src/controllers/courseController.js`, `backend/src/controllers/lessonController.js`, `backend/src/controllers/reportController.js`, `backend/src/controllers/notificationController.js`, `backend/src/controllers/paymentController.js`.
-- Persistence and schema: `backend/prisma/schema.prisma`, `backend/src/prisma/client.js`.
-- Payment provider setup: `backend/STRIPE_SETUP.md` (configuration summary; provider-specific docs are external).
-
-Notes: CSV/PDF export facilities are described here only if present in the codebase; no repository-level export implementation was documented during this iteration and therefore export capabilities are considered future work or out-of-scope for this chapter unless confirmed otherwise.
-
+- Transactional and audit-first: Administrative actions are treated as transactions with associated audit records. Operations such as user status changes, teacher approvals, and content deletions are logged with administrator identity, timestamp, and operation type. Rollback or compensating actions are handled according to the operation type (for example, revoking access tokens after account banning).
+- Immediate enforcement: Role and policy changes take effect promptly; user status updates (ban/unban, pending to active) propagate to authentication and session services to ensure immediate enforcement of new permissions or restrictions. Token validation and route guards respect updated user states.
+- Notifications and escalation: Significant administrative events trigger automated notification workflows: teacher approval/rejection sends email notifications to the affected user; user bans send notification emails; content moderation actions may notify course authors or reporters as configured. Escalation mechanisms ensure that high-priority reports or policy violations are flagged for senior administrative review.
 
