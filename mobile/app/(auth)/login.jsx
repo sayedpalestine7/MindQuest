@@ -93,13 +93,7 @@ export default function LoginScreen() {
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign in</Text>}
       </Pressable>
 
-      <Pressable
-        style={[styles.button, styles.secondaryButton]}
-        onPress={() => promptAsync()}
-        disabled={!request || loading || !googleReady}
-      >
-        <Text style={styles.secondaryButtonText}>Continue with Google</Text>
-      </Pressable>
+      
 
       <Text style={styles.footer}>
         No account? <Link href="/(auth)/signup" style={styles.link}>Create one</Link>
