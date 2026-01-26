@@ -569,14 +569,14 @@ export default function AnimationStudio() {
       const updated = prevObjects.map(o => {
         if (selectedIds.includes(o.id)) {
           const lastTransition = o.transitions[o.transitions.length - 1];
-          
+
           // Update the last transition to have the correct duration (time until next keyframe)
           const updatedLastTransition = {
             ...lastTransition,
             duration: transitionDuration,
             easing: easing || lastTransition.easing || 'linear'
           };
-          
+
           // Calculate new start time based on updated last transition
           const newStartTime = lastTransition.startTime + transitionDuration;
 
@@ -900,7 +900,7 @@ export default function AnimationStudio() {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     } else {
       setIsPlaying(true);
-      
+
       if (mode === 'slides') {
         // Slide mode playback
         const startTime = Date.now() - (playbackTime * 1000);
@@ -1015,7 +1015,7 @@ export default function AnimationStudio() {
 
   const createNewAnimation = (selectedMode = 'timeline') => {
     setMode(selectedMode);
-    
+
     if (selectedMode === 'slides') {
       // Initialize slide mode
       setSlides([
@@ -1037,7 +1037,7 @@ export default function AnimationStudio() {
       setSlides([]);
       setObjectLibrary([]);
     }
-    
+
     setAnimationTitle('Untitled Animation');
     setDuration(DEFAULT_ANIMATION_DURATION);
     setDurationOverride(null);
@@ -1054,7 +1054,7 @@ export default function AnimationStudio() {
       );
       const data = response.data || {};
       const animationMode = data.mode || 'timeline';
-      
+
       setMode(animationMode);
       setAnimationTitle(data.title || 'Untitled Animation');
       setCanvasMeta({
@@ -1062,7 +1062,7 @@ export default function AnimationStudio() {
         height: data.canvasHeight ?? null
       });
       setCurrentAnimationId(animationId);
-      
+
       if (animationMode === 'slides') {
         // Load slide mode data
         const slideData = data.slideData || {};
@@ -1092,7 +1092,7 @@ export default function AnimationStudio() {
         // Timeline mode: load top-level connections
         setConnections(data.connections || []);
       }
-      
+
       setShowProjectSelector(false);
     } catch (error) {
       console.error('Error loading animation:', error);
@@ -1101,9 +1101,9 @@ export default function AnimationStudio() {
   };
 
   // ========== SLIDE MODE FUNCTIONS ==========
-  
+
   const currentSlide = slides[currentSlideIndex] || slides[0];
-  
+
   const totalSlideDuration = useMemo(() => {
     return slides.reduce((sum, slide) => sum + (slide.duration || 1.0), 0);
   }, [slides]);
@@ -1125,9 +1125,9 @@ export default function AnimationStudio() {
       text: type === 'text' ? 'Text' : '',
       visible: true
     };
-    
+
     setObjectLibrary(prev => [...prev, newObj]);
-    
+
     // Auto-add to current slide
     setSlides(prev => prev.map((slide, idx) => {
       if (idx === currentSlideIndex) {
@@ -1138,7 +1138,7 @@ export default function AnimationStudio() {
       }
       return slide;
     }));
-    
+
     return newObj;
   };
 
@@ -1148,7 +1148,7 @@ export default function AnimationStudio() {
       if (idx === currentSlideIndex) {
         return {
           ...slide,
-          objects: slide.objects.map(obj => 
+          objects: slide.objects.map(obj =>
             obj.id === objId ? { ...obj, visible: !obj.visible } : obj
           )
         };
@@ -1214,16 +1214,16 @@ export default function AnimationStudio() {
   const deleteSlideObject = (objId) => {
     // Remove from object library
     setObjectLibrary(prev => prev.filter(obj => obj.id !== objId));
-    
+
     // Remove from all slides and clean up connections
     setSlides(prev => prev.map(slide => ({
       ...slide,
       objects: slide.objects.filter(obj => obj.id !== objId),
-      connections: (slide.connections || []).filter(conn => 
+      connections: (slide.connections || []).filter(conn =>
         conn.fromId !== objId && conn.toId !== objId
       )
     })));
-    
+
     // Deselect if it was selected
     setSelectedIds(prev => prev.filter(id => id !== objId));
   };
@@ -1231,7 +1231,7 @@ export default function AnimationStudio() {
   // Add connection between two objects in current slide
   const addSlideConnection = () => {
     if (selectedIds.length !== 2) return;
-    
+
     const [fromId, toId] = selectedIds;
     const newConnection = {
       id: `conn_${Date.now()}`,
@@ -1240,7 +1240,7 @@ export default function AnimationStudio() {
       color: '#facc15',
       width: 2
     };
-    
+
     setSlides(prev => prev.map((slide, idx) => {
       if (idx >= currentSlideIndex) {
         // Add to current and all future slides
@@ -1285,16 +1285,16 @@ export default function AnimationStudio() {
   const getSlideObjectState = (objectId, slideIndex, progress) => {
     const slide = slides[slideIndex];
     const nextSlide = slides[slideIndex + 1];
-    
+
     const currentObj = slide?.objects?.find(o => o.id === objectId);
     const nextObj = nextSlide?.objects?.find(o => o.id === objectId);
-    
+
     if (!currentObj || !currentObj.visible) return null;
     if (!nextSlide || !nextObj || !nextObj.visible) return currentObj;
-    
+
     const easingFunc = easingFunctions[slide.easing] || easingFunctions.linear;
     const t = easingFunc(progress);
-    
+
     return {
       ...currentObj,
       x: lerp(currentObj.x, nextObj.x, t),
@@ -1341,7 +1341,7 @@ export default function AnimationStudio() {
     let objectsToRender = [];
     let slideIdx = currentSlideIndex;
     let progress = 0;
-    
+
     if (isPlaying) {
       // Find current slide based on playback time
       let accumulatedTime = 0;
@@ -1354,11 +1354,11 @@ export default function AnimationStudio() {
         accumulatedTime += slides[i].duration;
       }
     }
-    
+
     // Get all unique object IDs
     const allObjIds = new Set();
     slides.forEach(slide => slide.objects.forEach(obj => allObjIds.add(obj.id)));
-    
+
     objectsToRender = Array.from(allObjIds).map(id => {
       const state = getSlideObjectState(id, slideIdx, progress);
       return state;
@@ -1397,13 +1397,13 @@ export default function AnimationStudio() {
           .map(slide => slide.objects.find(o => o.id === libObj.id && o.visible))
           .filter(Boolean)
           .map(obj => ({ x: obj.x, y: obj.y }));
-        
+
         if (positions.length < 2) return;
-        
+
         ctx.strokeStyle = 'rgba(59, 130, 246, 0.3)';
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 5]);
-        
+
         ctx.beginPath();
         ctx.moveTo(positions[0].x, positions[0].y);
         for (let i = 1; i < positions.length; i++) {
@@ -1411,7 +1411,7 @@ export default function AnimationStudio() {
         }
         ctx.stroke();
         ctx.setLineDash([]);
-        
+
         // Draw dots at keyframes
         positions.forEach((pos, idx) => {
           ctx.fillStyle = idx === slideIdx ? '#3b82f6' : 'rgba(59, 130, 246, 0.5)';
@@ -1426,30 +1426,30 @@ export default function AnimationStudio() {
     objectsToRender.forEach(obj => {
       ctx.save();
       ctx.globalAlpha = obj.opacity ?? 1;
-      
+
       const x = obj.x ?? 0;
       const y = obj.y ?? 0;
       const scale = obj.scale ?? 1;
       const size = (obj.width ?? BASE_SHAPE_SIZE) * scale;
-      
+
       ctx.translate(x, y);
       if (obj.rotation) {
         ctx.rotate((obj.rotation * Math.PI) / 180);
       }
 
       ctx.fillStyle = obj.color || '#3b82f6';
-      
+
       switch (obj.type) {
         case 'circle':
           ctx.beginPath();
           ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
           ctx.fill();
           break;
-        
+
         case 'square':
           ctx.fillRect(-size / 2, -size / 2, size, size);
           break;
-        
+
         case 'triangle':
           ctx.beginPath();
           ctx.moveTo(0, -size / 2);
@@ -1458,14 +1458,14 @@ export default function AnimationStudio() {
           ctx.closePath();
           ctx.fill();
           break;
-        
+
         case 'rectangle': {
           const w = (obj.width ?? 100) * scale;
           const h = (obj.height ?? 60) * scale;
           ctx.fillRect(-w / 2, -h / 2, w, h);
           break;
         }
-        
+
         case 'text':
           ctx.fillStyle = obj.color || '#000000';
           ctx.font = `${16 * scale}px Arial`;
@@ -1474,7 +1474,7 @@ export default function AnimationStudio() {
           ctx.fillText(obj.text || '', 0, 0);
           break;
       }
-      
+
       // Draw text content for all object types (not just 'text' type)
       if (obj.text && obj.type !== 'text') {
         ctx.fillStyle = '#ffffff';
@@ -1483,13 +1483,13 @@ export default function AnimationStudio() {
         ctx.textBaseline = 'middle';
         ctx.fillText(obj.text, 0, 0);
       }
-      
+
       // Draw selection outline
       if (!isPlaying && selectedIds.includes(obj.id)) {
         ctx.strokeStyle = '#3b82f6';
         ctx.lineWidth = 2;
         const padding = 5;
-        
+
         if (obj.type === 'circle') {
           ctx.beginPath();
           ctx.arc(0, 0, size / 2 + padding, 0, Math.PI * 2);
@@ -1502,7 +1502,7 @@ export default function AnimationStudio() {
           ctx.strokeRect(-size / 2 - padding, -size / 2 - padding, size + padding * 2, size + padding * 2);
         }
       }
-      
+
       ctx.restore();
     });
   }, [mode, currentSlide, selectedIds, isPlaying, playbackTime, slides, objectLibrary, connections, currentSlideIndex]);
@@ -1542,19 +1542,19 @@ export default function AnimationStudio() {
 
     const handleMouseDown = (e) => {
       if (isPlaying) return;
-      
+
       const rect = canvas.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
       const isMultiSelect = e.ctrlKey || e.metaKey;
-      
+
       let foundObject = null;
-      
+
       // Find clicked object (reverse order to check top objects first)
       for (const obj of currentSlide.objects.filter(o => o.visible).reverse()) {
         const scale = obj.scale ?? 1;
         let width, height;
-        
+
         if (obj.type === 'rectangle' || obj.type === 'text') {
           width = (obj.width ?? 100) * scale;
           height = (obj.height ?? 60) * scale;
@@ -1574,11 +1574,11 @@ export default function AnimationStudio() {
           width = size;
           height = size;
         }
-        
+
         // Rectangle/square/triangle hit detection
         const halfWidth = width / 2;
         const halfHeight = height / 2;
-        
+
         if (
           mouseX >= obj.x - halfWidth &&
           mouseX <= obj.x + halfWidth &&
@@ -1589,7 +1589,7 @@ export default function AnimationStudio() {
           break;
         }
       }
-      
+
       if (foundObject) {
         // Handle multi-select
         if (isMultiSelect) {
@@ -1603,19 +1603,19 @@ export default function AnimationStudio() {
         } else {
           setSelectedIds(prev => {
             const newSelection = prev.includes(foundObject.id) ? prev : [foundObject.id];
-            
+
             // Store initial positions for all selected objects
             slideDragRef.current.dragging = foundObject.id;
             slideDragRef.current.offset = { x: mouseX - foundObject.x, y: mouseY - foundObject.y };
             slideDragRef.current.dragStartPositions = {};
-            
+
             newSelection.forEach(id => {
               const obj = currentSlide.objects.find(o => o.id === id);
               if (obj) {
                 slideDragRef.current.dragStartPositions[id] = { x: obj.x, y: obj.y };
               }
             });
-            
+
             return newSelection;
           });
         }
@@ -1629,20 +1629,20 @@ export default function AnimationStudio() {
 
     const handleMouseMove = (e) => {
       if (!slideDragRef.current.dragging) return;
-      
+
       const rect = canvas.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
-      
+
       // Calculate delta from the primary dragged object's start position
       const primaryStartPos = slideDragRef.current.dragStartPositions[slideDragRef.current.dragging];
       if (!primaryStartPos) return;
-      
+
       const newX = mouseX - slideDragRef.current.offset.x;
       const newY = mouseY - slideDragRef.current.offset.y;
       const deltaX = newX - primaryStartPos.x;
       const deltaY = newY - primaryStartPos.y;
-      
+
       // Move all selected objects by the same delta
       setSlides(prev => prev.map((slide, idx) => {
         if (idx === currentSlideIndex) {
@@ -1697,9 +1697,9 @@ export default function AnimationStudio() {
 
     try {
       const canvasRect = canvasRef.current?.getBoundingClientRect();
-      
+
       let animationData;
-      
+
       if (mode === 'slides') {
         // Save slide mode data (store connections inside each slide in slideData)
         animationData = {
@@ -1759,7 +1759,7 @@ export default function AnimationStudio() {
         setCurrentAnimationId(response.data._id);
         setSaveMessage('✓ Animation saved successfully!');
       }
-      
+
       if (mode === 'timeline') {
         const normalized = normalizeAnimation({
           duration,
@@ -1768,7 +1768,7 @@ export default function AnimationStudio() {
         });
         setDuration(normalized.effectiveDuration || DEFAULT_ANIMATION_DURATION);
       }
-      
+
       setTimeout(() => setSaveMessage(''), 3000);
     } catch (error) {
       console.error('Error saving animation:', error);
@@ -2270,7 +2270,7 @@ export default function AnimationStudio() {
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-gray-800 rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[600px] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6">Animation Projects</h2>
-            
+
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-3">Create New Animation</h3>
               <p className="text-sm text-gray-400 mb-4">Choose an animation mode. This cannot be changed later.</p>
@@ -2330,10 +2330,10 @@ export default function AnimationStudio() {
                             </span>
                           </div>
                           <p className="text-sm text-gray-400">
-                            {animation.mode === 'slides' 
+                            {animation.mode === 'slides'
                               ? `${animation.slideData?.slides?.length || 0} slides`
                               : `${animation.objects?.length || 0} objects`
-                            } · 
+                            } ·
                             {new Date(animation.createdAt).toLocaleDateString()}
                           </p>
                         </div>
@@ -2396,7 +2396,7 @@ export default function AnimationStudio() {
             placeholder="Enter animation title..."
             className="px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
           />
-          <button 
+          <button
             onClick={exportAnimation}
             disabled={isSaving}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded disabled:bg-gray-600 disabled:cursor-not-allowed"
@@ -2417,208 +2417,208 @@ export default function AnimationStudio() {
         {mode === 'timeline' ? (
           // TIMELINE MODE UI (existing)
           <>
-        <div className="w-64 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto">
-          <div className="mb-4">
-            <h2 className="text-sm font-semibold mb-2">Add Objects</h2>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => addObject('circle')} className="p-2 bg-blue-600 hover:bg-blue-700 rounded flex items-center justify-center">
-                <Circle size={20} />
-              </button>
-              <button onClick={() => addObject('square')} className="p-2 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center">
-                <Square size={20} />
-              </button>
-              <button onClick={() => addObject('triangle')} className="p-2 bg-green-600 hover:bg-green-700 rounded flex items-center justify-center">
-                <Triangle size={20} />
-              </button>
-              <button onClick={() => addObject('rectangle')} className="p-2 bg-orange-600 hover:bg-orange-700 rounded text-xs">
-                Rect
-              </button>
-              <button onClick={() => addObject('text')} className="p-2 bg-purple-600 hover:bg-purple-700 rounded text-xs col-span-2">
-                Text
-              </button>
-            </div>
-            <div className="mt-4">
-              <h3 className="text-xs text-gray-400 mb-2">General</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {generalTemplates.map((template) => (
-                  <button
-                    key={template.label}
-                    onClick={() => addObject(template.type, 0, template.overrides, template.label)}
-                    className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-                  >
-                    {template.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="mt-4">
-              <h3 className="text-xs text-gray-400 mb-2">Data Structures</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {dataStructureTemplates.map((template) => (
-                  <button
-                    key={template.label}
-                    onClick={() => addObject(template.type, 0, template.overrides, template.label)}
-                    className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-                  >
-                    {template.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="mt-4">
-              <h3 className="text-xs text-gray-400 mb-2">Saved Objects</h3>
-              {isLoadingSavedObjects ? (
-                <p className="text-[10px] text-gray-500">Loading saved objects...</p>
-              ) : savedObjects.length > 0 ? (
+            <div className="w-64 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto">
+              <div className="mb-4">
+                <h2 className="text-sm font-semibold mb-2">Add Objects</h2>
                 <div className="grid grid-cols-2 gap-2">
-                  {savedObjects.map((saved) => (
-                    <div key={saved.id} className="flex items-center justify-between bg-gray-800 rounded">
+                  <button onClick={() => addObject('circle')} className="p-2 bg-blue-600 hover:bg-blue-700 rounded flex items-center justify-center">
+                    <Circle size={20} />
+                  </button>
+                  <button onClick={() => addObject('square')} className="p-2 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center">
+                    <Square size={20} />
+                  </button>
+                  <button onClick={() => addObject('triangle')} className="p-2 bg-green-600 hover:bg-green-700 rounded flex items-center justify-center">
+                    <Triangle size={20} />
+                  </button>
+                  <button onClick={() => addObject('rectangle')} className="p-2 bg-orange-600 hover:bg-orange-700 rounded text-xs">
+                    Rect
+                  </button>
+                  <button onClick={() => addObject('text')} className="p-2 bg-purple-600 hover:bg-purple-700 rounded text-xs col-span-2">
+                    Text
+                  </button>
+                </div>
+                <div className="mt-4">
+                  <h3 className="text-xs text-gray-400 mb-2">General</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {generalTemplates.map((template) => (
                       <button
-                        onClick={() => addSavedObjectToCanvas(saved)}
-                        className="flex-1 text-left px-2 py-2 hover:bg-gray-700 rounded-l text-xs"
-                        title={saved.name}
+                        key={template.label}
+                        onClick={() => addObject(template.type, 0, template.overrides, template.label)}
+                        className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs"
                       >
-                        {saved.name}
+                        {template.label}
                       </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <h3 className="text-xs text-gray-400 mb-2">Data Structures</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {dataStructureTemplates.map((template) => (
                       <button
-                        onClick={(e) => { e.stopPropagation(); if (confirm('Delete saved object from library?')) deleteSavedObject(saved.id); }}
-                        className="px-2 py-2 hover:bg-red-700 rounded-r text-xs bg-transparent"
-                        title="Delete from library"
+                        key={template.label}
+                        onClick={() => addObject(template.type, 0, template.overrides, template.label)}
+                        className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs"
                       >
-                        <Trash2 size={14} />
+                        {template.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <h3 className="text-xs text-gray-400 mb-2">Saved Objects</h3>
+                  {isLoadingSavedObjects ? (
+                    <p className="text-[10px] text-gray-500">Loading saved objects...</p>
+                  ) : savedObjects.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {savedObjects.map((saved) => (
+                        <div key={saved.id} className="flex items-center justify-between bg-gray-800 rounded">
+                          <button
+                            onClick={() => addSavedObjectToCanvas(saved)}
+                            className="flex-1 text-left px-2 py-2 hover:bg-gray-700 rounded-l text-xs"
+                            title={saved.name}
+                          >
+                            {saved.name}
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); if (confirm('Delete saved object from library?')) deleteSavedObject(saved.id); }}
+                            className="px-2 py-2 hover:bg-red-700 rounded-r text-xs bg-transparent"
+                            title="Delete from library"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-gray-500">No saved objects yet.</p>
+                  )}
+                </div>
+                <div className="mt-4">
+                  <h3 className="text-xs text-gray-400 mb-2">Connections</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={addConnection}
+                      disabled={selectedIds.length < 2}
+                      className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs disabled:opacity-50"
+                    >
+                      Connect
+                    </button>
+                    <button
+                      onClick={clearConnectionsForSelection}
+                      disabled={selectedIds.length === 0}
+                      className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs disabled:opacity-50"
+                    >
+                      Clear
+                    </button>
+                    <div className="col-span-2 flex items-center gap-2">
+                      <label className="flex items-center text-xs">
+                        <input type="checkbox" className="mr-2" checked={deleteMergedFromLibrary} onChange={(e) => setDeleteMergedFromLibrary(e.target.checked)} />
+                        Delete originals from library
+                      </label>
+                      <button
+                        onClick={mergeSelectedObjects}
+                        disabled={selectedIds.length < 2}
+                        className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs disabled:opacity-50 ml-auto"
+                      >
+                        Merge (Overlap)
                       </button>
                     </div>
-                  ))}
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-2">Connect uses the first two selected objects.</p>
                 </div>
-              ) : (
-                <p className="text-[10px] text-gray-500">No saved objects yet.</p>
-              )}
-            </div>
-            <div className="mt-4">
-              <h3 className="text-xs text-gray-400 mb-2">Connections</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={addConnection}
-                  disabled={selectedIds.length < 2}
-                  className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs disabled:opacity-50"
-                >
-                  Connect
-                </button>
-                <button
-                  onClick={clearConnectionsForSelection}
-                  disabled={selectedIds.length === 0}
-                  className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs disabled:opacity-50"
-                >
-                  Clear
-                </button>
-                <div className="col-span-2 flex items-center gap-2">
-                  <label className="flex items-center text-xs">
-                    <input type="checkbox" className="mr-2" checked={deleteMergedFromLibrary} onChange={(e) => setDeleteMergedFromLibrary(e.target.checked)} />
-                    Delete originals from library
-                  </label>
-                  <button
-                    onClick={mergeSelectedObjects}
-                    disabled={selectedIds.length < 2}
-                    className="px-2 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs disabled:opacity-50 ml-auto"
+              </div>
+
+              <div>
+                <h2 className="text-sm font-semibold mb-2">Objects ({selectedIds.length} selected)</h2>
+                {objects.map(obj => (
+                  <div key={obj.id} className={`flex items-center justify-between p-2 mb-1 rounded cursor-pointer ${selectedIds.includes(obj.id) ? 'bg-gray-700' : 'bg-gray-750 hover:bg-gray-700'}`}
+                    onClick={(e) => {
+                      if (e.ctrlKey || e.metaKey) {
+                        setSelectedIds(prev => prev.includes(obj.id) ? prev.filter(id => id !== obj.id) : [...prev, obj.id]);
+                      } else {
+                        setSelectedIds([obj.id]);
+                        setSelectedTransitionIndex(obj.transitions.length - 1);
+                      }
+                    }}
+                    onContextMenu={(e) => handleContextMenu(e, obj.id, undefined)}
                   >
-                    Merge (Overlap)
-                  </button>
-                </div>
+                    <span className="text-sm">{obj.name}</span>
+                    <button onClick={(e) => { e.stopPropagation(); deleteObject(obj.id); }} className="text-red-400 hover:text-red-300"><Trash2 size={16} /></button>
+                  </div>
+                ))}
               </div>
-              <p className="text-[10px] text-gray-500 mt-2">Connect uses the first two selected objects.</p>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-sm font-semibold mb-2">Objects ({selectedIds.length} selected)</h2>
-            {objects.map(obj => (
-              <div key={obj.id} className={`flex items-center justify-between p-2 mb-1 rounded cursor-pointer ${selectedIds.includes(obj.id) ? 'bg-gray-700' : 'bg-gray-750 hover:bg-gray-700'}`}
-                onClick={(e) => {
-                  if (e.ctrlKey || e.metaKey) {
-                    setSelectedIds(prev => prev.includes(obj.id) ? prev.filter(id => id !== obj.id) : [...prev, obj.id]);
-                  } else {
-                    setSelectedIds([obj.id]);
-                    setSelectedTransitionIndex(obj.transitions.length - 1);
-                  }
-                }}
-                onContextMenu={(e) => handleContextMenu(e, obj.id, undefined)}
-              >
-                <span className="text-sm">{obj.name}</span>
-                <button onClick={(e) => { e.stopPropagation(); deleteObject(obj.id); }} className="text-red-400 hover:text-red-300"><Trash2 size={16} /></button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col min-w-0">
-          <div
-            ref={canvasRef}
-            className="flex-1 bg-gray-700 relative overflow-hidden"
-            onMouseDown={handleCanvasMouseDown}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-          >
-            <canvas
-              ref={parityCanvasRef}
-              className={`absolute inset-0 ${useParityPreview ? 'block' : 'hidden'}`}
-              style={{ pointerEvents: 'none' }}
-            />
-            {renderConnections()}
-            {objects.map(obj => renderMotionTrail(obj))}
-
-            {objects.map(obj => {
-              const allTransitions = obj.transitions.map((trans, idx) => ({ trans, idx }));
-
-              return (
-                <React.Fragment key={obj.id}>
-                  {!isPlaying && !useParityPreview && allTransitions.slice(0, -1).map(({ trans, idx }) => (
-                    obj.children?.length ? renderCompound(obj, trans, true, idx) : renderShape(obj, trans, true, idx)
-                  ))}
-                  {!useParityPreview && (obj.children?.length
-                    ? renderCompound(obj, isPlaying ? getObjectStateAtTime(obj, currentTime) : obj.transitions[obj.transitions.length - 1], false, obj.transitions.length - 1)
-                    : renderShape(obj, isPlaying ? getObjectStateAtTime(obj, currentTime) : obj.transitions[obj.transitions.length - 1], false, obj.transitions.length - 1))}
-                </React.Fragment>
-              );
-            })}
-
-            <div
-              className="absolute border border-dashed border-white/40 pointer-events-none"
-              style={{
-                left: safeAreaPadding,
-                right: safeAreaPadding,
-                top: safeAreaPadding,
-                bottom: safeAreaPadding
-              }}
-            >
-              <div className="absolute -top-5 left-0 text-[10px] text-white/60">Safe area</div>
             </div>
 
-            {selectionBox && (
+            <div className="flex-1 flex flex-col min-w-0">
               <div
-                style={{
-                  position: 'absolute',
-                  left: selectionBox.x,
-                  top: selectionBox.y,
-                  width: selectionBox.width,
-                  height: selectionBox.height,
-                  border: '2px dashed #3b82f6',
-                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                  pointerEvents: 'none'
-                }}
-              />
-            )}
-          </div>
+                ref={canvasRef}
+                className="flex-1 bg-gray-700 relative overflow-hidden"
+                onMouseDown={handleCanvasMouseDown}
+                onMouseMove={handleCanvasMouseMove}
+                onMouseUp={handleCanvasMouseUp}
+              >
+                <canvas
+                  ref={parityCanvasRef}
+                  className={`absolute inset-0 ${useParityPreview ? 'block' : 'hidden'}`}
+                  style={{ pointerEvents: 'none' }}
+                />
+                {renderConnections()}
+                {objects.map(obj => renderMotionTrail(obj))}
 
-          <div className="h-48 bg-gray-800 border-t border-gray-700 p-4">
-          <div className="flex items-center gap-4 mb-4">
-            <button onClick={togglePlay} className="p-2 bg-blue-600 hover:bg-blue-700 rounded">{isPlaying ? <Pause size={20} /> : <Play size={20} />}</button>
-            <span className="text-sm">{currentTime.toFixed(2)}s / {duration}s</span>
-            {timelineWarnings.length > 0 && (
-              <div className="text-xs text-yellow-300 bg-yellow-500/10 border border-yellow-500/30 rounded px-2 py-1">
-                {timelineWarnings.length} warning{timelineWarnings.length > 1 ? 's' : ''}
+                {objects.map(obj => {
+                  const allTransitions = obj.transitions.map((trans, idx) => ({ trans, idx }));
+
+                  return (
+                    <React.Fragment key={obj.id}>
+                      {!isPlaying && !useParityPreview && allTransitions.slice(0, -1).map(({ trans, idx }) => (
+                        obj.children?.length ? renderCompound(obj, trans, true, idx) : renderShape(obj, trans, true, idx)
+                      ))}
+                      {!useParityPreview && (obj.children?.length
+                        ? renderCompound(obj, isPlaying ? getObjectStateAtTime(obj, currentTime) : obj.transitions[obj.transitions.length - 1], false, obj.transitions.length - 1)
+                        : renderShape(obj, isPlaying ? getObjectStateAtTime(obj, currentTime) : obj.transitions[obj.transitions.length - 1], false, obj.transitions.length - 1))}
+                    </React.Fragment>
+                  );
+                })}
+
+                <div
+                  className="absolute border border-dashed border-white/40 pointer-events-none"
+                  style={{
+                    left: safeAreaPadding,
+                    right: safeAreaPadding,
+                    top: safeAreaPadding,
+                    bottom: safeAreaPadding
+                  }}
+                >
+                  <div className="absolute -top-5 left-0 text-[10px] text-white/60">Safe area</div>
+                </div>
+
+                {selectionBox && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: selectionBox.x,
+                      top: selectionBox.y,
+                      width: selectionBox.width,
+                      height: selectionBox.height,
+                      border: '2px dashed #3b82f6',
+                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                      pointerEvents: 'none'
+                    }}
+                  />
+                )}
               </div>
-            )}
-            {/* <button 
+
+              <div className="h-48 bg-gray-800 border-t border-gray-700 p-4">
+                <div className="flex items-center gap-4 mb-4">
+                  <button onClick={togglePlay} className="p-2 bg-blue-600 hover:bg-blue-700 rounded">{isPlaying ? <Pause size={20} /> : <Play size={20} />}</button>
+                  <span className="text-sm">{currentTime.toFixed(2)}s / {duration}s</span>
+                  {timelineWarnings.length > 0 && (
+                    <div className="text-xs text-yellow-300 bg-yellow-500/10 border border-yellow-500/30 rounded px-2 py-1">
+                      {timelineWarnings.length} warning{timelineWarnings.length > 1 ? 's' : ''}
+                    </div>
+                  )}
+                  {/* <button 
               onClick={() => {
                 const time = prompt('Enter time to add object (in seconds):', currentTime.toFixed(2));
                 if (time !== null) {
@@ -2633,171 +2633,171 @@ export default function AnimationStudio() {
               className="px-
             >
               Add at Time
-            </button> */} 
-          </div>
-            <div className="relative h-16 bg-gray-900 rounded overflow-x-auto">
-              <input type="range" min="0" max={duration} step="0.01" value={currentTime} onChange={(e) => setCurrentTime(parseFloat(e.target.value))} className="absolute w-full h-full opacity-0 cursor-pointer z-10" disabled={isPlaying} />
-              <div className="absolute w-full h-full flex items-center px-2">
-                <div className="w-full h-8 bg-gray-700 relative">
-                  <div className="absolute h-full bg-blue-500 opacity-30" style={{ width: `${(currentTime / duration) * 100}%` }} />
-                  {derivedDuration > 0 && (
-                    <div
-                      className="absolute top-0 h-full"
-                      style={{ left: `${endMarkerPosition}%` }}
-                      title={`Animation end: ${derivedDuration.toFixed(2)}s`}
-                    >
-                      <div className="h-full w-px bg-yellow-400" />
-                      <div className="absolute -top-5 -left-3 text-[10px] text-yellow-300">End</div>
-                    </div>
-                  )}
+            </button> */}
                 </div>
+                <div className="relative h-16 bg-gray-900 rounded overflow-x-auto">
+                  <input type="range" min="0" max={duration} step="0.01" value={currentTime} onChange={(e) => setCurrentTime(parseFloat(e.target.value))} className="absolute w-full h-full opacity-0 cursor-pointer z-10" disabled={isPlaying} />
+                  <div className="absolute w-full h-full flex items-center px-2">
+                    <div className="w-full h-8 bg-gray-700 relative">
+                      <div className="absolute h-full bg-blue-500 opacity-30" style={{ width: `${(currentTime / duration) * 100}%` }} />
+                      {derivedDuration > 0 && (
+                        <div
+                          className="absolute top-0 h-full"
+                          style={{ left: `${endMarkerPosition}%` }}
+                          title={`Animation end: ${derivedDuration.toFixed(2)}s`}
+                        >
+                          <div className="h-full w-px bg-yellow-400" />
+                          <div className="absolute -top-5 -left-3 text-[10px] text-yellow-300">End</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {timelineWarnings.length > 0 && (
+                  <div className="mt-3 space-y-1 text-xs text-yellow-200">
+                    {timelineWarnings.map((warning, index) => (
+                      <div key={`${warning}-${index}`} className="flex items-start gap-2">
+                        <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-yellow-300" />
+                        <span>{warning}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-            {timelineWarnings.length > 0 && (
-              <div className="mt-3 space-y-1 text-xs text-yellow-200">
-                {timelineWarnings.map((warning, index) => (
-                  <div key={`${warning}-${index}`} className="flex items-start gap-2">
-                    <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-yellow-300" />
-                    <span>{warning}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
 
-        <div className="w-72 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto">
-          {selectedObject && selectedTransitionIndex !== null && selectedObject.transitions[selectedTransitionIndex] ? (
-            <>
-              <p className="text-xs text-gray-400 mb-3" title="Keyframes define a start state; easing applies over the duration to the next keyframe.">
-                {selectedTransitionIndex === 0 ? 'Initial State' : `Transition ${selectedTransitionIndex}`}
-              </p>
-              {selectedTransitionIndex > 0 && (
-                <div className="text-xs text-gray-400 mb-3">
-                  <span
-                    className="inline-flex items-center gap-1"
-                    title="Easing is applied from this keyframe to the next keyframe."
-                  >
-                    Easing: {selectedObject.transitions[selectedTransitionIndex - 1]?.easing || 'linear'}
-                    <span className="text-gray-500">ⓘ</span>
-                  </span>
-                </div>
-              )}
-              {selectedTransitionIndex > 0 && (
-                <div className="mb-4 p-2 bg-gray-700 rounded">
-                  <button onClick={() => deleteTransition(selectedObject.id, selectedTransitionIndex)} className="w-full text-xs px-2 py-1 bg-red-600 hover:bg-red-700 rounded">Delete Transition</button>
-                </div>
-              )}
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs mb-1">Text</label>
-                  <input type="text" value={selectedObject.transitions[selectedTransitionIndex].text || ''} onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { text: e.target.value })} className="w-full px-3 py-2 bg-gray-700 rounded text-white text-sm" placeholder="Enter text..." />
-                </div>
-                {selectedObject.type === 'rectangle' && (
-                  <>
+            <div className="w-72 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto">
+              {selectedObject && selectedTransitionIndex !== null && selectedObject.transitions[selectedTransitionIndex] ? (
+                <>
+                  <p className="text-xs text-gray-400 mb-3" title="Keyframes define a start state; easing applies over the duration to the next keyframe.">
+                    {selectedTransitionIndex === 0 ? 'Initial State' : `Transition ${selectedTransitionIndex}`}
+                  </p>
+                  {selectedTransitionIndex > 0 && (
+                    <div className="text-xs text-gray-400 mb-3">
+                      <span
+                        className="inline-flex items-center gap-1"
+                        title="Easing is applied from this keyframe to the next keyframe."
+                      >
+                        Easing: {selectedObject.transitions[selectedTransitionIndex - 1]?.easing || 'linear'}
+                        <span className="text-gray-500">ⓘ</span>
+                      </span>
+                    </div>
+                  )}
+                  {selectedTransitionIndex > 0 && (
+                    <div className="mb-4 p-2 bg-gray-700 rounded">
+                      <button onClick={() => deleteTransition(selectedObject.id, selectedTransitionIndex)} className="w-full text-xs px-2 py-1 bg-red-600 hover:bg-red-700 rounded">Delete Transition</button>
+                    </div>
+                  )}
+                  <div className="space-y-3">
                     <div>
-                      <label className="block text-xs mb-1">Width: {selectedObject.transitions[selectedTransitionIndex].width ?? 100}</label>
-                      <input type="range" min="20" max="300" value={selectedObject.transitions[selectedTransitionIndex].width ?? 100} onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { width: parseInt(e.target.value) })} className="w-full" />
+                      <label className="block text-xs mb-1">Text</label>
+                      <input type="text" value={selectedObject.transitions[selectedTransitionIndex].text || ''} onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { text: e.target.value })} className="w-full px-3 py-2 bg-gray-700 rounded text-white text-sm" placeholder="Enter text..." />
+                    </div>
+                    {selectedObject.type === 'rectangle' && (
+                      <>
+                        <div>
+                          <label className="block text-xs mb-1">Width: {selectedObject.transitions[selectedTransitionIndex].width ?? 100}</label>
+                          <input type="range" min="20" max="300" value={selectedObject.transitions[selectedTransitionIndex].width ?? 100} onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { width: parseInt(e.target.value) })} className="w-full" />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-1">Height: {selectedObject.transitions[selectedTransitionIndex].height ?? 60}</label>
+                          <input type="range" min="20" max="300" value={selectedObject.transitions[selectedTransitionIndex].height ?? 60} onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { height: parseInt(e.target.value) })} className="w-full" />
+                        </div>
+                      </>
+                    )}
+                    <div>
+                      <label className="block text-xs mb-1">Scale: {(selectedObject.transitions[selectedTransitionIndex].scale ?? 1).toFixed(1)}</label>
+                      <input type="range" min="0.1" max="3" step="0.1" value={selectedObject.transitions[selectedTransitionIndex].scale ?? 1} onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { scale: parseFloat(e.target.value) })} className="w-full" />
                     </div>
                     <div>
-                      <label className="block text-xs mb-1">Height: {selectedObject.transitions[selectedTransitionIndex].height ?? 60}</label>
-                      <input type="range" min="20" max="300" value={selectedObject.transitions[selectedTransitionIndex].height ?? 60} onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { height: parseInt(e.target.value) })} className="w-full" />
+                      <label className="block text-xs mb-1">Rotation: {selectedObject.transitions[selectedTransitionIndex].rotation ?? 0}°</label>
+                      <input type="range" min="0" max="360" value={selectedObject.transitions[selectedTransitionIndex].rotation ?? 0} onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { rotation: parseInt(e.target.value) })} className="w-full" />
                     </div>
-                  </>
-                )}
-                <div>
-                  <label className="block text-xs mb-1">Scale: {(selectedObject.transitions[selectedTransitionIndex].scale ?? 1).toFixed(1)}</label>
-                  <input type="range" min="0.1" max="3" step="0.1" value={selectedObject.transitions[selectedTransitionIndex].scale ?? 1} onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { scale: parseFloat(e.target.value) })} className="w-full" />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1">Rotation: {selectedObject.transitions[selectedTransitionIndex].rotation ?? 0}°</label>
-                  <input type="range" min="0" max="360" value={selectedObject.transitions[selectedTransitionIndex].rotation ?? 0} onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { rotation: parseInt(e.target.value) })} className="w-full" />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1">Opacity: {(selectedObject.transitions[selectedTransitionIndex].opacity ?? 1).toFixed(1)}</label>
-                  <input type="range" min="0" max="1" step="0.1" value={selectedObject.transitions[selectedTransitionIndex].opacity ?? 1} onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { opacity: parseFloat(e.target.value) })} className="w-full" />
-                </div>
-                <div>
-                  <label className="block text-xs mb-1">Color</label>
-                  <input
-                    type="color"
-                    value={selectedObject.transitions[selectedTransitionIndex].color ?? '#ffffff'}
-                    onChange={(e) => {
-                      const color = e.target.value;
-                      const current = selectedObject.transitions[selectedTransitionIndex];
-                      const updates = { color };
-                      if (current?.fillColor === 'transparent') {
-                        updates.strokeColor = color;
-                      }
-                      updateTransition(selectedObject.id, selectedTransitionIndex, updates);
-                    }}
-                    className="w-full h-8 rounded"
-                  />
-                </div>
-                {['rectangle', 'square', 'circle'].includes(selectedObject.type) && (
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-xs">
+                    <div>
+                      <label className="block text-xs mb-1">Opacity: {(selectedObject.transitions[selectedTransitionIndex].opacity ?? 1).toFixed(1)}</label>
+                      <input type="range" min="0" max="1" step="0.1" value={selectedObject.transitions[selectedTransitionIndex].opacity ?? 1} onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { opacity: parseFloat(e.target.value) })} className="w-full" />
+                    </div>
+                    <div>
+                      <label className="block text-xs mb-1">Color</label>
                       <input
-                        type="checkbox"
-                        checked={selectedObject.transitions[selectedTransitionIndex].fillColor === 'transparent'}
+                        type="color"
+                        value={selectedObject.transitions[selectedTransitionIndex].color ?? '#ffffff'}
                         onChange={(e) => {
+                          const color = e.target.value;
                           const current = selectedObject.transitions[selectedTransitionIndex];
-                          if (e.target.checked) {
-                            updateTransition(selectedObject.id, selectedTransitionIndex, {
-                              fillColor: 'transparent',
-                              strokeColor: current.strokeColor || current.color || '#ffffff',
-                              borderWidth: current.borderWidth ?? 2
-                            });
-                          } else {
-                            updateTransition(selectedObject.id, selectedTransitionIndex, {
-                              fillColor: null,
-                              strokeColor: null
-                            });
+                          const updates = { color };
+                          if (current?.fillColor === 'transparent') {
+                            updates.strokeColor = color;
                           }
+                          updateTransition(selectedObject.id, selectedTransitionIndex, updates);
                         }}
+                        className="w-full h-8 rounded"
                       />
-                      Hollow
-                    </label>
-                    {(selectedObject.transitions[selectedTransitionIndex].fillColor === 'transparent' || selectedObject.transitions[selectedTransitionIndex].strokeColor) && (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-xs mb-1">Stroke</label>
+                    </div>
+                    {['rectangle', 'square', 'circle'].includes(selectedObject.type) && (
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-xs">
                           <input
-                            type="color"
-                            value={selectedObject.transitions[selectedTransitionIndex].strokeColor ?? selectedObject.transitions[selectedTransitionIndex].color ?? '#ffffff'}
-                            onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { strokeColor: e.target.value })}
-                            className="w-full h-8 rounded"
+                            type="checkbox"
+                            checked={selectedObject.transitions[selectedTransitionIndex].fillColor === 'transparent'}
+                            onChange={(e) => {
+                              const current = selectedObject.transitions[selectedTransitionIndex];
+                              if (e.target.checked) {
+                                updateTransition(selectedObject.id, selectedTransitionIndex, {
+                                  fillColor: 'transparent',
+                                  strokeColor: current.strokeColor || current.color || '#ffffff',
+                                  borderWidth: current.borderWidth ?? 2
+                                });
+                              } else {
+                                updateTransition(selectedObject.id, selectedTransitionIndex, {
+                                  fillColor: null,
+                                  strokeColor: null
+                                });
+                              }
+                            }}
                           />
-                        </div>
-                        <div>
-                          <label className="block text-xs mb-1">Border: {selectedObject.transitions[selectedTransitionIndex].borderWidth ?? 2}</label>
-                          <input
-                            type="range"
-                            min="1"
-                            max="10"
-                            value={selectedObject.transitions[selectedTransitionIndex].borderWidth ?? 2}
-                            onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { borderWidth: parseInt(e.target.value) })}
-                            className="w-full"
-                          />
-                        </div>
+                          Hollow
+                        </label>
+                        {(selectedObject.transitions[selectedTransitionIndex].fillColor === 'transparent' || selectedObject.transitions[selectedTransitionIndex].strokeColor) && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-xs mb-1">Stroke</label>
+                              <input
+                                type="color"
+                                value={selectedObject.transitions[selectedTransitionIndex].strokeColor ?? selectedObject.transitions[selectedTransitionIndex].color ?? '#ffffff'}
+                                onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { strokeColor: e.target.value })}
+                                className="w-full h-8 rounded"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs mb-1">Border: {selectedObject.transitions[selectedTransitionIndex].borderWidth ?? 2}</label>
+                              <input
+                                type="range"
+                                min="1"
+                                max="10"
+                                value={selectedObject.transitions[selectedTransitionIndex].borderWidth ?? 2}
+                                onChange={(e) => updateTransition(selectedObject.id, selectedTransitionIndex, { borderWidth: parseInt(e.target.value) })}
+                                className="w-full"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="text-sm text-gray-400">{selectedIds.length > 1 ? `${selectedIds.length} objects selected - right-click to add transition` : 'Select an object to edit'}</div>
-          )}
-        </div>
-      </>
+                </>
+              ) : (
+                <div className="text-sm text-gray-400">{selectedIds.length > 1 ? `${selectedIds.length} objects selected - right-click to add transition` : 'Select an object to edit'}</div>
+              )}
+            </div>
+          </>
         ) : (
           // SLIDE MODE UI
           <>
             {/* Left Sidebar - Object Library */}
             <div className="w-64 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto">
               <h2 className="text-sm font-semibold mb-3">Object Library</h2>
-              
+
               <div className="mb-4">
                 <p className="text-xs text-gray-400 mb-2">Create Objects</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -2839,13 +2839,12 @@ export default function AnimationStudio() {
                 {objectLibrary.map(obj => {
                   const inCurrentSlide = currentSlide.objects.some(o => o.id === obj.id);
                   const isVisible = currentSlide.objects.find(o => o.id === obj.id)?.visible;
-                  
+
                   return (
                     <div
                       key={obj.id}
-                      className={`flex items-center gap-2 p-2 mb-1 rounded text-xs ${
-                        selectedIds.includes(obj.id) ? 'bg-blue-700' : 'bg-gray-700'
-                      }`}
+                      className={`flex items-center gap-2 p-2 mb-1 rounded text-xs ${selectedIds.includes(obj.id) ? 'bg-blue-700' : 'bg-gray-700'
+                        }`}
                       onClick={() => {
                         if (inCurrentSlide) {
                           setSelectedIds([obj.id]);
@@ -2920,9 +2919,9 @@ export default function AnimationStudio() {
                   <span className="text-sm">
                     Slide {currentSlideIndex + 1} of {slides.length}
                   </span>
-                  
+
                   <div className="flex-1" />
-                  
+
                   <button
                     onClick={() => setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))}
                     disabled={currentSlideIndex === 0}
@@ -2960,7 +2959,7 @@ export default function AnimationStudio() {
                     <Trash2 size={20} />
                   </button>
                 </div>
-                
+
                 {/* Slide thumbnails */}
                 <div
                   ref={slideThumbsRef}
@@ -2978,11 +2977,10 @@ export default function AnimationStudio() {
                     <button
                       key={slide.id}
                       onClick={() => setCurrentSlideIndex(idx)}
-                      className={`flex-shrink-0 w-24 h-16 rounded border-2 ${
-                        idx === currentSlideIndex
+                      className={`flex-shrink-0 w-24 h-16 rounded border-2 ${idx === currentSlideIndex
                           ? 'border-blue-500 bg-blue-900'
                           : 'border-gray-600 bg-gray-700 hover:bg-gray-600'
-                      }`}
+                        }`}
                     >
                       <div className="text-xs p-1">
                         Slide {idx + 1}
@@ -2999,7 +2997,7 @@ export default function AnimationStudio() {
             {/* Right Sidebar - Properties */}
             <div className="w-72 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto">
               <h2 className="text-sm font-semibold mb-3">Slide Properties</h2>
-              
+
               <div className="space-y-3 mb-6">
                 <div>
                   <label className="block text-xs mb-1">Duration (seconds)</label>
@@ -3018,7 +3016,7 @@ export default function AnimationStudio() {
                     className="w-full px-3 py-2 bg-gray-700 rounded text-white text-sm"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-xs mb-1">Easing</label>
                   <select
@@ -3138,7 +3136,7 @@ export default function AnimationStudio() {
               {/* Connection Management */}
               <div className="mt-6 pt-4 border-t border-gray-700">
                 <h2 className="text-sm font-semibold mb-3">Connections</h2>
-                
+
                 {selectedIds.length === 2 ? (
                   <button
                     onClick={addSlideConnection}
@@ -3151,7 +3149,7 @@ export default function AnimationStudio() {
                     Select exactly 2 objects (Ctrl+Click) to create a connection
                   </p>
                 )}
-                
+
                 {currentSlide.connections && currentSlide.connections.length > 0 && (
                   <div className="mt-3 space-y-2">
                     <p className="text-xs text-gray-400">Existing connections:</p>
