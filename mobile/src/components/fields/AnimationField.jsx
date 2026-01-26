@@ -384,7 +384,32 @@ const buildAnimationHtml = (animation) => {
       ctx.translate(offsetX, offsetY);
       ctx.scale(scale, scale);
 
-      if (Array.isArray(animation.connections)) {
+      // If slideData is present, draw connections scoped to the active slide; otherwise draw global connections
+      const slideData = animation.slideData;
+      if (slideData && Array.isArray(slideData.slides) && slideData.slides.length > 0) {
+        // determine current slide index by accumulated durations
+        let acc = 0;
+        const totalSlideDuration = slideData.slides.reduce((s, sl) => s + (sl.duration || 1), 0);
+        const t = totalSlideDuration > 0 ? (currentTime % (animation.effectiveDuration || animation.duration || totalSlideDuration)) : 0;
+        let slideIdx = 0;
+        for (let i = 0; i < slideData.slides.length; i++) {
+          const d = slideData.slides[i].duration || 1;
+          if (t >= acc && t < acc + d) {
+            slideIdx = i;
+            break;
+          }
+          acc += d;
+        }
+        const slideConns = (slideData.slides[slideIdx] && Array.isArray(slideData.slides[slideIdx].connections)) ? slideData.slides[slideIdx].connections : [];
+        slideConns.forEach((conn) => {
+          const fromObj = (slideData.slides[slideIdx].objects || []).find((obj) => obj.id === conn.fromId) || animation.objects.find((obj) => obj.id === conn.fromId);
+          const toObj = (slideData.slides[slideIdx].objects || []).find((obj) => obj.id === conn.toId) || animation.objects.find((obj) => obj.id === conn.toId);
+          if (!fromObj || !toObj) return;
+          const fromState = fromObj.transitions ? getObjectStateAtTime(fromObj, currentTime) : { x: fromObj.x ?? 0, y: fromObj.y ?? 0 };
+          const toState = toObj.transitions ? getObjectStateAtTime(toObj, currentTime) : { x: toObj.x ?? 0, y: toObj.y ?? 0 };
+          drawArrow({ x: fromState.x ?? 0, y: fromState.y ?? 0 }, { x: toState.x ?? 0, y: toState.y ?? 0 }, conn.color || "#facc15", conn.width || 2);
+        });
+      } else if (Array.isArray(animation.connections)) {
         animation.connections.forEach((conn) => {
           const fromObj = animation.objects.find((obj) => obj.id === conn.fromId);
           const toObj = animation.objects.find((obj) => obj.id === conn.toId);

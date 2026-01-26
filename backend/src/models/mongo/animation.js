@@ -34,7 +34,43 @@ const AnimationObjectSchema = new mongoose.Schema(
       required: true
     },
     transitions: [TransitionSchema],
-    children: []
+    children: [],
+    // Slide mode properties (when used in slides)
+    x: { type: Number },
+    y: { type: Number },
+    width: { type: Number },
+    height: { type: Number },
+    scale: { type: Number, default: 1 },
+    rotation: { type: Number, default: 0 },
+    color: { type: String },
+    fillColor: { type: String },
+    strokeColor: { type: String },
+    borderWidth: { type: Number, default: 2 },
+    openTop: { type: Boolean, default: false },
+    text: { type: String },
+    opacity: { type: Number, default: 1 },
+    visible: { type: Boolean, default: true }
+  },
+  { _id: false }
+);
+
+// Schema for slides (slide mode only)
+const SlideSchema = new mongoose.Schema(
+  {
+    id: { type: String, required: true },
+    time: { type: Number, default: 0 },
+    duration: { type: Number, default: 1.0 },
+    easing: { type: String, default: 'ease-in-out' },
+    objects: [AnimationObjectSchema],
+    connections: [
+      {
+        id: { type: String },
+        fromId: { type: String, required: true },
+        toId: { type: String, required: true },
+        color: { type: String, default: "#facc15" },
+        width: { type: Number, default: 2 }
+      }
+    ]
   },
   { _id: false }
 );
@@ -49,6 +85,12 @@ const AnimationSchema = new mongoose.Schema(
       ref: "User",
       required: true
     },
+    // Mode: 'timeline' (default/existing) or 'slides' (new)
+    mode: { 
+      type: String, 
+      enum: ['timeline', 'slides'], 
+      default: 'timeline' 
+    },
     duration: { type: Number, default: 15 },
     durationOverride: { type: Number, default: null },
     canvasWidth: { type: Number, default: null },
@@ -61,7 +103,13 @@ const AnimationSchema = new mongoose.Schema(
         width: { type: Number, default: 2 }
       }
     ],
+    // Timeline mode data
     objects: [AnimationObjectSchema],
+    // Slide mode data
+    slideData: {
+      slides: [SlideSchema],
+      objectLibrary: [AnimationObjectSchema]
+    },
     isPublished: { type: Boolean, default: false },
     tags: [{ type: String }]
   },

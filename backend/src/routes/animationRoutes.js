@@ -32,18 +32,20 @@ const router = express.Router();
 // 📥 Save animation
 router.post("/", async (req, res) => {
   try {
-    const { title, description, authorId, duration, durationOverride, canvasWidth, canvasHeight, connections, objects, isPublished, tags } = req.body;
+    const { title, description, authorId, mode, duration, durationOverride, canvasWidth, canvasHeight, connections, objects, slideData, isPublished, tags } = req.body;
 
     const newAnimation = new Animation({
       title,
       description,
       authorId,
+      mode: mode || 'timeline', // Default to timeline mode
       duration,
       durationOverride,
       canvasWidth,
       canvasHeight,
       connections,
       objects,
+      slideData,
       isPublished: isPublished || false,
       tags: tags || []
     });
@@ -59,19 +61,21 @@ router.post("/", async (req, res) => {
 // 📝 Update animation
 router.put("/:id", async (req, res) => {
   try {
-    const { title, description, duration, durationOverride, canvasWidth, canvasHeight, connections, objects, isPublished, tags } = req.body;
+    const { title, description, mode, duration, durationOverride, canvasWidth, canvasHeight, connections, objects, slideData, isPublished, tags } = req.body;
 
     const updated = await Animation.findByIdAndUpdate(
       req.params.id,
       {
         title,
         description,
+        mode,
         duration,
         durationOverride,
         canvasWidth,
         canvasHeight,
         connections,
         objects,
+        slideData,
         isPublished,
         tags
       },

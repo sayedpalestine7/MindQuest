@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Play, Pause, Square, Circle, Triangle, Save, Trash2, X, Plus, FolderOpen } from 'lucide-react';
+import { Play, Pause, Square, Circle, Triangle, Save, Trash2, X, Plus, FolderOpen, Layers, GitBranch, Eye, EyeOff, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
 import axios from 'axios';
 import AnimationRenderer from '../components/coursePage/AnimationRenderer';
 import {
@@ -47,9 +47,34 @@ export default function AnimationStudio() {
   const [isLoadingSavedObjects, setIsLoadingSavedObjects] = useState(false);
   const [deleteMergedFromLibrary, setDeleteMergedFromLibrary] = useState(false);
 
+  // Slide mode state
+  const [mode, setMode] = useState('timeline'); // 'timeline' or 'slides'
+  const [slides, setSlides] = useState([
+    {
+      id: 'slide_0',
+      time: 0,
+      duration: 1.0,
+      easing: 'ease-in-out',
+      objects: [],
+      connections: [] // Per-slide connections
+    }
+  ]);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [objectLibrary, setObjectLibrary] = useState([]);
+  const [playbackTime, setPlaybackTime] = useState(0);
+
   const animationRef = useRef(null);
   const canvasRef = useRef(null);
   const parityCanvasRef = useRef(null);
+  const slideDragRef = useRef({
+    dragging: null,
+    offset: { x: 0, y: 0 },
+    dragStartPositions: {} // Store initial positions for multi-select drag
+  });
+  const slideThumbsRef = useRef(null);
+  const thumbDragging = useRef(false);
+  const thumbStartX = useRef(0);
+  const thumbStartScroll = useRef(0);
   const dragStateRef = useRef({
     draggingId: null,
     resizingId: null,
@@ -850,10 +875,14 @@ export default function AnimationStudio() {
         e.preventDefault();
         pasteObjects();
       }
-      // Add Delete key support
+      // Add Delete key support for both modes
       if (e.key === 'Delete' && selectedIds.length > 0) {
         e.preventDefault();
-        selectedIds.forEach(id => deleteObject(id));
+        if (mode === 'slides') {
+          selectedIds.forEach(id => deleteSlideObject(id));
+        } else {
+          selectedIds.forEach(id => deleteObject(id));
+        }
       }
     };
     window.addEventListener('click', handleClick);
@@ -862,7 +891,7 @@ export default function AnimationStudio() {
       window.removeEventListener('click', handleClick);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedIds, objects, copiedObjects, deleteObject]);
+  }, [selectedIds, objects, copiedObjects, deleteObject, mode]);
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -870,20 +899,38 @@ export default function AnimationStudio() {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     } else {
       setIsPlaying(true);
-      const startTime = Date.now() - (currentTime * 1000);
-
-      const animate = () => {
-        const elapsed = (Date.now() - startTime) / 1000;
-        if (elapsed >= duration) {
-          setCurrentTime(0);
-          setIsPlaying(false);
-          if (animationRef.current) cancelAnimationFrame(animationRef.current);
-        } else {
-          setCurrentTime(elapsed);
-          animationRef.current = requestAnimationFrame(animate);
-        }
-      };
-      animate();
+      
+      if (mode === 'slides') {
+        // Slide mode playback
+        const startTime = Date.now() - (playbackTime * 1000);
+        const animate = () => {
+          const elapsed = (Date.now() - startTime) / 1000;
+          if (elapsed >= totalSlideDuration) {
+            setPlaybackTime(0);
+            setIsPlaying(false);
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
+          } else {
+            setPlaybackTime(elapsed);
+            animationRef.current = requestAnimationFrame(animate);
+          }
+        };
+        animate();
+      } else {
+        // Timeline mode playback
+        const startTime = Date.now() - (currentTime * 1000);
+        const animate = () => {
+          const elapsed = (Date.now() - startTime) / 1000;
+          if (elapsed >= duration) {
+            setCurrentTime(0);
+            setIsPlaying(false);
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
+          } else {
+            setCurrentTime(elapsed);
+            animationRef.current = requestAnimationFrame(animate);
+          }
+        };
+        animate();
+      }
     }
   };
 
@@ -965,8 +1012,31 @@ export default function AnimationStudio() {
     }
   };
 
-  const createNewAnimation = () => {
-    setObjects([]);
+  const createNewAnimation = (selectedMode = 'timeline') => {
+    setMode(selectedMode);
+    
+    if (selectedMode === 'slides') {
+      // Initialize slide mode
+      setSlides([
+        {
+          id: 'slide_0',
+          time: 0,
+          duration: 1.0,
+          easing: 'ease-in-out',
+          objects: [],
+          connections: []
+        }
+      ]);
+      setCurrentSlideIndex(0);
+      setObjectLibrary([]);
+      setObjects([]); // Clear timeline objects
+    } else {
+      // Initialize timeline mode
+      setObjects([]);
+      setSlides([]);
+      setObjectLibrary([]);
+    }
+    
     setAnimationTitle('Untitled Animation');
     setDuration(DEFAULT_ANIMATION_DURATION);
     setDurationOverride(null);
@@ -981,24 +1051,613 @@ export default function AnimationStudio() {
       const response = await axios.get(
         `http://localhost:5000/api/animations/${animationId}`
       );
-      const normalized = normalizeAnimation(response.data || {});
+      const data = response.data || {};
+      const animationMode = data.mode || 'timeline';
       
-      setObjects(normalized.objects || []);
-      setAnimationTitle(normalized.title || 'Untitled Animation');
-      setDurationOverride(normalized.durationOverride);
-      setDuration(normalized.effectiveDuration || DEFAULT_ANIMATION_DURATION);
-      setConnections(normalized.connections || []);
+      setMode(animationMode);
+      setAnimationTitle(data.title || 'Untitled Animation');
       setCanvasMeta({
-        width: normalized.canvasWidth ?? null,
-        height: normalized.canvasHeight ?? null
+        width: data.canvasWidth ?? null,
+        height: data.canvasHeight ?? null
       });
       setCurrentAnimationId(animationId);
+      
+      if (animationMode === 'slides') {
+        // Load slide mode data
+        const slideData = data.slideData || {};
+        setSlides(slideData.slides || [
+          {
+            id: 'slide_0',
+            time: 0,
+            duration: 1.0,
+            easing: 'ease-in-out',
+            objects: [],
+            connections: []
+          }
+        ]);
+        setObjectLibrary(slideData.objectLibrary || []);
+        setCurrentSlideIndex(0);
+        setObjects([]); // Clear timeline objects
+        // Clear top-level connections for slides mode; connections are stored per-slide
+        setConnections([]);
+      } else {
+        // Load timeline mode data
+        const normalized = normalizeAnimation(data);
+        setObjects(normalized.objects || []);
+        setDurationOverride(normalized.durationOverride);
+        setDuration(normalized.effectiveDuration || DEFAULT_ANIMATION_DURATION);
+        setSlides([]);
+        setObjectLibrary([]);
+        // Timeline mode: load top-level connections
+        setConnections(data.connections || []);
+      }
+      
       setShowProjectSelector(false);
     } catch (error) {
       console.error('Error loading animation:', error);
       setSaveMessage('✗ Error loading animation: ' + error.message);
     }
   };
+
+  // ========== SLIDE MODE FUNCTIONS ==========
+  
+  const currentSlide = slides[currentSlideIndex] || slides[0];
+  
+  const totalSlideDuration = useMemo(() => {
+    return slides.reduce((sum, slide) => sum + (slide.duration || 1.0), 0);
+  }, [slides]);
+
+  // Create object in library and add to current slide
+  const createSlideObject = (type) => {
+    const newObj = {
+      id: `obj_${Date.now()}`,
+      name: `${type}_${objectLibrary.filter(o => o.type === type).length + 1}`,
+      type,
+      x: 500,
+      y: 300,
+      scale: 1,
+      rotation: 0,
+      opacity: 1,
+      color: type === 'circle' ? '#3b82f6' : type === 'square' ? '#ef4444' : type === 'triangle' ? '#10b981' : '#f59e0b',
+      width: type === 'rectangle' || type === 'text' ? 120 : BASE_SHAPE_SIZE,
+      height: type === 'rectangle' || type === 'text' ? 60 : BASE_SHAPE_SIZE,
+      text: type === 'text' ? 'Text' : '',
+      visible: true
+    };
+    
+    setObjectLibrary(prev => [...prev, newObj]);
+    
+    // Auto-add to current slide
+    setSlides(prev => prev.map((slide, idx) => {
+      if (idx === currentSlideIndex) {
+        return {
+          ...slide,
+          objects: [...slide.objects, { ...newObj }]
+        };
+      }
+      return slide;
+    }));
+    
+    return newObj;
+  };
+
+  // Toggle object visibility in current slide
+  const toggleSlideObjectVisibility = (objId) => {
+    setSlides(prev => prev.map((slide, idx) => {
+      if (idx === currentSlideIndex) {
+        return {
+          ...slide,
+          objects: slide.objects.map(obj => 
+            obj.id === objId ? { ...obj, visible: !obj.visible } : obj
+          )
+        };
+      }
+      return slide;
+    }));
+  };
+
+  // Update object in current slide
+  const updateSlideObject = (objId, updates) => {
+    setSlides(prev => prev.map((slide, idx) => {
+      if (idx === currentSlideIndex) {
+        return {
+          ...slide,
+          objects: slide.objects.map(obj =>
+            obj.id === objId ? { ...obj, ...updates } : obj
+          )
+        };
+      }
+      return slide;
+    }));
+  };
+
+  // Add new slide
+  const addSlide = () => {
+    const lastSlide = slides[slides.length - 1];
+    const newSlide = {
+      id: `slide_${Date.now()}`,
+      time: lastSlide ? lastSlide.time + lastSlide.duration : 0,
+      duration: 1.0,
+      easing: 'ease-in-out',
+      objects: lastSlide ? lastSlide.objects.map(obj => ({ ...obj })) : [],
+      connections: lastSlide ? [...lastSlide.connections] : [] // Inherit connections
+    };
+    setSlides(prev => [...prev, newSlide]);
+    setCurrentSlideIndex(slides.length);
+  };
+
+  // Delete current slide
+  const deleteSlide = () => {
+    if (slides.length <= 1) return;
+    setSlides(prev => prev.filter((_, idx) => idx !== currentSlideIndex));
+    setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
+  };
+
+  // Duplicate current slide
+  const duplicateSlide = () => {
+    const newSlide = {
+      ...currentSlide,
+      id: `slide_${Date.now()}`,
+      objects: currentSlide.objects.map(obj => ({ ...obj })),
+      connections: [...(currentSlide.connections || [])]
+    };
+    setSlides(prev => {
+      const newSlides = [...prev];
+      newSlides.splice(currentSlideIndex + 1, 0, newSlide);
+      return newSlides;
+    });
+    setCurrentSlideIndex(currentSlideIndex + 1);
+  };
+
+  // Delete object from library and all slides
+  const deleteSlideObject = (objId) => {
+    // Remove from object library
+    setObjectLibrary(prev => prev.filter(obj => obj.id !== objId));
+    
+    // Remove from all slides and clean up connections
+    setSlides(prev => prev.map(slide => ({
+      ...slide,
+      objects: slide.objects.filter(obj => obj.id !== objId),
+      connections: (slide.connections || []).filter(conn => 
+        conn.fromId !== objId && conn.toId !== objId
+      )
+    })));
+    
+    // Deselect if it was selected
+    setSelectedIds(prev => prev.filter(id => id !== objId));
+  };
+
+  // Add connection between two objects in current slide
+  const addSlideConnection = () => {
+    if (selectedIds.length !== 2) return;
+    
+    const [fromId, toId] = selectedIds;
+    const newConnection = {
+      id: `conn_${Date.now()}`,
+      fromId,
+      toId,
+      color: '#facc15',
+      width: 2
+    };
+    
+    setSlides(prev => prev.map((slide, idx) => {
+      if (idx >= currentSlideIndex) {
+        // Add to current and all future slides
+        return {
+          ...slide,
+          connections: [...(slide.connections || []), { ...newConnection }]
+        };
+      }
+      return slide;
+    }));
+  };
+
+  // Remove connection from current slide and all future slides
+  const removeSlideConnection = (connId) => {
+    setSlides(prev => prev.map((slide, idx) => {
+      if (idx >= currentSlideIndex) {
+        return {
+          ...slide,
+          connections: (slide.connections || []).filter(conn => conn.id !== connId)
+        };
+      }
+      return slide;
+    }));
+  };
+
+  // Interpolation function for slides
+  const lerp = (start, end, t) => start + (end - start) * t;
+
+  const easingFunctions = {
+    linear: (t) => t,
+    'ease-in': (t) => t * t,
+    'ease-out': (t) => t * (2 - t),
+    'ease-in-out': (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+    bounce: (t) => {
+      if (t < 1 / 2.75) return 7.5625 * t * t;
+      if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
+      if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
+      return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
+    }
+  };
+
+  const getSlideObjectState = (objectId, slideIndex, progress) => {
+    const slide = slides[slideIndex];
+    const nextSlide = slides[slideIndex + 1];
+    
+    const currentObj = slide?.objects?.find(o => o.id === objectId);
+    const nextObj = nextSlide?.objects?.find(o => o.id === objectId);
+    
+    if (!currentObj || !currentObj.visible) return null;
+    if (!nextSlide || !nextObj || !nextObj.visible) return currentObj;
+    
+    const easingFunc = easingFunctions[slide.easing] || easingFunctions.linear;
+    const t = easingFunc(progress);
+    
+    return {
+      ...currentObj,
+      x: lerp(currentObj.x, nextObj.x, t),
+      y: lerp(currentObj.y, nextObj.y, t),
+      scale: lerp(currentObj.scale ?? 1, nextObj.scale ?? 1, t),
+      rotation: lerp(currentObj.rotation ?? 0, nextObj.rotation ?? 0, t),
+      opacity: lerp(currentObj.opacity ?? 1, nextObj.opacity ?? 1, t),
+      width: lerp(currentObj.width ?? BASE_SHAPE_SIZE, nextObj.width ?? BASE_SHAPE_SIZE, t),
+      height: lerp(currentObj.height ?? BASE_SHAPE_SIZE, nextObj.height ?? BASE_SHAPE_SIZE, t)
+    };
+  };
+
+  // Render slide mode canvas
+  useEffect(() => {
+    if (mode !== 'slides' || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#1f2937'; // Dark gray background like timeline mode
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw safe area guide
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(safeAreaPadding, safeAreaPadding, canvas.width - safeAreaPadding * 2, canvas.height - safeAreaPadding * 2);
+    ctx.setLineDash([]);
+
+    // Determine which objects to render
+    let objectsToRender = [];
+    let slideIdx = currentSlideIndex;
+    let progress = 0;
+    
+    if (isPlaying) {
+      // Find current slide based on playback time
+      let accumulatedTime = 0;
+      for (let i = 0; i < slides.length; i++) {
+        if (playbackTime >= accumulatedTime && playbackTime < accumulatedTime + slides[i].duration) {
+          slideIdx = i;
+          progress = (playbackTime - accumulatedTime) / slides[i].duration;
+          break;
+        }
+        accumulatedTime += slides[i].duration;
+      }
+    }
+    
+    // Get all unique object IDs
+    const allObjIds = new Set();
+    slides.forEach(slide => slide.objects.forEach(obj => allObjIds.add(obj.id)));
+    
+    objectsToRender = Array.from(allObjIds).map(id => {
+      const state = getSlideObjectState(id, slideIdx, progress);
+      return state;
+    }).filter(Boolean);
+
+    // Draw slide-scoped connections for the active slide
+    const slideConnections = (slides[slideIdx] && slides[slideIdx].connections) ? slides[slideIdx].connections : [];
+    if (slideConnections.length > 0) {
+      slideConnections.forEach(conn => {
+        const fromObj = objectsToRender.find(o => o.id === conn.fromId);
+        const toObj = objectsToRender.find(o => o.id === conn.toId);
+        if (!fromObj || !toObj) return;
+        ctx.strokeStyle = conn.color || '#facc15';
+        ctx.lineWidth = conn.width || 2;
+        ctx.beginPath();
+        ctx.moveTo(fromObj.x, fromObj.y);
+        ctx.lineTo(toObj.x, toObj.y);
+        ctx.stroke();
+        // Draw arrowhead
+        const headLength = 10;
+        const angle = Math.atan2(toObj.y - fromObj.y, toObj.x - fromObj.x);
+        ctx.fillStyle = conn.color || '#facc15';
+        ctx.beginPath();
+        ctx.moveTo(toObj.x, toObj.y);
+        ctx.lineTo(toObj.x - headLength * Math.cos(angle - Math.PI / 6), toObj.y - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(toObj.x - headLength * Math.cos(angle + Math.PI / 6), toObj.y - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+      });
+    }
+
+    // Draw motion trails in edit mode (BEFORE objects so dots don't cover text)
+    if (!isPlaying) {
+      objectLibrary.forEach(libObj => {
+        const positions = slides
+          .map(slide => slide.objects.find(o => o.id === libObj.id && o.visible))
+          .filter(Boolean)
+          .map(obj => ({ x: obj.x, y: obj.y }));
+        
+        if (positions.length < 2) return;
+        
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        
+        ctx.beginPath();
+        ctx.moveTo(positions[0].x, positions[0].y);
+        for (let i = 1; i < positions.length; i++) {
+          ctx.lineTo(positions[i].x, positions[i].y);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Draw dots at keyframes
+        positions.forEach((pos, idx) => {
+          ctx.fillStyle = idx === slideIdx ? '#3b82f6' : 'rgba(59, 130, 246, 0.5)';
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+    }
+
+    // Draw objects (AFTER motion trails so text appears on top)
+    objectsToRender.forEach(obj => {
+      ctx.save();
+      ctx.globalAlpha = obj.opacity ?? 1;
+      
+      const x = obj.x ?? 0;
+      const y = obj.y ?? 0;
+      const scale = obj.scale ?? 1;
+      const size = (obj.width ?? BASE_SHAPE_SIZE) * scale;
+      
+      ctx.translate(x, y);
+      if (obj.rotation) {
+        ctx.rotate((obj.rotation * Math.PI) / 180);
+      }
+
+      ctx.fillStyle = obj.color || '#3b82f6';
+      
+      switch (obj.type) {
+        case 'circle':
+          ctx.beginPath();
+          ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        
+        case 'square':
+          ctx.fillRect(-size / 2, -size / 2, size, size);
+          break;
+        
+        case 'triangle':
+          ctx.beginPath();
+          ctx.moveTo(0, -size / 2);
+          ctx.lineTo(size / 2, size / 2);
+          ctx.lineTo(-size / 2, size / 2);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        
+        case 'rectangle': {
+          const w = (obj.width ?? 100) * scale;
+          const h = (obj.height ?? 60) * scale;
+          ctx.fillRect(-w / 2, -h / 2, w, h);
+          break;
+        }
+        
+        case 'text':
+          ctx.fillStyle = obj.color || '#000000';
+          ctx.font = `${16 * scale}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(obj.text || '', 0, 0);
+          break;
+      }
+      
+      // Draw text content for all object types (not just 'text' type)
+      if (obj.text && obj.type !== 'text') {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `${12 * scale}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(obj.text, 0, 0);
+      }
+      
+      // Draw selection outline
+      if (!isPlaying && selectedIds.includes(obj.id)) {
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 2;
+        const padding = 5;
+        
+        if (obj.type === 'circle') {
+          ctx.beginPath();
+          ctx.arc(0, 0, size / 2 + padding, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (obj.type === 'rectangle') {
+          const w = (obj.width ?? 100) * scale;
+          const h = (obj.height ?? 60) * scale;
+          ctx.strokeRect(-w / 2 - padding, -h / 2 - padding, w + padding * 2, h + padding * 2);
+        } else {
+          ctx.strokeRect(-size / 2 - padding, -size / 2 - padding, size + padding * 2, size + padding * 2);
+        }
+      }
+      
+      ctx.restore();
+    });
+  }, [mode, currentSlide, selectedIds, isPlaying, playbackTime, slides, objectLibrary, connections, currentSlideIndex]);
+  // Keep slide canvas sized to its container
+  useEffect(() => {
+    if (mode !== 'slides' || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const container = canvas.parentElement;
+    if (!container) return;
+
+    const resize = () => {
+      const rect = container.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.floor(rect.width));
+      canvas.height = Math.max(1, Math.floor(rect.height));
+    };
+
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [mode, slides]);
+
+  // Handle dragging in slide mode
+  useEffect(() => {
+    if (mode !== 'slides' || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+
+    const handleMouseDown = (e) => {
+      if (isPlaying) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const isMultiSelect = e.ctrlKey || e.metaKey;
+      
+      let foundObject = null;
+      
+      // Find clicked object (reverse order to check top objects first)
+      for (const obj of currentSlide.objects.filter(o => o.visible).reverse()) {
+        const scale = obj.scale ?? 1;
+        let width, height;
+        
+        if (obj.type === 'rectangle' || obj.type === 'text') {
+          width = (obj.width ?? 100) * scale;
+          height = (obj.height ?? 60) * scale;
+        } else if (obj.type === 'circle') {
+          const size = (obj.width ?? BASE_SHAPE_SIZE) * scale;
+          // Circle hit detection
+          const dx = mouseX - obj.x;
+          const dy = mouseY - obj.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance <= size / 2) {
+            foundObject = obj;
+            break;
+          }
+          continue;
+        } else {
+          const size = (obj.width ?? BASE_SHAPE_SIZE) * scale;
+          width = size;
+          height = size;
+        }
+        
+        // Rectangle/square/triangle hit detection
+        const halfWidth = width / 2;
+        const halfHeight = height / 2;
+        
+        if (
+          mouseX >= obj.x - halfWidth &&
+          mouseX <= obj.x + halfWidth &&
+          mouseY >= obj.y - halfHeight &&
+          mouseY <= obj.y + halfHeight
+        ) {
+          foundObject = obj;
+          break;
+        }
+      }
+      
+      if (foundObject) {
+        // Handle multi-select
+        if (isMultiSelect) {
+          setSelectedIds(prev => {
+            if (prev.includes(foundObject.id)) {
+              return prev.filter(id => id !== foundObject.id);
+            } else {
+              return [...prev, foundObject.id];
+            }
+          });
+        } else {
+          setSelectedIds(prev => {
+            const newSelection = prev.includes(foundObject.id) ? prev : [foundObject.id];
+            
+            // Store initial positions for all selected objects
+            slideDragRef.current.dragging = foundObject.id;
+            slideDragRef.current.offset = { x: mouseX - foundObject.x, y: mouseY - foundObject.y };
+            slideDragRef.current.dragStartPositions = {};
+            
+            newSelection.forEach(id => {
+              const obj = currentSlide.objects.find(o => o.id === id);
+              if (obj) {
+                slideDragRef.current.dragStartPositions[id] = { x: obj.x, y: obj.y };
+              }
+            });
+            
+            return newSelection;
+          });
+        }
+      } else {
+        // If clicked on empty canvas, deselect all
+        if (!isMultiSelect) {
+          setSelectedIds([]);
+        }
+      }
+    };
+
+    const handleMouseMove = (e) => {
+      if (!slideDragRef.current.dragging) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      // Calculate delta from the primary dragged object's start position
+      const primaryStartPos = slideDragRef.current.dragStartPositions[slideDragRef.current.dragging];
+      if (!primaryStartPos) return;
+      
+      const newX = mouseX - slideDragRef.current.offset.x;
+      const newY = mouseY - slideDragRef.current.offset.y;
+      const deltaX = newX - primaryStartPos.x;
+      const deltaY = newY - primaryStartPos.y;
+      
+      // Move all selected objects by the same delta
+      setSlides(prev => prev.map((slide, idx) => {
+        if (idx === currentSlideIndex) {
+          return {
+            ...slide,
+            objects: slide.objects.map(obj => {
+              if (selectedIds.includes(obj.id)) {
+                const startPos = slideDragRef.current.dragStartPositions[obj.id];
+                if (startPos) {
+                  return { ...obj, x: startPos.x + deltaX, y: startPos.y + deltaY };
+                }
+              }
+              return obj;
+            })
+          };
+        }
+        return slide;
+      }));
+    };
+
+    const handleMouseUp = () => {
+      slideDragRef.current.dragging = null;
+    };
+
+    canvas.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      canvas.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [mode, currentSlide, isPlaying]);
+
+  // ========== END SLIDE MODE FUNCTIONS ==========
 
   const exportAnimation = async () => {
     if (!animationTitle.trim()) {
@@ -1017,32 +1676,54 @@ export default function AnimationStudio() {
 
     try {
       const canvasRect = canvasRef.current?.getBoundingClientRect();
-      const normalized = normalizeAnimation({
-        title: animationTitle,
-        duration,
-        durationOverride,
-        objects,
-        canvasWidth: canvasRect?.width ?? null,
-        canvasHeight: canvasRect?.height ?? null
-      });
+      
+      let animationData;
+      
+      if (mode === 'slides') {
+        // Save slide mode data (store connections inside each slide in slideData)
+        animationData = {
+          title: animationTitle,
+          description: `Slide animation with ${slides.length} slides`,
+          authorId,
+          mode: 'slides',
+          duration: totalSlideDuration,
+          canvasWidth: canvasRect?.width ?? null,
+          canvasHeight: canvasRect?.height ?? null,
+          slideData: {
+            slides,
+            objectLibrary
+          }
+        };
+      } else {
+        // Save timeline mode data
+        const normalized = normalizeAnimation({
+          title: animationTitle,
+          duration,
+          durationOverride,
+          objects,
+          canvasWidth: canvasRect?.width ?? null,
+          canvasHeight: canvasRect?.height ?? null
+        });
 
-      const animationData = {
-        title: animationTitle,
-        description: `Animation created with ${objects.length} objects`,
-        authorId,
-        duration: normalized.duration,
-        durationOverride: normalized.durationOverride,
-        canvasWidth: normalized.canvasWidth,
-        canvasHeight: normalized.canvasHeight,
-        connections,
-        objects: normalized.objects.map(obj => ({
-          id: obj.id,
-          name: obj.name,
-          type: obj.type,
-          transitions: obj.transitions,
-          children: obj.children
-        }))
-      };
+        animationData = {
+          title: animationTitle,
+          description: `Animation created with ${objects.length} objects`,
+          authorId,
+          mode: 'timeline',
+          duration: normalized.duration,
+          durationOverride: normalized.durationOverride,
+          canvasWidth: normalized.canvasWidth,
+          canvasHeight: normalized.canvasHeight,
+          connections,
+          objects: normalized.objects.map(obj => ({
+            id: obj.id,
+            name: obj.name,
+            type: obj.type,
+            transitions: obj.transitions,
+            children: obj.children
+          }))
+        };
+      }
 
       if (currentAnimationId) {
         // Update existing animation
@@ -1057,7 +1738,15 @@ export default function AnimationStudio() {
         setCurrentAnimationId(response.data._id);
         setSaveMessage('✓ Animation saved successfully!');
       }
-      setDuration(normalized.effectiveDuration || DEFAULT_ANIMATION_DURATION);
+      
+      if (mode === 'timeline') {
+        const normalized = normalizeAnimation({
+          duration,
+          durationOverride,
+          objects
+        });
+        setDuration(normalized.effectiveDuration || DEFAULT_ANIMATION_DURATION);
+      }
       
       setTimeout(() => setSaveMessage(''), 3000);
     } catch (error) {
@@ -1096,7 +1785,8 @@ export default function AnimationStudio() {
   };
 
   const renderConnections = () => {
-    if (!connections.length || useParityPreview) return null;
+    // For slides mode we draw connections directly on the canvas; overlay is for timeline mode only
+    if (mode === 'slides' || !connections.length || useParityPreview) return null;
     return (
       <svg className="absolute inset-0 pointer-events-none" style={{ width: '100%', height: '100%' }}>
         <defs>
@@ -1512,21 +2202,83 @@ export default function AnimationStudio() {
     renderParityFrame();
   }, [useParityPreview, currentTime, objects, canvasMeta]);
 
+  // Slide thumbnails drag-to-scroll handlers (mouse + touch)
+  const handleThumbMouseDown = (e) => {
+    const el = slideThumbsRef.current;
+    if (!el) return;
+    thumbDragging.current = true;
+    thumbStartX.current = e.pageX - el.offsetLeft;
+    thumbStartScroll.current = el.scrollLeft;
+    el.classList.add('cursor-grabbing');
+    e.preventDefault();
+  };
+
+  const handleThumbMouseMove = (e) => {
+    const el = slideThumbsRef.current;
+    if (!el || !thumbDragging.current) return;
+    const x = e.pageX - el.offsetLeft;
+    const walk = x - thumbStartX.current;
+    el.scrollLeft = thumbStartScroll.current - walk;
+  };
+
+  const handleThumbMouseUp = () => {
+    const el = slideThumbsRef.current;
+    thumbDragging.current = false;
+    if (el) el.classList.remove('cursor-grabbing');
+  };
+
+  const handleThumbTouchStart = (e) => {
+    const el = slideThumbsRef.current;
+    if (!el) return;
+    thumbDragging.current = true;
+    thumbStartX.current = e.touches[0].pageX - el.offsetLeft;
+    thumbStartScroll.current = el.scrollLeft;
+  };
+
+  const handleThumbTouchMove = (e) => {
+    const el = slideThumbsRef.current;
+    if (!el || !thumbDragging.current) return;
+    const x = e.touches[0].pageX - el.offsetLeft;
+    const walk = x - thumbStartX.current;
+    el.scrollLeft = thumbStartScroll.current - walk;
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gray-900 text-white">
       {showProjectSelector && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-8 max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
+          <div className="bg-gray-800 rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[600px] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6">Animation Projects</h2>
             
             <div className="mb-6">
-              <button
-                onClick={createNewAnimation}
-                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
-              >
-                <Plus size={20} />
-                Create New Animation
-              </button>
+              <h3 className="text-lg font-semibold mb-3">Create New Animation</h3>
+              <p className="text-sm text-gray-400 mb-4">Choose an animation mode. This cannot be changed later.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => createNewAnimation('timeline')}
+                  className="flex flex-col items-center gap-3 px-6 py-6 bg-gray-700 hover:bg-gray-600 rounded-lg border-2 border-transparent hover:border-blue-500 transition"
+                >
+                  <GitBranch size={32} className="text-blue-400" />
+                  <div className="text-center">
+                    <div className="font-semibold text-lg">Timeline Mode</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      Keyframe-based animations with continuous timeline
+                    </div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => createNewAnimation('slides')}
+                  className="flex flex-col items-center gap-3 px-6 py-6 bg-gray-700 hover:bg-gray-600 rounded-lg border-2 border-transparent hover:border-green-500 transition"
+                >
+                  <Layers size={32} className="text-green-400" />
+                  <div className="text-center">
+                    <div className="font-semibold text-lg">Slide Mode</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      Slide-based animations with automatic transitions
+                    </div>
+                  </div>
+                </button>
+              </div>
             </div>
 
             {isLoadingAnimations ? (
@@ -1544,11 +2296,23 @@ export default function AnimationStudio() {
                       className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-left transition"
                     >
                       <div className="flex items-center gap-3">
-                        <FolderOpen size={20} />
+                        {animation.mode === 'slides' ? (
+                          <Layers size={20} className="text-green-400" />
+                        ) : (
+                          <GitBranch size={20} className="text-blue-400" />
+                        )}
                         <div className="flex-1">
-                          <h4 className="font-semibold">{animation.title}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold">{animation.title}</h4>
+                            <span className={`text-xs px-2 py-0.5 rounded ${animation.mode === 'slides' ? 'bg-green-600' : 'bg-blue-600'}`}>
+                              {animation.mode === 'slides' ? 'Slides' : 'Timeline'}
+                            </span>
+                          </div>
                           <p className="text-sm text-gray-400">
-                            {animation.objects?.length || 0} objects · 
+                            {animation.mode === 'slides' 
+                              ? `${animation.slideData?.slides?.length || 0} slides`
+                              : `${animation.objects?.length || 0} objects`
+                            } · 
                             {new Date(animation.createdAt).toLocaleDateString()}
                           </p>
                         </div>
@@ -1569,6 +2333,10 @@ export default function AnimationStudio() {
       <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-3 ">
           <h1 className="text-xl font-bold">Animation Studio</h1>
+          <span className={`text-xs px-3 py-1 rounded-full flex items-center gap-1.5 ${mode === 'slides' ? 'bg-green-600' : 'bg-blue-600'}`}>
+            {mode === 'slides' ? <Layers size={14} /> : <GitBranch size={14} />}
+            {mode === 'slides' ? 'Slide Mode' : 'Timeline Mode'}
+          </span>
           {currentAnimationId && (
             <button
               onClick={() => setShowProjectSelector(true)}
@@ -1615,7 +2383,11 @@ export default function AnimationStudio() {
         </div>
       </div>
 
+      {/* ========== MAIN CONTENT AREA ========== */}
       <div className="flex flex-1 overflow-hidden">
+        {mode === 'timeline' ? (
+          // TIMELINE MODE UI (existing)
+          <>
         <div className="w-64 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto">
           <div className="mb-4">
             <h2 className="text-sm font-semibold mb-2">Add Objects</h2>
@@ -1749,7 +2521,7 @@ export default function AnimationStudio() {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <div
             ref={canvasRef}
             className="flex-1 bg-gray-700 relative overflow-hidden"
@@ -1867,12 +2639,8 @@ export default function AnimationStudio() {
 
         <div className="w-72 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto">
           {selectedObject && selectedTransitionIndex !== null && selectedObject.transitions[selectedTransitionIndex] ? (
-            <div>
-              <h2 className="text-sm font-semibold mb-1">{selectedObject.name}</h2>
-              <p
-                className="text-xs text-gray-400 mb-3"
-                title="Keyframes define a start state; easing applies over the duration to the next keyframe."
-              >
+            <>
+              <p className="text-xs text-gray-400 mb-3" title="Keyframes define a start state; easing applies over the duration to the next keyframe.">
                 {selectedTransitionIndex === 0 ? 'Initial State' : `Transition ${selectedTransitionIndex}`}
               </p>
               {selectedTransitionIndex > 0 && (
@@ -1988,14 +2756,403 @@ export default function AnimationStudio() {
                   </div>
                 )}
               </div>
-            </div>
+            </>
           ) : (
             <div className="text-sm text-gray-400">{selectedIds.length > 1 ? `${selectedIds.length} objects selected - right-click to add transition` : 'Select an object to edit'}</div>
           )}
         </div>
+      </>
+        ) : (
+          // SLIDE MODE UI
+          <>
+            {/* Left Sidebar - Object Library */}
+            <div className="w-64 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto">
+              <h2 className="text-sm font-semibold mb-3">Object Library</h2>
+              
+              <div className="mb-4">
+                <p className="text-xs text-gray-400 mb-2">Create Objects</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => createSlideObject('circle')}
+                    className="p-2 bg-blue-600 hover:bg-blue-700 rounded flex items-center justify-center"
+                  >
+                    <Circle size={20} />
+                  </button>
+                  <button
+                    onClick={() => createSlideObject('square')}
+                    className="p-2 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center"
+                  >
+                    <Square size={20} />
+                  </button>
+                  <button
+                    onClick={() => createSlideObject('triangle')}
+                    className="p-2 bg-green-600 hover:bg-green-700 rounded flex items-center justify-center"
+                  >
+                    <Triangle size={20} />
+                  </button>
+                  <button
+                    onClick={() => createSlideObject('rectangle')}
+                    className="p-2 bg-orange-600 hover:bg-orange-700 rounded text-xs"
+                  >
+                    Rect
+                  </button>
+                  <button
+                    onClick={() => createSlideObject('text')}
+                    className="p-2 bg-purple-600 hover:bg-purple-700 rounded text-xs col-span-2"
+                  >
+                    Text
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-400 mb-2">All Objects</p>
+                {objectLibrary.map(obj => {
+                  const inCurrentSlide = currentSlide.objects.some(o => o.id === obj.id);
+                  const isVisible = currentSlide.objects.find(o => o.id === obj.id)?.visible;
+                  
+                  return (
+                    <div
+                      key={obj.id}
+                      className={`flex items-center gap-2 p-2 mb-1 rounded text-xs ${
+                        selectedIds.includes(obj.id) ? 'bg-blue-700' : 'bg-gray-700'
+                      }`}
+                      onClick={() => {
+                        if (inCurrentSlide) {
+                          setSelectedIds([obj.id]);
+                        }
+                      }}
+                    >
+                      <div
+                        className="w-4 h-4 rounded"
+                        style={{ backgroundColor: obj.color }}
+                      />
+                      <span className="flex-1">{obj.name}</span>
+                      {inCurrentSlide && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSlideObjectVisibility(obj.id);
+                          }}
+                          className="p-1 hover:bg-gray-600 rounded"
+                          title={isVisible ? 'Hide' : 'Show'}
+                        >
+                          {isVisible ? <Eye size={14} /> : <EyeOff size={14} />}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-700">
+                <p className="text-xs text-gray-400 mb-2">Connections</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={addConnection}
+                    disabled={selectedIds.length < 2}
+                    className="px-2 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Connect
+                  </button>
+                  <button
+                    onClick={clearConnectionsForSelection}
+                    disabled={selectedIds.length === 0}
+                    className="px-2 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-500 mt-2">
+                  Select 2+ objects to connect
+                </p>
+              </div>
+            </div>
+
+            {/* Main Canvas Area */}
+            <div className="flex-1 flex flex-col min-w-0">
+              <div className="flex-1 relative overflow-hidden">
+                <canvas
+                  ref={canvasRef}
+                  className="absolute inset-0 w-full h-full"
+                  style={{ cursor: isPlaying ? 'default' : 'pointer' }}
+                />
+              </div>
+
+              {/* Slide Navigation Controls */}
+              <div className="h-32 bg-gray-800 border-t border-gray-700 p-4">
+                <div className="flex items-center gap-4 mb-3">
+                  <button
+                    onClick={togglePlay}
+                    className="p-2 bg-blue-600 hover:bg-blue-700 rounded"
+                  >
+                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                  </button>
+                  <span className="text-sm">
+                    Slide {currentSlideIndex + 1} of {slides.length}
+                  </span>
+                  
+                  <div className="flex-1" />
+                  
+                  <button
+                    onClick={() => setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))}
+                    disabled={currentSlideIndex === 0}
+                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    onClick={() => setCurrentSlideIndex(Math.min(slides.length - 1, currentSlideIndex + 1))}
+                    disabled={currentSlideIndex === slides.length - 1}
+                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                  <button
+                    onClick={duplicateSlide}
+                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded"
+                    title="Duplicate slide"
+                  >
+                    <Copy size={20} />
+                  </button>
+                  <button
+                    onClick={addSlide}
+                    className="p-2 bg-green-600 hover:bg-green-700 rounded"
+                    title="Add slide"
+                  >
+                    <Plus size={20} />
+                  </button>
+                  <button
+                    onClick={deleteSlide}
+                    disabled={slides.length <= 1}
+                    className="p-2 bg-red-600 hover:bg-red-700 rounded disabled:opacity-50"
+                    title="Delete slide"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
+                
+                {/* Slide thumbnails */}
+                <div
+                  ref={slideThumbsRef}
+                  onMouseDown={handleThumbMouseDown}
+                  onMouseMove={handleThumbMouseMove}
+                  onMouseUp={handleThumbMouseUp}
+                  onMouseLeave={handleThumbMouseUp}
+                  onTouchStart={handleThumbTouchStart}
+                  onTouchMove={handleThumbTouchMove}
+                  onTouchEnd={handleThumbMouseUp}
+                  className="w-full flex gap-2 overflow-x-auto pb-2"
+                  style={{ cursor: 'grab' }}
+                >
+                  {slides.map((slide, idx) => (
+                    <button
+                      key={slide.id}
+                      onClick={() => setCurrentSlideIndex(idx)}
+                      className={`flex-shrink-0 w-24 h-16 rounded border-2 ${
+                        idx === currentSlideIndex
+                          ? 'border-blue-500 bg-blue-900'
+                          : 'border-gray-600 bg-gray-700 hover:bg-gray-600'
+                      }`}
+                    >
+                      <div className="text-xs p-1">
+                        Slide {idx + 1}
+                        <div className="text-[10px] text-gray-400">
+                          {slide.objects.filter(o => o.visible).length} obj
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Sidebar - Properties */}
+            <div className="w-72 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto">
+              <h2 className="text-sm font-semibold mb-3">Slide Properties</h2>
+              
+              <div className="space-y-3 mb-6">
+                <div>
+                  <label className="block text-xs mb-1">Duration (seconds)</label>
+                  <input
+                    type="number"
+                    min="0.1"
+                    max="10"
+                    step="0.1"
+                    value={currentSlide.duration}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setSlides(prev => prev.map((slide, idx) =>
+                        idx === currentSlideIndex ? { ...slide, duration: val } : slide
+                      ));
+                    }}
+                    className="w-full px-3 py-2 bg-gray-700 rounded text-white text-sm"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs mb-1">Easing</label>
+                  <select
+                    value={currentSlide.easing}
+                    onChange={(e) => {
+                      setSlides(prev => prev.map((slide, idx) =>
+                        idx === currentSlideIndex ? { ...slide, easing: e.target.value } : slide
+                      ));
+                    }}
+                    className="w-full px-3 py-2 bg-gray-700 rounded text-white text-sm"
+                  >
+                    <option value="linear">Linear</option>
+                    <option value="ease-in">Ease In</option>
+                    <option value="ease-out">Ease Out</option>
+                    <option value="ease-in-out">Ease In-Out</option>
+                    <option value="bounce">Bounce</option>
+                  </select>
+                </div>
+              </div>
+
+              {selectedIds.length === 1 && currentSlide.objects.find(o => o.id === selectedIds[0]) && (
+                <>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold">Object Properties</h2>
+                    <button
+                      onClick={() => deleteSlideObject(selectedIds[0])}
+                      className="p-1.5 bg-red-600 hover:bg-red-700 rounded text-white"
+                      title="Delete object (Del)"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  {(() => {
+                    const selectedObject = currentSlide.objects.find(o => o.id === selectedIds[0]);
+                    return (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs mb-1">Name</label>
+                          <input
+                            type="text"
+                            value={selectedObject.name || ''}
+                            onChange={(e) => updateSlideObject(selectedObject.id, { name: e.target.value })}
+                            className="w-full px-3 py-2 bg-gray-700 rounded text-white text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs mb-1">Text Content</label>
+                          <input
+                            type="text"
+                            value={selectedObject.text || ''}
+                            onChange={(e) => updateSlideObject(selectedObject.id, { text: e.target.value })}
+                            placeholder="Enter text to display inside object..."
+                            className="w-full px-3 py-2 bg-gray-700 rounded text-white text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs mb-1">
+                            Scale: {(selectedObject.scale ?? 1).toFixed(1)}
+                          </label>
+                          <input
+                            type="range"
+                            min="0.1"
+                            max="3"
+                            step="0.1"
+                            value={selectedObject.scale ?? 1}
+                            onChange={(e) => updateSlideObject(selectedObject.id, { scale: parseFloat(e.target.value) })}
+                            className="w-full"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs mb-1">
+                            Rotation: {selectedObject.rotation ?? 0}°
+                          </label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="360"
+                            value={selectedObject.rotation ?? 0}
+                            onChange={(e) => updateSlideObject(selectedObject.id, { rotation: parseInt(e.target.value) })}
+                            className="w-full"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs mb-1">
+                            Opacity: {(selectedObject.opacity ?? 1).toFixed(1)}
+                          </label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={selectedObject.opacity ?? 1}
+                            onChange={(e) => updateSlideObject(selectedObject.id, { opacity: parseFloat(e.target.value) })}
+                            className="w-full"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs mb-1">Color</label>
+                          <input
+                            type="color"
+                            value={selectedObject.color ?? '#3b82f6'}
+                            onChange={(e) => updateSlideObject(selectedObject.id, { color: e.target.value })}
+                            className="w-full h-8 rounded"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+
+              {/* Connection Management */}
+              <div className="mt-6 pt-4 border-t border-gray-700">
+                <h2 className="text-sm font-semibold mb-3">Connections</h2>
+                
+                {selectedIds.length === 2 ? (
+                  <button
+                    onClick={addSlideConnection}
+                    className="w-full px-3 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-white text-sm transition-colors"
+                  >
+                    Connect Selected Objects
+                  </button>
+                ) : (
+                  <p className="text-xs text-gray-400 mb-3">
+                    Select exactly 2 objects (Ctrl+Click) to create a connection
+                  </p>
+                )}
+                
+                {currentSlide.connections && currentSlide.connections.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs text-gray-400">Existing connections:</p>
+                    {currentSlide.connections.map(conn => {
+                      const fromObj = currentSlide.objects.find(o => o.id === conn.fromId);
+                      const toObj = currentSlide.objects.find(o => o.id === conn.toId);
+                      return (
+                        <div key={conn.id} className="flex items-center justify-between bg-gray-700 rounded px-2 py-1">
+                          <span className="text-xs">
+                            {fromObj?.name || 'Object'} → {toObj?.name || 'Object'}
+                          </span>
+                          <button
+                            onClick={() => removeSlideConnection(conn.id)}
+                            className="text-red-400 hover:text-red-300 text-xs"
+                            title="Remove connection from this slide forward"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-      {contextMenu && (
+      {contextMenu && mode === 'timeline' && (
         <div className="fixed bg-gray-800 border border-gray-700 rounded shadow-lg py-1 z-50" style={{ left: contextMenu.x, top: contextMenu.y }} onClick={(e) => e.stopPropagation()}>
           {contextMenu.isObject ? (
             <>
