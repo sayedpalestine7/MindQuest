@@ -1309,10 +1309,21 @@ export default function AnimationStudio() {
   // Render slide mode canvas
   useEffect(() => {
     if (mode !== 'slides' || !canvasRef.current) return;
-    
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    
+    const container = canvas.parentElement;
+
+    // Ensure canvas has valid pixel dimensions before drawing. If not, size it from the container.
+    if ((!canvas.width || !canvas.height) && container) {
+      const rect = container.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.floor(rect.width));
+      canvas.height = Math.max(1, Math.floor(rect.height));
+    }
+
+    // If still not sized, skip drawing until next pass
+    if (!canvas.width || !canvas.height) return;
+
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#1f2937'; // Dark gray background like timeline mode
@@ -1505,13 +1516,22 @@ export default function AnimationStudio() {
       const rect = container.getBoundingClientRect();
       canvas.width = Math.max(1, Math.floor(rect.width));
       canvas.height = Math.max(1, Math.floor(rect.height));
+      // After resizing, force a background redraw to avoid showing the page background
+      requestAnimationFrame(() => {
+        const ctx = canvas.getContext('2d');
+        if (ctx && canvas.width && canvas.height) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#1f2937';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+      });
     };
 
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(container);
     return () => observer.disconnect();
-  }, [mode, slides]);
+  }, [mode]);
 
   // Handle dragging in slide mode
   useEffect(() => {
@@ -2871,7 +2891,7 @@ export default function AnimationStudio() {
 
             {/* Main Canvas Area */}
             <div className="flex-1 flex flex-col min-w-0">
-              <div className="flex-1 relative overflow-hidden">
+              <div className="flex-1 relative overflow-hidden bg-gray-700">
                 <canvas
                   ref={canvasRef}
                   className="absolute inset-0 w-full h-full"
