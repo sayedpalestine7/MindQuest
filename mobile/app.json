@@ -33,7 +33,7 @@
       "expo-web-browser"
     ],
     "extra": {
-      "apiUrl": "http://192.168.68.55:5000",
+      "apiUrl": "http://192.168.68.54:5000",
       "googleExpoClientId": "",
       "googleAndroidClientId": "",
       "googleIosClientId": "",

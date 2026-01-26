@@ -51,14 +51,15 @@ export default ImageField;
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    // marginBottom: 16,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFF',
+    width: '100%',
   },
   image: {
     width: '100%',
-    minHeight: 200,
+    minHeight: 400,
     maxHeight: 400,
   },
   loadingContainer: {
