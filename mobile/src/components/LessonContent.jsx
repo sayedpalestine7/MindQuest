@@ -33,7 +33,7 @@ export default function LessonContent({ fields }) {
       
       case 'animation':
         // Animation rendered as video/GIF using expo-av
-        return <AnimationField key={_id || index} content={content} />;
+        return <AnimationField key={_id || index} field={field} content={content} />;
       
       case 'minigame':
         // Skipping minigames for now as per requirements

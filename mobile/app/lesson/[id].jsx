@@ -50,28 +50,53 @@ export default function LessonScreen() {
 
       // For now, let's create a workaround by fetching enrolled courses
       if (user?._id) {
-        const enrolledCourses = await courseService.getEnrolledCourses(user._id);
+        const enrolledCourses = await courseService.getEnrolledCourses(user._id, false);
+        const targetLessonId = id ? id.toString() : '';
+
+        const normalizeLessonId = (lesson) => {
+          if (!lesson) return '';
+          if (typeof lesson === 'string') return lesson;
+          if (lesson._id) return lesson._id.toString();
+          if (lesson.toString) return lesson.toString();
+          return '';
+        };
         
         // Find the course containing this lesson
         let foundCourse = null;
         for (const course of enrolledCourses) {
-          const lessonExists = course.lessonIds?.some(l => l._id === id || l === id);
+          const lessonExists = course.lessonIds?.some((l) => normalizeLessonId(l) === targetLessonId);
           if (lessonExists) {
             foundCourse = course;
             break;
           }
         }
 
-        if (foundCourse) {
-          const fullCourse = await courseService.getCourseById(foundCourse._id);
+        const loadCourseAndLesson = async (courseId, desiredLessonId) => {
+          const fullCourse = await courseService.getCourseById(courseId, false);
           setCourse(fullCourse);
 
-          const lesson = fullCourse.lessonIds?.find(l => l._id === id);
-          setCurrentLesson(lesson);
+          const lesson = fullCourse.lessonIds?.find((l) => normalizeLessonId(l) === desiredLessonId);
+          if (lesson) {
+            setCurrentLesson(lesson);
+          } else if (fullCourse.lessonIds && fullCourse.lessonIds.length > 0) {
+            const fallbackLesson = fullCourse.lessonIds[0];
+            setCurrentLesson(fallbackLesson);
+            const fallbackId = normalizeLessonId(fallbackLesson);
+            if (fallbackId && fallbackId !== desiredLessonId) {
+              router.replace(`/lesson/${fallbackId}`);
+            }
+          }
 
           // Load progress
           const progressData = await progressService.getProgress(user._id, fullCourse._id);
           setProgress(progressData);
+        };
+
+        if (foundCourse) {
+          await loadCourseAndLesson(foundCourse._id, targetLessonId);
+        } else if (enrolledCourses.length > 0) {
+          const fallbackCourse = enrolledCourses[0];
+          await loadCourseAndLesson(fallbackCourse._id, targetLessonId);
         } else {
           Alert.alert('Error', 'Course not found or you are not enrolled');
           router.back();

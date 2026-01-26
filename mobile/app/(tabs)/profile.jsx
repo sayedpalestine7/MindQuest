@@ -208,8 +208,19 @@ export default function ProfileScreen() {
           const lessons = latestCourse.lessonIds || [];
           const firstLesson = lessons?.[0];
           const firstLessonId = typeof firstLesson === 'object' ? firstLesson?._id : firstLesson;
-          const resumeLessonId = latest.currentLessonId || firstLessonId || null;
-          const lessonTitle = lessons.find((l) => typeof l === 'object' && l._id === resumeLessonId)?.title;
+          const lessonIdList = lessons
+            .map((l) => (typeof l === 'object' ? l?._id : l))
+            .filter(Boolean)
+            .map((l) => l.toString());
+          const currentLessonId = latest.currentLessonId ? latest.currentLessonId.toString() : null;
+          const validCurrentLessonId = currentLessonId && lessonIdList.includes(currentLessonId)
+            ? currentLessonId
+            : null;
+          const resumeLessonId = validCurrentLessonId || (firstLessonId ? firstLessonId.toString() : null);
+          const lessonTitle = lessons.find((l) => {
+            const lessonId = typeof l === 'object' ? l?._id : l;
+            return lessonId && resumeLessonId && lessonId.toString() === resumeLessonId;
+          })?.title;
           const completedLessons = latestCourse.completedLessons ?? latest.completedLessons?.length ?? 0;
           const totalLessons = latestCourse.totalLessons ?? lessons.length ?? 0;
           const progressPercent = latestCourse.progress ?? (totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0);

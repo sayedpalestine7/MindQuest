@@ -19,10 +19,12 @@ export default function AnimationRenderer({ animationId, playbackMode = "start-s
   const [error, setError] = useState(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const canvasRef = useRef(null)
   const animationFrameRef = useRef(null)
 
   const isLoopMode = playbackMode === "loop"
+  const isSlideMode = animation?.mode === 'slides'
 
   useEffect(() => {
     if (!animationId) {
@@ -42,9 +44,20 @@ export default function AnimationRenderer({ animationId, playbackMode = "start-s
         `http://localhost:5000/api/animations/${animationId}`
       )
       console.log('Loaded animation:', response.data)
-      const normalized = normalizeAnimation(response.data || {})
-      setAnimation(normalized)
+      
+      const data = response.data || {}
+      
+      if (data.mode === 'slides') {
+        // Slide mode - set data directly without normalization
+        setAnimation(data)
+      } else {
+        // Timeline mode - normalize as before
+        const normalized = normalizeAnimation(data)
+        setAnimation(normalized)
+      }
+      
       setCurrentTime(0)
+      setCurrentSlideIndex(0)
     } catch (err) {
       console.error("Error loading animation:", err)
       setError("Failed to load animation: " + err.message)
@@ -61,39 +74,98 @@ export default function AnimationRenderer({ animationId, playbackMode = "start-s
       return
     }
 
-    // Use high-resolution timestamps to compute accurate delta time
-    let lastTimestamp = null
-    const duration = animation?.effectiveDuration || animation?.duration || DEFAULT_ANIMATION_DURATION
+    if (isSlideMode) {
+      // Slide mode playback with auto-advance - optimized with direct rendering
+      const slides = animation?.slideData?.slides || []
+      if (slides.length === 0) return
+      
+      let lastTimestamp = null
+      let localTime = currentTime
+      let localSlideIndex = currentSlideIndex
+      let frameCount = 0
+      
+      const animate = (timestamp) => {
+        if (lastTimestamp === null) lastTimestamp = timestamp
+        const deltaSec = (timestamp - lastTimestamp) / 1000
+        lastTimestamp = timestamp
 
-    const animate = (timestamp) => {
-      if (lastTimestamp === null) lastTimestamp = timestamp
-      const deltaSec = (timestamp - lastTimestamp) / 1000
-      lastTimestamp = timestamp
-
-      setCurrentTime((prev) => {
-        const next = prev + deltaSec
-        if (next >= duration) {
-          if (isLoopMode && duration > 0) {
-            return next % duration
+        localTime += deltaSec
+        
+        // Find current slide
+        let accumulatedTime = 0
+        let foundSlide = false
+        
+        for (let i = 0; i < slides.length; i++) {
+          if (localTime >= accumulatedTime && localTime < accumulatedTime + slides[i].duration) {
+            localSlideIndex = i
+            foundSlide = true
+            break
           }
-          // stop playback at exact duration
-          setIsPlaying(false)
-          return duration
+          accumulatedTime += slides[i].duration
         }
-        return next
-      })
+        
+        // End of animation
+        if (!foundSlide) {
+          if (isLoopMode) {
+            localTime = 0
+            localSlideIndex = 0
+          } else {
+            setIsPlaying(false)
+            setCurrentTime(accumulatedTime)
+            setCurrentSlideIndex(localSlideIndex)
+            return
+          }
+        }
+        
+        // Render frame directly to avoid state update re-renders
+        renderSlideFrame(slides, localSlideIndex, localTime)
+        
+        // Update state less frequently (every 10 frames ~160ms) to avoid lag
+        frameCount++
+        if (frameCount % 10 === 0) {
+          setCurrentTime(localTime)
+          setCurrentSlideIndex(localSlideIndex)
+        }
+        
+        animationFrameRef.current = requestAnimationFrame(animate)
+      }
+
+      animationFrameRef.current = requestAnimationFrame(animate)
+    } else {
+      // Timeline mode playback (existing logic)
+      let lastTimestamp = null
+      const duration = animation?.effectiveDuration || animation?.duration || DEFAULT_ANIMATION_DURATION
+
+      const animate = (timestamp) => {
+        if (lastTimestamp === null) lastTimestamp = timestamp
+        const deltaSec = (timestamp - lastTimestamp) / 1000
+        lastTimestamp = timestamp
+
+        setCurrentTime((prev) => {
+          const next = prev + deltaSec
+          if (next >= duration) {
+            if (isLoopMode && duration > 0) {
+              return next % duration
+            }
+            // stop playback at exact duration
+            setIsPlaying(false)
+            return duration
+          }
+          return next
+        })
+
+        animationFrameRef.current = requestAnimationFrame(animate)
+      }
 
       animationFrameRef.current = requestAnimationFrame(animate)
     }
-
-    animationFrameRef.current = requestAnimationFrame(animate)
 
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [isPlaying, isLoopMode, animation?.effectiveDuration, animation?.duration])
+  }, [isPlaying, isLoopMode, isSlideMode, animation?.effectiveDuration, animation?.duration, animation?.slideData])
 
   useEffect(() => {
     if (isLoopMode) {
@@ -109,9 +181,12 @@ export default function AnimationRenderer({ animationId, playbackMode = "start-s
       console.log('Canvas or animation not ready:', { canvas: !!canvasRef.current, animation: !!animation })
       return
     }
-    console.log('Rendering frame at time:', currentTime, 'Animation objects:', animation.objects?.length)
-    renderFrame()
-  }, [currentTime, animation])
+    // Only render timeline mode here - slide mode renders directly in animation loop
+    if (!isSlideMode) {
+      console.log('Rendering frame:', `time ${currentTime}`)
+      renderFrame()
+    }
+  }, [currentTime, animation, isSlideMode])
 
   const drawArrow = (ctx, from, to, color = "#facc15", width = 2) => {
     const headLength = 10
@@ -135,6 +210,162 @@ export default function AnimationRenderer({ animationId, playbackMode = "start-s
     ctx.fill()
   }
 
+  // Optimized slide mode rendering - called directly from animation loop
+  const renderSlideFrame = (slides, slideIndex, time) => {
+    const canvas = canvasRef.current
+    if (!canvas || slides.length === 0) return
+
+    const ctx = canvas.getContext("2d")
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.fillStyle = isLoopMode ? "#ffffff" : "#f3f4f6"
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    const currentSlide = slides[slideIndex]
+    const nextSlide = slides[slideIndex + 1]
+    if (!currentSlide) return
+
+    // Calculate progress within current slide
+    let accumulatedTime = 0
+    for (let i = 0; i < slideIndex; i++) {
+      accumulatedTime += slides[i].duration
+    }
+    const progress = Math.min(1, Math.max(0, (time - accumulatedTime) / currentSlide.duration))
+
+    // Helper functions for interpolation
+    const lerp = (start, end, t) => start + (end - start) * t
+    const easingFunctions = {
+      linear: (t) => t,
+      'ease-in': (t) => t * t,
+      'ease-out': (t) => t * (2 - t),
+      'ease-in-out': (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+      bounce: (t) => {
+        if (t < 1 / 2.75) return 7.5625 * t * t
+        if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75
+        if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375
+        return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375
+      }
+    }
+
+    const getSlideObjectState = (objectId) => {
+      const currentObj = currentSlide.objects.find(o => o.id === objectId)
+      const nextObj = nextSlide?.objects.find(o => o.id === objectId)
+      
+      if (!currentObj || !currentObj.visible) return null
+      if (!nextSlide || !nextObj || !nextObj.visible) return currentObj
+      
+      const easingFunc = easingFunctions[currentSlide.easing] || easingFunctions.linear
+      const t = easingFunc(progress)
+      
+      return {
+        ...currentObj,
+        x: lerp(currentObj.x, nextObj.x, t),
+        y: lerp(currentObj.y, nextObj.y, t),
+        scale: lerp(currentObj.scale ?? 1, nextObj.scale ?? 1, t),
+        rotation: lerp(currentObj.rotation ?? 0, nextObj.rotation ?? 0, t),
+        opacity: lerp(currentObj.opacity ?? 1, nextObj.opacity ?? 1, t),
+        width: lerp(currentObj.width ?? BASE_SHAPE_SIZE, nextObj.width ?? BASE_SHAPE_SIZE, t),
+        height: lerp(currentObj.height ?? BASE_SHAPE_SIZE, nextObj.height ?? BASE_SHAPE_SIZE, t)
+      }
+    }
+
+    // Get all unique object IDs
+    const allObjIds = new Set()
+    slides.forEach(slide => slide.objects.forEach(obj => allObjIds.add(obj.id)))
+    
+    const objectsToRender = Array.from(allObjIds)
+      .map(id => getSlideObjectState(id))
+      .filter(Boolean)
+
+    ctx.save()
+
+    // Draw connections — prefer slide-level connections, fallback to animation-level
+    const slideConnections = Array.isArray(currentSlide?.connections) ? currentSlide.connections : (Array.isArray(animation?.connections) ? animation.connections : [])
+
+    if (Array.isArray(slideConnections)) {
+      slideConnections.forEach((conn) => {
+        const fromObj = objectsToRender.find(o => o.id === conn.fromId)
+        const toObj = objectsToRender.find(o => o.id === conn.toId)
+        if (!fromObj || !toObj) return
+        drawArrow(
+          ctx,
+          { x: fromObj.x ?? 0, y: fromObj.y ?? 0 },
+          { x: toObj.x ?? 0, y: toObj.y ?? 0 },
+          conn.color || "#facc15",
+          conn.width || 2
+        )
+      })
+    }
+
+    // Draw shapes
+    const drawShapeSlide = (state) => {
+      if (!state || (state.opacity ?? 1) <= 0) return
+
+      ctx.save()
+      ctx.globalAlpha = Math.max(0, Math.min(1, state.opacity ?? 1))
+      ctx.fillStyle = state.color || "#3b82f6"
+
+      const x = state.x ?? 0
+      const y = state.y ?? 0
+      const scale = state.scale ?? 1
+      const size = (state.width ?? BASE_SHAPE_SIZE) * scale
+
+      ctx.translate(x, y)
+      if (state.rotation) {
+        ctx.rotate((state.rotation * Math.PI) / 180)
+      }
+
+      switch (state.type) {
+        case "circle":
+          ctx.beginPath()
+          ctx.arc(0, 0, size / 2, 0, Math.PI * 2)
+          ctx.fill()
+          break
+
+        case "square":
+          ctx.fillRect(-size / 2, -size / 2, size, size)
+          break
+
+        case "triangle":
+          ctx.beginPath()
+          ctx.moveTo(0, -size / 2)
+          ctx.lineTo(size / 2, size / 2)
+          ctx.lineTo(-size / 2, size / 2)
+          ctx.closePath()
+          ctx.fill()
+          break
+
+        case "rectangle": {
+          const w = (state.width ?? 100) * scale
+          const h = (state.height ?? 60) * scale
+          ctx.fillRect(-w / 2, -h / 2, w, h)
+          break
+        }
+
+        case "text":
+          ctx.fillStyle = state.color || "#000000"
+          ctx.font = `${16 * scale}px Arial`
+          ctx.textAlign = "center"
+          ctx.textBaseline = "middle"
+          ctx.fillText(state.text || "", 0, 0)
+          break
+      }
+
+      // Draw text content for all object types (not just 'text' type)
+      if (state.text && state.type !== 'text') {
+        ctx.fillStyle = '#ffffff'
+        ctx.font = `${12 * scale}px Arial`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(state.text, 0, 0)
+      }
+
+      ctx.restore()
+    }
+
+    objectsToRender.forEach(state => drawShapeSlide(state))
+    ctx.restore()
+  }
+
   const renderFrame = () => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -144,6 +375,19 @@ export default function AnimationRenderer({ animationId, playbackMode = "start-s
     ctx.fillStyle = isLoopMode ? "#ffffff" : "#f3f4f6"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
+    if (isSlideMode) {
+      // Slide mode rendering is now handled in renderSlideFrame called from animation loop
+      // Only render here when paused (not playing) for scrubbing
+      if (!isPlaying) {
+        const slides = animation?.slideData?.slides || []
+        if (slides.length > 0) {
+          renderSlideFrame(slides, currentSlideIndex, currentTime)
+        }
+      }
+      return
+    }
+
+    // Timeline mode rendering (existing logic)
     if (!animation?.objects || animation.objects.length === 0) {
       console.log('No objects in animation')
       return
