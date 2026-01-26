@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Play, Pause, Square, Circle, Triangle, Save, Trash2, X, Plus, FolderOpen, Layers, GitBranch, Eye, EyeOff, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
+import { Play, Pause, Square, Circle, Triangle, Save, Trash2, X, Plus, FolderOpen, Layers, GitBranch, Eye, EyeOff, ChevronLeft, ChevronRight, Copy, Brain } from 'lucide-react';
 import axios from 'axios';
 import AnimationRenderer from '../components/coursePage/AnimationRenderer';
 import {
@@ -12,6 +12,7 @@ import {
   getCompoundStatesAtTime,
   normalizeAnimation
 } from '../utils/animationUtils';
+import { Link, useLocation, useNavigate } from "react-router";
 
 export default function AnimationStudio() {
   const [objects, setObjects] = useState([]);
@@ -2352,6 +2353,14 @@ export default function AnimationStudio() {
 
       <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-3 ">
+          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition">
+            <div className="w-10 h-10 rounded-xl mq-header-logo flex items-center justify-center">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold mq-header-title text-white ">MindQuest -</h1>
+            </div>
+          </Link>
           <h1 className="text-xl font-bold">Animation Studio</h1>
           <span className={`text-xs px-3 py-1 rounded-full flex items-center gap-1.5 ${mode === 'slides' ? 'bg-green-600' : 'bg-blue-600'}`}>
             {mode === 'slides' ? <Layers size={14} /> : <GitBranch size={14} />}
@@ -2368,12 +2377,12 @@ export default function AnimationStudio() {
           )}
         </div>
         <div className="flex gap-3 items-center">
-          <button
+          {/* <button
             onClick={() => setUseParityPreview(prev => !prev)}
             className={`px-3 py-2 rounded text-sm border ${useParityPreview ? 'bg-blue-600 border-blue-500' : 'bg-gray-700 border-gray-600 hover:bg-gray-600'}`}
           >
             {useParityPreview ? 'Parity Preview: On' : 'Parity Preview: Off'}
-          </button>
+          </button> */}
           <button
             onClick={() => setShowStudentPreview(true)}
             className="px-3 py-2 rounded text-sm border bg-gray-700 border-gray-600 hover:bg-gray-600"
