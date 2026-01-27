@@ -6,7 +6,7 @@ An interactive learning platform for technical topics (data structures, algorith
 ---
 
 **Contents**
-- **Backend**: API server, database models (Postgres + Prisma and MongoDB), authentication, file uploads, payments, and business logic. See [backend](backend/).
+- **Backend**: API server, database models ((MySQL) and MongoDB), authentication, file uploads, payments, and business logic. See [backend](backend/).
 - **Frontend**: React + Vite single-page app using Tailwind CSS for the web UI. See [frontend](frontend/).
 - **Mobile**: React Native / Expo app for mobile interaction. See [mobile](mobile/).
 - **Graduation report**: Documentation and chapters. See [graduation-report](graduation-report/).
@@ -26,7 +26,7 @@ An interactive learning platform for technical topics (data structures, algorith
 ## Tech Stack
 - Frontend: React, Vite, Tailwind CSS, Framer Motion
 - Backend: Node.js, Express
-- Databases: PostgreSQL (via Prisma) for relational data; MongoDB for content (courses, lessons, animations)
+- Databases: mysql for relational data; MongoDB for content (courses, lessons, animations)
 - Other: Socket.io for realtime, Stripe for payments, Multer for file uploads
 
 ---
@@ -43,7 +43,7 @@ See each package's README for more details.
 
 ## Setup & Run (Development)
 
-Prerequisites: Node.js (16+), npm, local MongoDB and Postgres instances (or Docker).
+Prerequisites: Node.js (16+), npm, local MongoDB and (MySQL) instances (or Docker).
 
 1) Backend
 
@@ -92,7 +92,7 @@ npm start
 ---
 
 ## Development Notes
-- The project uses both Postgres (Prisma) for transactional/user data and MongoDB for content flexibility. See `backend/prisma/schema.prisma` and `backend/src/models` for schema and model details.
+- The project uses both Mysql for transactional/user data and MongoDB for content flexibility. See `backend/prisma/schema.prisma` and `backend/src/models` for schema and model details.
 - Environment-specific configuration is read from `backend/.env`.
 - Payment integration notes are in `backend/STRIPE_SETUP.md`.
 
