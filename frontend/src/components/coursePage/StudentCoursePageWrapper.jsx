@@ -145,6 +145,7 @@ export default function StudentCoursePageWrapper({
                 animationId: f.animationId || null,
                 animationPreviewMode: f.animationPreviewMode || "start-stop",
                 correctAnswer: f.correctAnswer ?? f.answer ?? "",
+                explanation: f.explanation ?? "",
               }
             }),
           }))
@@ -367,7 +368,7 @@ export default function StudentCoursePageWrapper({
     ? Math.min(100, Math.round((uniqueCompletedCount / lessons.length) * 100))
     : 0
   
-  const isAllLessonsCompleted = lessons.length > 0 && uniqueCompletedCount === lessons.length
+  const isAllLessonsCompleted = isPreviewMode ? true : (lessons.length > 0 && uniqueCompletedCount === lessons.length)
   
   const handleLessonComplete = async () => {
     if (!currentLessonId || !courseId) return
@@ -649,7 +650,7 @@ export default function StudentCoursePageWrapper({
       {!hideHeader && (
         <>
           <AppHeader subtitle={course?.title || "Course"} />
-          {!isPreviewMode && (
+          {/* {!isPreviewMode && (
             <StudentHeader
               courseTitle={course?.title}
               progress={progress}
@@ -658,7 +659,7 @@ export default function StudentCoursePageWrapper({
               userName={effectiveUser?.name}
               userId={effectiveUser?._id}
             />
-          )}
+          )} */}
         </>
       )}
       

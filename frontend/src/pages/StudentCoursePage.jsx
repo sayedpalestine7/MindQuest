@@ -39,6 +39,14 @@ export default function StudentCoursePage() {
     }
     return localStorage.getItem("userId") || null
   })
+
+  // Sync studentId from AuthContext when available (handles login timing)
+  useEffect(() => {
+    if (!studentId && user) {
+      const id = user._id || user.id || null
+      if (id) setStudentId(id)
+    }
+  }, [user, studentId])
   const [enrolledCourseIds, setEnrolledCourseIds] = useState([])
   const [isEnrolled, setIsEnrolled] = useState(true)
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
@@ -80,6 +88,7 @@ export default function StudentCoursePage() {
                 animationId: f.animationId || null,
                 // include potential correct answer fields from backend
                 correctAnswer: f.correctAnswer ?? f.answer ?? "",
+                explanation: f.explanation ?? "",
               };
             }),
           }))

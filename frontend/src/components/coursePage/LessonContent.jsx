@@ -231,16 +231,30 @@ function FieldRenderer({ field, feedback, answer, onAnswerSubmit, onAnswerChange
             </Button>
           </div>
           {feedback === "correct" && (
-            <p className="flex items-center gap-2 text-green-600 text-sm">
-              <CheckCircle2 className="w-4 h-4" />
-              Correct!
-            </p>
+            <div className="space-y-1 text-sm">
+              <p className="flex items-center gap-2 text-green-600">
+                <CheckCircle2 className="w-4 h-4" />
+                Correct!
+              </p>
+              {field.explanation && (
+                <p className="text-gray-700"><strong>Explanation:</strong> {field.explanation}</p>
+              )}
+            </div>
           )}
+
           {feedback === "incorrect" && (
-            <p className="flex items-center gap-2 text-red-600 text-sm">
-              <XCircle className="w-4 h-4" />
-              Incorrect. Try again.
-            </p>
+            <div className="space-y-1 text-sm">
+              <p className="flex items-center gap-2 text-red-600">
+                <XCircle className="w-4 h-4" />
+                Incorrect.
+              </p>
+              {(field.correctAnswer || field.answer) && (
+                <p className="text-gray-800"><strong>Correct answer:</strong> {field.correctAnswer || field.answer}</p>
+              )}
+              {field.explanation && (
+                <p className="text-gray-700"><strong>Explanation:</strong> {field.explanation}</p>
+              )}
+            </div>
           )}
         </div>
       )
