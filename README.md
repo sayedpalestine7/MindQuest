@@ -1,107 +1,122 @@
-# Interactive Course Builder
 
-> A web-based platform for interactive learning of technical topics like data structures and algorithms.  
-> Users can explore courses with animations, mini-games, and quizzes to reinforce concepts.
+# MindQuest — Interactive Course Builder
 
----
-
-## 🧠 Project Overview
-
-This project is designed as a graduation project for a computer engineering degree.  
-The goal is to build a **fully functional web application** that provides an engaging, interactive learning experience.
-
-### Features
-- User authentication (signup, login)
-- Interactive lessons with animations (stack push/pop, linked list traversal, etc.)
-- Mini-games and simulations to practice concepts
-- Quizzes for each lesson
-- Progress tracking and optional achievements/points system
+An interactive learning platform for technical topics (data structures, algorithms, etc.) featuring animated lessons, mini-games, quizzes, and progress tracking. This repository contains the full-stack source (backend, frontend, and mobile clients) and supporting project artifacts for a graduation project.
 
 ---
 
-## 🧰 Tech Stack
-
-**Frontend:**  
-- React  
-- Tailwind CSS  
-- Framer Motion (for animations)  
-
-**Backend:**  
-- Node.js + Express  
-- PostgreSQL + Prisma (for user accounts, progress tracking)  
-- MongoDB + Mongoose (for courses, lessons, animations, quizzes)  
-
-**DevOps / Tools:**  
-- Git & GitHub  
-- Docker (optional for deployment consistency)  
+**Contents**
+- **Backend**: API server, database models (Postgres + Prisma and MongoDB), authentication, file uploads, payments, and business logic. See [backend](backend/).
+- **Frontend**: React + Vite single-page app using Tailwind CSS for the web UI. See [frontend](frontend/).
+- **Mobile**: React Native / Expo app for mobile interaction. See [mobile](mobile/).
+- **Graduation report**: Documentation and chapters. See [graduation-report](graduation-report/).
 
 ---
 
-## 📂 Project Structure
-
-backend/
-├── src/
-│ ├── controllers/
-│ ├── routes/
-│ ├── middleware/
-│ ├── models/
-│ ├── utils/
-│ ├── prisma/
-│ ├── db/
-│ └── server.js
-frontend/
-├── src/
-│ ├── components/
-│ ├── pages/
-│ ├── context/
-│ ├── hooks/
-│ ├── services/
-│ └── App.jsx
-
+**Key Features**
+- User authentication (signup, login, JWT)
+- Interactive lessons with step-by-step animations
+- Quizzes per lesson, progress tracking, and achievements
+- Course, lesson, and quiz management (admin/teacher flows)
+- Real-time features (chat, sockets) and file uploads
+- Payment endpoints for premium features (Stripe integration notes in backend/STRIPE_SETUP.md)
 
 ---
 
-## ⚙️ Setup Instructions
+## Tech Stack
+- Frontend: React, Vite, Tailwind CSS, Framer Motion
+- Backend: Node.js, Express
+- Databases: PostgreSQL (via Prisma) for relational data; MongoDB for content (courses, lessons, animations)
+- Other: Socket.io for realtime, Stripe for payments, Multer for file uploads
 
-1. **Clone the repository**
+---
+
+## Repo Structure (top-level)
+- [backend](backend/) — Express API and service layer
+- [frontend](frontend/) — React web client (Vite)
+- [mobile](mobile/) — React Native / Expo mobile client
+- [graduation-report](graduation-report/) — Project documentation and chapters
+
+See each package's README for more details.
+
+---
+
+## Setup & Run (Development)
+
+Prerequisites: Node.js (16+), npm, local MongoDB and Postgres instances (or Docker).
+
+1) Backend
+
+ - Copy the example env and set values: create `backend/.env` with:
+
+```
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/mindquest
+POSTGRES_URL=postgresql://USER:PASSWORD@localhost:5432/mindquest
+JWT_SECRET=replace_with_a_secure_secret
+STRIPE_SECRET=sk_test_...
+```
+
+ - Install and initialize:
 
 ```bash
-git clone https://github.com/sayedpalestine7/MindQuest
-    cd interactive-course-builder/backend
+cd backend
+npm install
+npm run dev
+```
 
-2. Install backend dependencie
-    npm install
+2) Frontend (web)
 
-3. Create .env file in backend/
-    PORT=5000
-    MONGO_URI=mongodb://localhost:27017/coursebuilder
-    POSTGRES_URL=postgresql://USER:PASSWORD@localhost:5432/coursebuilder
-    JWT_SECRET=your_super_secret_key
+```bash
+cd frontend
+npm install
+npm run dev
+# open http://localhost:5173 (Vite default) or the URL printed in terminal
+```
 
-4. Initialize Prisma
-    npx prisma generate
-    npx prisma migrate dev --name init
+3) Mobile (optional)
 
-5. Start backend server
-    npm run dev
+```bash
+cd mobile
+npm install
+# Use Expo CLI / run in simulator or Expo Go
+npm start
+```
 
-6.Frontend setup
-    Go to frontend/ and install dependencies:
-    npm install
-    npm start
+---
 
-🔗 Links
+## Testing
+- Backend: run available tests or use Postman collections in `backend/mindquest.rest` and `backend/seedCourseRequests.rest` for API exploration.
+- Frontend: standard `npm run test` (if configured) or manual QA in browser.
 
-GitHub Repository: <your-repo-url>
+---
 
-Project Documentation: TBD
+## Development Notes
+- The project uses both Postgres (Prisma) for transactional/user data and MongoDB for content flexibility. See `backend/prisma/schema.prisma` and `backend/src/models` for schema and model details.
+- Environment-specific configuration is read from `backend/.env`.
+- Payment integration notes are in `backend/STRIPE_SETUP.md`.
 
-📝 License
+---
 
-This project is licensed under the MIT License.
+## Contributing
+- Create issues for bugs or feature requests.
+- Fork, add a branch, implement, and open a PR. Keep changes scoped and include tests where appropriate.
 
-👨‍💻 Author
+---
 
-Sayed Qutob
-Ahmad Dardouk
-Computer Engineering Student | Graduation Project
+## Useful Links
+- API examples: [backend/mindquest.rest](backend/mindquest.rest)
+- Seed scripts: [backend/scripts](backend/scripts)
+
+---
+
+## License
+This project is released under the MIT License.
+
+---
+
+## Authors
+- Sayed Qutob
+- Ahmad Dardouk
+
+If you'd like, I can also update the individual package READMEs (`backend/README.md`, `frontend/README.md`, `mobile/README.md`) with step-by-step developer instructions.
